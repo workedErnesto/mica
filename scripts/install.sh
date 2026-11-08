@@ -11,8 +11,17 @@ if pgrep -f "/Applications/mica.app/Contents/MacOS/mica" >/dev/null; then
   for i in {1..40}; do pgrep -f "/Applications/mica.app/Contents/MacOS/mica" >/dev/null || break; sleep 0.5; done
   if pgrep -f "/Applications/mica.app/Contents/MacOS/mica" >/dev/null; then echo "mica did not quit, install stopped" >&2; exit 1; fi
 fi
-rm -rf /Applications/mica.app
-ditto build/mica.app /Applications/mica.app
+# Stage and verify before replacing the application. The profile and Keychain are never removed.
+staged=$(mktemp -d /Applications/.mica-install.XXXXXXXX)
+backup="$staged/previous.app"
+trap 'rm -rf "$staged"' EXIT
+ditto build/mica.app "$staged/mica.app"
+codesign --verify --strict "$staged/mica.app"
+if [[ -d /Applications/mica.app ]]; then mv /Applications/mica.app "$backup"; fi
+if ! mv "$staged/mica.app" /Applications/mica.app; then
+  if [[ -d "$backup" ]]; then mv "$backup" /Applications/mica.app; fi
+  exit 1
+fi
 codesign --verify --strict /Applications/mica.app
 lsregister=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
 "$lsregister" -u build/mica.app 2>/dev/null || true

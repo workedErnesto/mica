@@ -5,11 +5,11 @@ import MicaCore
 
 @MainActor
 final class DownloadItem: NSObject, ObservableObject, Identifiable, WKDownloadDelegate {
-    let id = UUID()
+    let id: UUID
     weak var manager: DownloadManager?
     weak var tab: Tab?
     @Published var name = ""
-    @Published var state: DownloadState = .choosing
+    @Published var state: DownloadState = .choosing { didSet { scheduleSave() } }
     @Published var fraction = 0.0
     @Published var bytes: Int64 = 0
     @Published var total: Int64 = 0
@@ -21,8 +21,37 @@ final class DownloadItem: NSObject, ObservableObject, Identifiable, WKDownloadDe
     var request: URLRequest?
     var observation: NSKeyValueObservation?
     var scoped = false
+    var bookmark: Data?
+    private var saveScheduled = false
+    var record: DownloadRecord {
+        DownloadRecord(id: id, name: name, state: state.rawValue, destination: destination, bookmark: bookmark,
+            source: request?.httpMethod == "GET" && ["http", "https"].contains(request?.url?.scheme ?? "") ? request?.url : nil, bytes: bytes, total: total)
+    }
+    private func scheduleSave() {
+        guard !saveScheduled else { return }; saveScheduled = true
+        Task { @MainActor [weak self] in
+            guard let self else { return }; self.saveScheduled = false; self.manager?.persist(self)
+        }
+    }
+    init(record: DownloadRecord, manager: DownloadManager) {
+        id = record.id; self.manager = manager
+        super.init()
+        name = record.name; destination = record.destination; bookmark = record.bookmark
+        state = record.state == "complete" ? .complete : .cancelled
+        bytes = record.bytes; total = record.total; fraction = state == .complete ? 1 : 0
+        if let source = record.source { request = URLRequest(url: source) }
+    }
+    private func accessDestination() {
+        if let bookmark {
+            var stale = false
+            if let resolved = try? URL(resolvingBookmarkData: bookmark, options: [.withSecurityScope], bookmarkDataIsStale: &stale) {
+                destination = resolved
+            }
+        }
+        scoped = destination?.startAccessingSecurityScopedResource() ?? false
+    }
     init(download: WKDownload, manager: DownloadManager, tab: Tab) {
-        self.manager = manager; self.tab = tab
+        id = UUID(); self.manager = manager; self.tab = tab
         super.init(); attach(download)
     }
     func attach(_ download: WKDownload) {
@@ -63,6 +92,7 @@ final class DownloadItem: NSObject, ObservableObject, Identifiable, WKDownloadDe
                     guard choice == 1 else { state = .cancelled; try? FileManager.default.removeItem(at: staging); releaseScope(); return }
                     _ = try FileManager.default.replaceItemAt(destination, withItemAt: staging)
                 } else { try FileManager.default.moveItem(at: staging, to: destination) }
+                bookmark = try? destination.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil)
                 state = .complete; fraction = 1; resumeData = nil
             } catch { failure = error.localizedDescription; state = .failed }
             releaseScope()
@@ -71,7 +101,7 @@ final class DownloadItem: NSObject, ObservableObject, Identifiable, WKDownloadDe
     func download(_ download: WKDownload, didFailWithError error: Error, resumeData: Data?) {
         observation = nil; self.download = nil
         if state != .cancelled { state = .failed; failure = error.localizedDescription }
-        self.resumeData = resumeData; releaseScope()
+        self.resumeData = resumeData; releaseScope(); manager?.persist(self)
     }
     func cancel() {
         state = .cancelled; observation = nil
@@ -89,14 +119,15 @@ final class DownloadItem: NSObject, ObservableObject, Identifiable, WKDownloadDe
         } else if let request { state = .choosing; web.startDownload(using: request) { [weak self] in self?.attach($0) } }
         else { state = .failed }
     }
-    func reveal() { if let destination, state == .complete { NSWorkspace.shared.activateFileViewerSelecting([destination]) } }
+    func reveal() { accessDestination(); defer { releaseScope() }; if let destination, state == .complete { NSWorkspace.shared.activateFileViewerSelecting([destination]) } }
     func open() {
+        accessDestination()
         guard let destination, state == .complete, let browser = manager?.browser else { return }
         Task {
             let answer = await ask(title: browser.text("открыть загруженный файл?", "Открыть загруженный файл?"), detail: destination.lastPathComponent, buttons: [browser.text("отмена", "Отмена"), browser.text("открыть", "Открыть")], window: browser.controller?.window)
-            if answer == 1 { NSWorkspace.shared.open(destination) }
+            if answer == 1 { NSWorkspace.shared.open(destination) }; releaseScope()
         }
     }
     func releaseScope() { if scoped, let destination { destination.stopAccessingSecurityScopedResource(); scoped = false } }
-    func cleanup() { cancel(); releaseScope(); if let staging { try? FileManager.default.removeItem(at: staging) }; resumeData = nil }
+    func cleanup() { cancel(); releaseScope(); manager?.persist(self) }
 }

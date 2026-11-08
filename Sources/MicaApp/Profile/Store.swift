@@ -14,6 +14,7 @@ final class Store: ObservableObject {
     @Published var bookmarks: [Visit] { didSet { save(bookmarks, "bookmarks.json") } }
     @Published var history: [Visit] { didSet { save(history, "history.json") } }
     @Published var permissions: [SitePermission] { didSet { save(permissions, "permissions.json") } }
+    @Published var downloadRecords: [DownloadRecord] { didSet { save(downloadRecords, "downloads.json") } }
     @Published var issue: String?
     /// Text typed in a settings field but not yet added; closing settings asks before discarding it.
     @Published var settingsDraft = ""
@@ -26,6 +27,7 @@ final class Store: ObservableObject {
     var sessionWork: DispatchWorkItem?
     var preferencesWork: DispatchWorkItem?
     var shuttingDown = false
+    private var unreadableFiles = Set<String>()
     var active: BrowserModel? { windows.first(where: { $0.window?.isKeyWindow == true })?.model ?? windows.last?.model }
     init() {
         let appRoot = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("mica", isDirectory: true)
@@ -45,16 +47,19 @@ final class Store: ObservableObject {
                 return nil
             }
         }
+        downloadRecords = read([DownloadRecord].self, "downloads.json") ?? []
         preferences = read(Preferences.self, "preferences.json") ?? Preferences()
         bookmarks = read([Visit].self, "bookmarks.json") ?? []
         history = read([Visit].self, "history.json") ?? []
         permissions = read([SitePermission].self, "permissions.json") ?? []
+        unreadableFiles = Set(loadIssues.map { String($0.prefix { $0 != ":" }) })
         if !loadIssues.isEmpty { issue = "mica: " + loadIssues.joined(separator: "\n") }
         if ProcessInfo.processInfo.arguments.contains("--qa") { preferences.onboardingComplete = true; preferences.restore = false }
     }
     func text(_ low: String, _ regular: String) -> String { Copy.text(low, regular, lowercase: preferences.lowercase, language: preferences.language) }
     var locale: Locale { Locale(identifier: preferences.language == .ru ? "ru_RU" : "en_US") }
     func save<T: Encodable>(_ value: T, _ name: String) {
+        guard !unreadableFiles.contains(name) else { return }
         do { try Persistence.write(value, at: root.appendingPathComponent(name)) } catch { issue = text("не удалось сохранить данные: ", "Не удалось сохранить данные: ") + error.localizedDescription }
     }
     func schedulePreferences() {
@@ -87,6 +92,7 @@ final class Store: ObservableObject {
                 guard raw.version == 1 else { throw CocoaError(.fileReadUnknown) }
                 saved = raw.validated()
             } catch {
+                unreadableFiles.insert("session.json")
                 let recovery = root.appendingPathComponent("Recovery", isDirectory: true)
                 try? FileManager.default.createDirectory(at: recovery, withIntermediateDirectories: true)
                 try? FileManager.default.copyItem(at: sessionURL, to: recovery.appendingPathComponent(UUID().uuidString + "-session.json"))
