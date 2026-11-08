@@ -42,7 +42,12 @@ jobs:
           $setup = Get-ChildItem windows/artifacts -Filter 'mica-*-win-x64-setup.exe' | Select-Object -First 1
           $p = Start-Process $setup.FullName -ArgumentList '--self-test' -PassThru
           if (-not $p.WaitForExit(60000)) { $p.Kill(); throw 'setup did not exit' }
-          if ($p.ExitCode -ne 0) { throw "setup exit code $($p.ExitCode)" }
+          if ($p.ExitCode -ne 0) {
+            Get-WinEvent -FilterHashtable @{LogName='Application'; StartTime=(Get-Date).AddMinutes(-5)} -ErrorAction SilentlyContinue |
+              Where-Object { $_.ProviderName -in @('Application Error', '.NET Runtime', 'Windows Error Reporting') } |
+              Select-Object -First 10 | Format-List TimeCreated, ProviderName, Message
+            throw "setup exit code $($p.ExitCode)"
+          }
       - name: Quiet install and smoke test with real WebView2
         if: matrix.arch == 'x64'
         continue-on-error: true
@@ -59,6 +64,7 @@ jobs:
           path: ~/AppData/Local/mica/QA/smoke-report.json
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
+        if: false
         with:
           name: mica-windows-${{ matrix.arch }}
           path: |
