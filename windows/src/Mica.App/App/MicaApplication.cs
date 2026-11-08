@@ -19,6 +19,11 @@ public sealed partial class MicaApplication : Application, IXamlMetadataProvider
 
     public MicaApplication()
     {
+        ResourceManagerRequested += (_, e) =>
+        {
+            var pri = Path.Combine(AppContext.BaseDirectory, "mica.pri");
+            if (File.Exists(pri)) e.CustomResourceManager = new Microsoft.Windows.ApplicationModel.Resources.ResourceManager(pri);
+        };
         Current = this;
         Dispatcher = DispatcherQueue.GetForCurrentThread();
         UnhandledException += (_, e) => { Diagnostics.Log.Error(e.Exception); e.Handled = Store.Shared.Windows.Count > 0; };
