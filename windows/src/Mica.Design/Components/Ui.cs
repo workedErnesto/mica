@@ -132,9 +132,15 @@ public sealed class Interaction
         target.PointerReleased += (s, e) =>
         {
             if (!Pressed) return;
-            ((UIElement)s).ReleasePointerCapture(e.Pointer);
-            Release(Hover);
+            var element = (UIElement)s;
+            // Decide and reset before releasing capture: ReleasePointerCapture raises PointerCaptureLost right away,
+            // and that handler used to clear Pressed first, so a mouse click never reached Invoked.
+            var point = e.GetCurrentPoint(element).Position;
+            var inside = point.X >= 0 && point.Y >= 0 && point.X <= element.ActualSize.X && point.Y <= element.ActualSize.Y;
+            Release(false);
+            element.ReleasePointerCapture(e.Pointer);
             e.Handled = true;
+            if (inside && Enabled) Invoked?.Invoke();
         };
         target.KeyDown += (_, e) =>
         {
