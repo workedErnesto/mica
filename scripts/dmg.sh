@@ -38,8 +38,8 @@ on run argv
         set icon size of viewOptions to 112
         set text size of viewOptions to 13
         set background picture of viewOptions to file ".background:background.png" of volumePath
-        set position of item "mica.app" of volumePath to {170, 210}
-        set position of item "Applications" of volumePath to {550, 210}
+        set position of item "mica.app" of volumePath to {170, 162}
+        set position of item "Applications" of volumePath to {550, 162}
         update volumePath without registering applications
         delay 2
         close w
