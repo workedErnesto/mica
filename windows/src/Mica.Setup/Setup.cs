@@ -17,18 +17,26 @@ public static class Program
 {
     public static string[] Arguments { get; private set; } = [];
     public static bool Has(string flag) => Arguments.Contains(flag);
+    public static void Trace(string message)
+    {
+        if (Has("--self-test")) File.AppendAllText(Path.Combine(Path.GetTempPath(), "mica-setup-self-test.log"), message + Environment.NewLine);
+    }
 
     [STAThread]
     static int Main(string[] args)
     {
         Arguments = args;
+        Trace("main");
         using var single = new Mutex(true, "mica-setup", out var first);
         if (!first) return 0;
         WinRT.ComWrappersSupport.InitializeComWrappers();
+        Trace("com wrappers initialized");
         Application.Start(callback =>
         {
+            Trace("application callback");
             SynchronizationContext.SetSynchronizationContext(new DispatcherQueueSynchronizationContext(DispatcherQueue.GetForCurrentThread()));
             _ = new SetupApplication();
+            Trace("application created");
         });
         return 0;
     }
@@ -40,6 +48,11 @@ public static class Program
 /// it, so CI can check that WinUI starts from the single-file build.</summary>
 public sealed partial class SetupApplication : Application, IXamlMetadataProvider
 {
+    public SetupApplication()
+    {
+        UnhandledException += (_, e) => Program.Trace("unhandled: " + e.Message + " " + e.Exception);
+        Program.Trace("application constructor");
+    }
     readonly XamlControlsXamlMetaDataProvider provider = new();
     public IXamlType GetXamlType(Type type) => provider.GetXamlType(type);
     public IXamlType GetXamlType(string fullName) => provider.GetXamlType(fullName);
@@ -48,11 +61,14 @@ public sealed partial class SetupApplication : Application, IXamlMetadataProvide
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
+        Program.Trace("launched");
         Resources.MergedDictionaries.Add(new XamlControlsResources());
+        Program.Trace("resources loaded");
         var settings = new Windows.UI.ViewManagement.UISettings();
         Palette.Apply(settings.GetColorValue(Windows.UI.ViewManagement.UIColorType.Background).R < 128, new Windows.UI.ViewManagement.AccessibilitySettings().HighContrast);
         Look.Apply(false, "#6E56CF", 0);
         Window = new Window { ExtendsContentIntoTitleBar = true, Title = "mica" };
+        Program.Trace("window created");
         var scale = Win32Dpi.Scale(Window);
         Window.AppWindow.Resize(new Windows.Graphics.SizeInt32((int)(640 * scale), (int)(460 * scale)));
         if (Window.AppWindow.Presenter is OverlappedPresenter presenter) { presenter.IsResizable = false; presenter.IsMaximizable = false; }
@@ -64,8 +80,10 @@ public sealed partial class SetupApplication : Application, IXamlMetadataProvide
         var transparency = settings.AdvancedEffectsEnabled && !Palette.Contrast;
         if (transparency) Window.SystemBackdrop = Microsoft.UI.Composition.SystemBackdrops.MicaController.IsSupported() ? new MicaBackdrop() : new DesktopAcrylicBackdrop();
         var view = new SetupView(this, transparency);
+        Program.Trace("view created");
         Window.Content = view;
         Window.Activate();
+        Program.Trace("window activated");
         if (Program.Has("--self-test")) { var t = DispatcherQueue.GetForCurrentThread().CreateTimer(); t.Interval = TimeSpan.FromSeconds(3); t.Tick += (_, _) => Exit(); t.Start(); }
     }
 }

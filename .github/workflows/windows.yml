@@ -43,6 +43,7 @@ jobs:
           $p = Start-Process $setup.FullName -ArgumentList '--self-test' -PassThru
           if (-not $p.WaitForExit(60000)) { $p.Kill(); throw 'setup did not exit' }
           if ($p.ExitCode -ne 0) {
+            if (Test-Path "$env:TEMP\mica-setup-self-test.log") { Get-Content "$env:TEMP\mica-setup-self-test.log" }
             Get-WinEvent -FilterHashtable @{LogName='Application'; StartTime=(Get-Date).AddMinutes(-5)} -ErrorAction SilentlyContinue |
               Where-Object { $_.ProviderName -in @('Application Error', '.NET Runtime', 'Windows Error Reporting') } |
               Select-Object -First 10 | Format-List TimeCreated, ProviderName, Message
