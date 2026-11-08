@@ -42,7 +42,7 @@ public static class QA
         var first = browser.Selected!;
         first.Load("https://example.com/");
         var online = await Wait(() => first.Core is not null && !first.Loading && first.Error is null && first.Title.Length > 0, 25);
-        results.Add(new("real HTTPS navigation", online, first.Error ?? first.Title));
+        results.Add(new("real HTTPS navigation", online, first.Error ?? $"title={first.Title}, core={first.Core is not null}, loading={first.Loading}, source={first.Core?.Source}"));
         if (online)
         {
             await first.EvaluateAsync("window.identity = crypto.randomUUID(); true");

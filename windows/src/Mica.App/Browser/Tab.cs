@@ -64,6 +64,8 @@ public sealed partial class Tab : Observable
         try { await WebView.EnsureCoreWebView2Async(environment, options); }
         catch (Exception e) { Fail(e.Message); return; }
         if (WebView is null) return;
+        try
+        {
         var core = WebView.CoreWebView2;
         Core = core;
         if (!owner.PrivateMode && store.Engine.NormalProfile is null) { store.Engine.NormalProfile = core.Profile; _ = store.Extensions.SyncAsync(core.Profile); }
@@ -103,6 +105,8 @@ public sealed partial class Tab : Observable
         if (!owner.PrivateMode) await passwords.InstallAsync(core);
         if (pendingUrl is { } url) { pendingUrl = null; core.Navigate(url); }
         Notify();
+        }
+        catch (Exception e) { Diagnostics.Log.Error(e); Fail(e.Message); }
     }
 
     void Fail(string message)
