@@ -4,7 +4,6 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
-    <EnableMsixTooling>true</EnableMsixTooling>
     <RootNamespace>Mica.Setup</RootNamespace>
     <AssemblyName>mica-setup</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>

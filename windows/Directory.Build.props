@@ -11,4 +11,7 @@
     <Copyright>mica</Copyright>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'Mica.Setup'">
+    <EnableMsixTooling>true</EnableMsixTooling>
+  </PropertyGroup>
 </Project>
