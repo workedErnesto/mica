@@ -4,6 +4,8 @@ mica — нативный браузер для macOS 15.4 и новее на Ap
 
 Локальная версия: 0.3.0. Это рабочая реализация с конкретными ограничениями WebKit и проверенным набором сценариев, а не заявление о паритете с Safari. Результаты и непроверенные случаи: [docs/VALIDATION.md](docs/VALIDATION.md).
 
+Версия для Windows (WinUI 3 и WebView2) лежит в `windows/` и собирается в CI, но на Windows ещё не запускалась: [docs/WINDOWS.md](docs/WINDOWS.md), различия платформ в [docs/PARITY.md](docs/PARITY.md).
+
 ## Установка
 
 После публикации скачайте DMG на странице [релизов mica](https://github.com/workedErnesto/mica/releases), откройте образ и перенесите mica в папку «Программы». Для запуска нужна macOS 15.4 или новее. Сборка подписана локальной ad hoc подписью и не нотариально заверена Apple, поэтому Gatekeeper может заблокировать запуск или запросить отдельное подтверждение.
@@ -13,15 +15,17 @@ mica — нативный браузер для macOS 15.4 и новее на Ap
 Для сборки нужны Xcode 26.1 и выбранный Xcode Command Line Tools. Проверено на Apple M1, macOS 15.7.5, 8 ГБ RAM. Сторонних Swift-зависимостей нет.
 
 ```sh
+cd macos
 swift test
 scripts/build.sh release
 ```
 
-Откройте `build/mica.app` в Finder или установите в «Программы» командой `scripts/install.sh`: тесты, сборка, замена копии в «Программах» и обновление кэша иконок. Иконку собирает `swift scripts/icon.swift build/mica.iconset && iconutil -c icns build/mica.iconset -o Resources/App/mica.icns`. Иконки Дока из пака: `swift scripts/app-icons.swift <папка Orbit_Icon_Pack> Resources/AppIcons`. Иконка сборки `Resources/App/mica.icns` с 8 ноября 2026 года собрана из `Resources/AppIcons/base-original.heic` (512 px, sips и iconutil), поэтому стандартная иконка совпадает с первой в наборе «стандартные»; `scripts/icon.swift` рисует прежнюю иконку и больше не используется для сборки. Скрипт создаёт полноценный app bundle и подписывает его локальной ad hoc подписью с App Sandbox. Для распространения другим пользователям нужны Developer ID и notarization; эта сборка их не имитирует. Для разработки можно открыть `Package.swift` в Xcode, но полноценный bundle с описаниями разрешений и entitlements создаёт `scripts/build.sh`.
+Команды выполняются из папки `macos/`. Откройте `macos/build/mica.app` в Finder или установите в «Программы» командой `macos/scripts/install.sh`: тесты, сборка, замена копии в «Программах» и обновление кэша иконок. Иконку собирает `swift scripts/icon.swift build/mica.iconset && iconutil -c icns build/mica.iconset -o Resources/App/mica.icns`. Иконки Дока из пака: `swift scripts/app-icons.swift <папка Orbit_Icon_Pack> Resources/AppIcons`. Иконка сборки `Resources/App/mica.icns` с 8 ноября 2026 года собрана из `Resources/AppIcons/base-original.heic` (512 px, sips и iconutil), поэтому стандартная иконка совпадает с первой в наборе «стандартные»; `scripts/icon.swift` рисует прежнюю иконку и больше не используется для сборки. Скрипт создаёт полноценный app bundle и подписывает его локальной ad hoc подписью с App Sandbox. Для распространения другим пользователям нужны Developer ID и notarization; эта сборка их не имитирует. Для разработки можно открыть `Package.swift` в Xcode, но полноценный bundle с описаниями разрешений и entitlements создаёт `scripts/build.sh`.
 
 Чистая проверка:
 
 ```sh
+cd macos
 swift package clean
 swift test
 scripts/build.sh release
@@ -31,6 +35,7 @@ codesign --verify --strict build/mica.app
 Диагностическая сборка и интеграционный прогон:
 
 ```sh
+cd macos
 scripts/build.sh debug
 build/mica.app/Contents/MacOS/mica --qa --smoke-test --diagnostics
 ```
@@ -78,7 +83,11 @@ build/mica.app/Contents/MacOS/mica --qa --smoke-test --diagnostics
 
 Во время работы mica раз в сутки проверяет последний стабильный релиз на GitHub. Проверку можно отключить в разделе «mica» настроек, пропустить конкретную версию или включить проверку снова; после повторного включения проверка запускается сразу. Перед открытием скачанного DMG сверяется SHA-256 из соседнего файла релиза; установка завершается пользователем. При запуске с образа mica может предложить скопировать более новую версию в «Программы» после выбора этой папки.
 
-Для упаковки готовой release-сборки выполните `scripts/dmg.sh`. Скрипт создаёт `build/mica-0.3.0.dmg` и файл `.sha256`, оформляя окно через Finder. Карантин не снимается. Локальная ad hoc подпись не заменяет Developer ID и notarization, поэтому Gatekeeper может блокировать приложение или требовать отдельного подтверждения. SHA-256 проверяет совпадение файлов релиза, но сам по себе не подтверждает издателя.
+Для упаковки готовой release-сборки выполните `macos/scripts/dmg.sh`. Скрипт создаёт `macos/build/mica-0.3.0.dmg` и файл `.sha256`, оформляя окно через Finder. Карантин не снимается. Локальная ad hoc подпись не заменяет Developer ID и notarization, поэтому Gatekeeper может блокировать приложение или требовать отдельного подтверждения. SHA-256 проверяет совпадение файлов релиза, но сам по себе не подтверждает издателя.
+
+## Уведомления сайтов
+
+Сайты в открытых вкладках могут показывать уведомления после вашего разрешения. Вопрос появляется только по нажатию на странице выбранной вкладки; «не сейчас» больше не спрашивает до закрытия вкладки. Уведомление приходит через центр уведомлений macOS, клик открывает вкладку. Решения меняются в сведениях сайта и в настройках «разрешения сайтов», там же можно запретить сайтам спрашивать. В окнах инкогнито уведомления запрещены. Push-уведомления закрытых сайтов не поддерживаются: страница должна быть открыта. Публичный WebKit не даёт WKWebView своего Notification API, поэтому mica добавляет стандартный объект `Notification` в страницу и проверяет каждый вызов на своей стороне.
 
 ## Приватность и расширения
 

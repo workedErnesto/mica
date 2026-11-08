@@ -1,0 +1,9 @@
+<Project>
+  <!-- Imported inside each project body, after Sdk.props, where the SDK version is known.
+       .NET 10 is the target. A machine with only the .NET 8 SDK (the Mac used for blind work) builds against net8.0,
+       so Mica.Core, its tests and the Windows compile check still run there. -->
+  <PropertyGroup>
+    <MicaDotnet>net10.0</MicaDotnet>
+    <MicaDotnet Condition="$(NETCoreSdkVersion.StartsWith('8.')) Or $(NETCoreSdkVersion.StartsWith('9.'))">net8.0</MicaDotnet>
+  </PropertyGroup>
+</Project>

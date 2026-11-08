@@ -24,6 +24,7 @@
 ## Команды
 
 ```sh
+cd macos
 scripts/build.sh release
 python3 scripts/benchmark.py
 # Короткий повтор без длительной сессии:
@@ -35,6 +36,7 @@ python3 scripts/benchmark.py --quick
 Результаты — `work/benchmark-YYYYMMDD-HHMMSS/`. В каждом сценарии: baseline процессов, момент готовности окна, список страниц, групповая память, swap, VM statistics, давление памяти и CPU. Снимок вручную:
 
 ```sh
+cd macos
 python3 scripts/measure.py baseline --out work/before
 python3 scripts/measure.py snapshot --pid PID --baseline work/before/baseline.json --out work/snapshot
 python3 scripts/measure.py cpu --pid PID --baseline work/before/baseline.json --out work/cpu --seconds 60
@@ -79,3 +81,7 @@ python3 scripts/measure.py cpu --pid PID --baseline work/before/baseline.json --
 | 10 страниц, 10 живых WKWebView | 1506.6 МиБ | 0.267 с | 4.61% одного ядра |
 
 Это значения с конкретных снимков, не верхние границы RAM. Время готовности окна не включает ожидание загрузки всех сайтов. Медиана dispatch/yield переключения для долгого прогона около 24.7 мс; это не input-to-photon latency. JSON содержит фактические значения каждого прохода, глобальный swap и исходы страниц. В окончательную упаковку дополнительно включено освобождение security-scoped доступа при очистке загрузок; измерительные сценарии загрузок файлов не выполняют.
+
+## Windows
+
+`mica.exe --qa --benchmark=N` (N = 0, 1 или 10) открывает N вкладок, ждёт 20 секунд и пишет `benchmark-N.tsv` в `%LOCALAPPDATA%\mica\QA`: private bytes самой mica и каждого процесса WebView2 с его ролью (браузер, рендерер, GPU, утилиты) из `GetProcessExtendedInfosAsync`. Это private working set, а не footprint macOS, поэтому числа двух платформ напрямую не сравниваются. Измерений на Windows ещё нет.

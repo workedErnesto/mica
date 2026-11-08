@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../../Dotnet.props" />
+  <PropertyGroup>
+    <TargetFramework>$(MicaDotnet)</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Mica.Core/Mica.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="$(SharedDir)fixtures/core/vectors.json" Link="vectors.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(SharedDir)keymap.json" Link="keymap.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

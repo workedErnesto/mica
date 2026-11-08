@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../../Dotnet.props" />
+  <Import Project="../../WinUI.props" />
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>Mica.Setup</RootNamespace>
+    <AssemblyName>mica-setup</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>$(SharedDir)icons/mica.ico</ApplicationIcon>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- One downloadable file: the published app is embedded as payload.zip by scripts/package.ps1. -->
+    <PublishSingleFile Condition="'$(OS)' == 'Windows_NT'">true</PublishSingleFile>
+    <SelfContained Condition="'$(OS)' == 'Windows_NT'">true</SelfContained>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Mica.Core/Mica.Core.csproj" />
+    <ProjectReference Include="../Mica.Design/Mica.Design.csproj" />
+    <ProjectReference Include="../Mica.Install/Mica.Install.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="$(PayloadZip)" LogicalName="mica.payload.zip" Condition="'$(PayloadZip)' != '' And Exists('$(PayloadZip)')" />
+    <EmbeddedResource Include="$(SharedDir)icons/mica-512.png" LogicalName="mica.icon.png" />
+  </ItemGroup>
+</Project>

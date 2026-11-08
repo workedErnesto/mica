@@ -1,0 +1,33 @@
+<Project>
+  <!-- Shared by every WinUI project. On Windows the full Windows App SDK build runs (XAML compiler, PRI, packaging
+       tools). Elsewhere (the Mac used for blind work) only compile assets are referenced: the C# is type-checked
+       against the real WinUI and WebView2 projections, nothing is packaged, and the output cannot run. -->
+  <PropertyGroup>
+    <TargetFramework>$(MicaDotnet)-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <UseWinUI>true</UseWinUI>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <EnableMsixTooling>false</EnableMsixTooling>
+    <Platforms>x64;ARM64</Platforms>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+    <!-- CsWinRT wants partial classes for anything that crosses into WinRT under AOT; the warning is the hint. -->
+    <WarningsAsErrors>$(WarningsAsErrors);CsWinRT1028</WarningsAsErrors>
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+    <WindowsAppSdkVersion>2.6.5</WindowsAppSdkVersion>
+    <WebView2Version>1.0.4314.35</WebView2Version>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="$(WindowsAppSdkVersion)" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="$(WebView2Version)" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.9457" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="$(WindowsAppSdkVersion)" ExcludeAssets="build;buildTransitive" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="$(WebView2Version)" ExcludeAssets="build;buildTransitive" />
+    <Reference Include="$(NuGetPackageRoot)microsoft.web.webview2/$(WebView2Version)/lib_manual/net8.0-windows10.0.17763.0/Microsoft.Web.WebView2.Core.Projection.dll" />
+  </ItemGroup>
+</Project>

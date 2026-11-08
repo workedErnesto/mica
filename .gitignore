@@ -18,3 +18,9 @@ PROMPT.md
 .codex/
 .cursor/
 references/
+
+# Windows build products
+bin/
+obj/
+*.user
+windows/artifacts/

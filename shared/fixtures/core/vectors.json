@@ -1,0 +1,471 @@
+{
+  "$comment" : "Shared behaviour vectors. macos/Tests/MicaCoreTests/SharedVectorTests.swift and windows/tests/Mica.Core.Tests/SharedVectorTests.cs both check every case. Add inputs, then run MICA_WRITE_VECTORS=1 swift test in macos/ to fill expect from the macOS implementation, review the diff, and make Windows pass.",
+  "address" : [
+    {
+      "engine" : "DuckDuckGo",
+      "expect" : "web:https://example.com",
+      "input" : "example.com"
+    },
+    {
+      "engine" : "DuckDuckGo",
+      "expect" : "web:https://example.com/a?b=1",
+      "input" : "https://example.com/a?b=1"
+    },
+    {
+      "engine" : "Google",
+      "expect" : "web:https://github.com/workedErnesto/mica",
+      "input" : "  github.com/workedErnesto/mica  "
+    },
+    {
+      "engine" : "DuckDuckGo",
+      "expect" : "web:http://localhost:3000",
+      "input" : "localhost:3000"
+    },
+    {
+      "engine" : "DuckDuckGo",
+      "expect" : "web:http://127.0.0.1:8080/x",
+      "input" : "127.0.0.1:8080/x"
+    },
+    {
+      "engine" : "DuckDuckGo",
+      "expect" : "web:http://[::1]:5173",
+      "input" : "[::1]:5173"
+    },
+    {
+      "engine" : "DuckDuckGo",
+      "expect" : "external:mailto:a@b.c",
+      "input" : "mailto:a@b.c"
+    },
+    {
+      "engine" : "DuckDuckGo",
+      "expect" : "external:tel:+79990000000",
+      "input" : "tel:+79990000000"
+    },
+    {
+      "engine" : "DuckDuckGo",
+      "expect" : "rejected:unsupported scheme",
+      "input" : "javascript:alert(1)"
+    },
+    {
+      "engine" : "DuckDuckGo",
+      "expect" : "rejected:unsupported scheme",
+      "input" : "file:///etc/passwd"
+    },
+    {
+      "engine" : "DuckDuckGo",
+      "expect" : "rejected:unsupported scheme",
+      "input" : "data:text/html,hi"
+    },
+    {
+      "engine" : "DuckDuckGo",
+      "expect" : "rejected:unsupported scheme",
+      "input" : "https://user:pw@example.com"
+    },
+    {
+      "engine" : "Yandex",
+      "expect" : "web:https://yandex.ru/search/?text=%D0%BA%D0%B0%D0%BA%20%D0%BF%D1%80%D0%B8%D0%B3%D0%BE%D1%82%D0%BE%D0%B2%D0%B8%D1%82%D1%8C%20%D0%B1%D0%BE%D1%80%D1%89",
+      "input" : "как приготовить борщ"
+    },
+    {
+      "engine" : "Google",
+      "expect" : "web:https://www.google.com/search?q=weather%20today",
+      "input" : "weather today"
+    },
+    {
+      "engine" : "Bing",
+      "expect" : "web:https://www.bing.com/search?q=a%26b%3Dc%20d",
+      "input" : "a&b=c d"
+    },
+    {
+      "engine" : "Kagi",
+      "expect" : "web:https://kagi.com/search?q=C++%20vs%20C%23",
+      "input" : "C++ vs C#"
+    },
+    {
+      "engine" : "DuckDuckGo",
+      "expect" : "web:https://duckduckgo.com/?q=100%25%20ok?",
+      "input" : "100% ok?"
+    },
+    {
+      "engine" : "DuckDuckGo",
+      "expect" : "rejected:empty",
+      "input" : ""
+    },
+    {
+      "engine" : "DuckDuckGo",
+      "expect" : "web:https://site.test:8443/p",
+      "input" : "site.test:8443/p"
+    },
+    {
+      "engine" : "DuckDuckGo",
+      "expect" : "rejected:unsupported scheme",
+      "input" : "ftp://example.com"
+    }
+  ],
+  "checksum" : [
+    {
+      "expect" : "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "text" : "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855  mica-0.3.0.dmg\n"
+    },
+    {
+      "expect" : null,
+      "text" : "nothing here"
+    },
+    {
+      "expect" : null,
+      "text" : "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b85"
+    }
+  ],
+  "chromeId" : [
+    {
+      "expect" : "eimadpbcbfnmbkopoojfekhnkhdbieeh",
+      "input" : "https://chromewebstore.google.com/detail/dark-reader/eimadpbcbfnmbkopoojfekhnkhdbieeh"
+    },
+    {
+      "expect" : "cjpalhdlnbpafiamejdnhcphjbkeiagm",
+      "input" : "chrome.google.com/webstore/detail/ublock/cjpalhdlnbpafiamejdnhcphjbkeiagm"
+    },
+    {
+      "expect" : "eimadpbcbfnmbkopoojfekhnkhdbieeh",
+      "input" : "eimadpbcbfnmbkopoojfekhnkhdbieeh"
+    },
+    {
+      "expect" : null,
+      "input" : "https://example.com/detail/eimadpbcbfnmbkopoojfekhnkhdbieeh"
+    },
+    {
+      "expect" : null,
+      "input" : "EIMADPBCBFNMBKOPOOJFEKHNKHDBIEEH"
+    }
+  ],
+  "copy" : [
+    {
+      "expect" : "настройки",
+      "language" : "ru",
+      "low" : "настройки",
+      "lowercase" : true,
+      "regular" : "Настройки"
+    },
+    {
+      "expect" : "Настройки",
+      "language" : "ru",
+      "low" : "настройки",
+      "lowercase" : false,
+      "regular" : "Настройки"
+    },
+    {
+      "expect" : "notifications",
+      "language" : "en",
+      "low" : "уведомления",
+      "lowercase" : true,
+      "regular" : "Уведомления"
+    },
+    {
+      "expect" : "Notifications",
+      "language" : "en",
+      "low" : "уведомления",
+      "lowercase" : false,
+      "regular" : "Уведомления"
+    },
+    {
+      "expect" : "Нет такой строки",
+      "language" : "en",
+      "low" : "нет такой строки",
+      "lowercase" : false,
+      "regular" : "Нет такой строки"
+    }
+  ],
+  "filename" : [
+    {
+      "expect" : "report.pdf",
+      "name" : "report.pdf"
+    },
+    {
+      "expect" : "passwd",
+      "name" : "../../etc/passwd"
+    },
+    {
+      "expect" : "spaced .txt",
+      "name" : "  spaced .txt  "
+    },
+    {
+      "expect" : "c.zip",
+      "name" : "a:b/c.zip"
+    },
+    {
+      "expect" : "bell.txt",
+      "name" : "\u0007bell.txt"
+    },
+    {
+      "expect" : "download",
+      "name" : ".."
+    },
+    {
+      "expect" : "download",
+      "name" : ""
+    },
+    {
+      "expect" : "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "name" : "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.bin"
+    }
+  ],
+  "greeting" : [
+    {
+      "expect" : "доброе утро, Эрнесто",
+      "greet" : true,
+      "hour" : 9,
+      "language" : "ru",
+      "lowercase" : true,
+      "name" : "Эрнесто",
+      "seed" : 0
+    },
+    {
+      "expect" : "Добрый вечер, Эрнесто",
+      "greet" : true,
+      "hour" : 21,
+      "language" : "ru",
+      "lowercase" : false,
+      "name" : "Эрнесто",
+      "seed" : 0
+    },
+    {
+      "expect" : "Up late, Ernesto?",
+      "greet" : true,
+      "hour" : 3,
+      "language" : "en",
+      "lowercase" : false,
+      "name" : "Ernesto",
+      "seed" : 0
+    },
+    {
+      "expect" : "Ernesto, what shall we open?",
+      "greet" : true,
+      "hour" : 14,
+      "language" : "en",
+      "lowercase" : true,
+      "name" : "Ernesto",
+      "seed" : -1
+    },
+    {
+      "expect" : null,
+      "greet" : true,
+      "hour" : 9,
+      "language" : "ru",
+      "lowercase" : true,
+      "name" : "  ",
+      "seed" : 0
+    },
+    {
+      "expect" : null,
+      "greet" : false,
+      "hour" : 9,
+      "language" : "en",
+      "lowercase" : true,
+      "name" : "Ernesto",
+      "seed" : 0
+    }
+  ],
+  "luminance" : [
+    {
+      "expect" : 0.14480000000000001,
+      "hex" : "#6E56CF"
+    },
+    {
+      "expect" : 0,
+      "hex" : "000000"
+    },
+    {
+      "expect" : 1,
+      "hex" : "#FFFFFF"
+    },
+    {
+      "expect" : null,
+      "hex" : "#12345"
+    },
+    {
+      "expect" : null,
+      "hex" : "zzzzzz"
+    }
+  ],
+  "notification" : [
+    {
+      "body" : "Привет",
+      "expect" : {
+        "body" : "Привет",
+        "silent" : false,
+        "tag" : "chat",
+        "title" : "Новое сообщение"
+      },
+      "id" : "n-1",
+      "silent" : false,
+      "tag" : "chat",
+      "title" : "Новое сообщение"
+    },
+    {
+      "body" : "",
+      "expect" : null,
+      "id" : "a b",
+      "silent" : false,
+      "tag" : "",
+      "title" : "x"
+    },
+    {
+      "body" : "",
+      "expect" : null,
+      "id" : "1",
+      "silent" : false,
+      "tag" : "",
+      "title" : "   "
+    },
+    {
+      "body" : "a\u0007b",
+      "expect" : {
+        "body" : "ab",
+        "silent" : true,
+        "tag" : "",
+        "title" : "tttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt"
+      },
+      "id" : "2",
+      "silent" : true,
+      "tag" : "",
+      "title" : "tttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt"
+    },
+    {
+      "body" : "line1\nline2",
+      "expect" : {
+        "body" : "line1\nline2",
+        "silent" : false,
+        "tag" : "tag",
+        "title" : "Title"
+      },
+      "id" : "3",
+      "silent" : false,
+      "tag" : "  tag  ",
+      "title" : "Title"
+    }
+  ],
+  "origin" : [
+    {
+      "expect" : "https://example.com",
+      "url" : "https://Example.com/a"
+    },
+    {
+      "expect" : "http://example.com",
+      "url" : "http://example.com:80/"
+    },
+    {
+      "expect" : "https://example.com",
+      "url" : "https://example.com:443/x"
+    },
+    {
+      "expect" : "https://example.com:8443",
+      "url" : "https://example.com:8443/x"
+    },
+    {
+      "expect" : "http://localhost:3000",
+      "url" : "http://localhost:3000"
+    },
+    {
+      "expect" : null,
+      "url" : "ftp://example.com"
+    },
+    {
+      "expect" : null,
+      "url" : "about:blank"
+    },
+    {
+      "expect" : "https://xn--d1acpjx3f.xn--p1ai",
+      "url" : "https://xn--d1acpjx3f.xn--p1ai/"
+    },
+    {
+      "expect" : null,
+      "url" : "not a url"
+    }
+  ],
+  "period" : [
+    {
+      "expect" : 3600,
+      "period" : "hour"
+    },
+    {
+      "expect" : 86400,
+      "period" : "day"
+    },
+    {
+      "expect" : 604800,
+      "period" : "week"
+    },
+    {
+      "expect" : 2419200,
+      "period" : "month"
+    },
+    {
+      "expect" : null,
+      "period" : "all"
+    }
+  ],
+  "shortcut" : [
+    {
+      "engine" : "DuckDuckGo",
+      "expect" : "https://github.com",
+      "input" : "github.com"
+    },
+    {
+      "engine" : "DuckDuckGo",
+      "expect" : null,
+      "input" : "just words"
+    },
+    {
+      "engine" : "DuckDuckGo",
+      "expect" : "https://news.ycombinator.com",
+      "input" : "https://news.ycombinator.com"
+    }
+  ],
+  "version" : [
+    {
+      "a" : "0.3.0",
+      "b" : "0.3.0",
+      "expect" : 0
+    },
+    {
+      "a" : "0.3",
+      "b" : "0.3.0",
+      "expect" : 0
+    },
+    {
+      "a" : "v1.2.0",
+      "b" : "1.10.0",
+      "expect" : -1
+    },
+    {
+      "a" : "1.0.1",
+      "b" : "1.0",
+      "expect" : 1
+    },
+    {
+      "a" : "0.4.0",
+      "b" : "0.3.9",
+      "expect" : 1
+    },
+    {
+      "a" : "1.2.3.4.5",
+      "b" : "1",
+      "expect" : "invalid"
+    },
+    {
+      "a" : "1.a",
+      "b" : "1",
+      "expect" : "invalid"
+    },
+    {
+      "a" : "",
+      "b" : "1",
+      "expect" : "invalid"
+    },
+    {
+      "a" : " v2 ",
+      "b" : "2.0.0",
+      "expect" : 0
+    }
+  ]
+}

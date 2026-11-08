@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../../Dotnet.props" />
+  <Import Project="../../WinUI.props" />
+  <PropertyGroup>
+    <RootNamespace>Mica.Design</RootNamespace>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Mica.Core/Mica.Core.csproj" />
+  </ItemGroup>
+</Project>

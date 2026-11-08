@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../../Dotnet.props" />
+  <Import Project="../../WinUI.props" />
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>Mica.App</RootNamespace>
+    <AssemblyName>mica</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>$(SharedDir)icons/mica.ico</ApplicationIcon>
+    <Description>mica browser</Description>
+    <!-- Release on Windows: self-contained Native AOT for cold start and memory, the same goal as the Swift build. -->
+    <PublishAot Condition="'$(OS)' == 'Windows_NT'">true</PublishAot>
+    <SelfContained Condition="'$(OS)' == 'Windows_NT'">true</SelfContained>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <IsAotCompatible>true</IsAotCompatible>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Mica.Core/Mica.Core.csproj" />
+    <ProjectReference Include="../Mica.Design/Mica.Design.csproj" />
+    <ProjectReference Include="../Mica.Install/Mica.Install.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="$(SharedDir)icons/mica.ico" Link="Assets/mica.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(SharedDir)icons/mica-512.png" Link="Assets/mica-512.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(SharedDir)icons/app/*.ico" Link="Assets/AppIcons/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(SharedDir)icons/app/*.png" Link="Assets/AppIcons/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(SharedDir)icons/app/NOTICE.txt" Link="Assets/AppIcons/NOTICE.txt" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(SharedDir)blocklist/BLOCKLIST-NOTICE.txt" Link="Assets/BLOCKLIST-NOTICE.txt" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(SharedDir)fixtures/extension-check/**" Link="Assets/QA/extension-check/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>
