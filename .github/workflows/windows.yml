@@ -57,6 +57,11 @@ jobs:
               Select-Object -First 10 | Format-List TimeCreated, ProviderName, Message
             throw "setup exit code $($p.ExitCode)"
           }
+      - name: Setup installs with real mouse clicks
+        shell: powershell
+        run: |
+          $setup = Get-ChildItem windows/artifacts -Filter 'mica-*-win-${{ matrix.arch }}-setup.exe' | Select-Object -First 1
+          windows/scripts/setup-click.ps1 -Setup $setup.FullName
       - name: Quiet install and smoke test with real WebView2
         shell: pwsh
         run: |
