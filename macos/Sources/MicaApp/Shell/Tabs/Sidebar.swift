@@ -73,7 +73,12 @@ struct Sidebar: View {
                     ForEach(regular) { tab in RailTile(tab: tab, browser: browser).transition(Motion.pop) }
                     RailPlus(browser: browser)
                 }
+                .frame(maxWidth: .infinity)
+                .padding(.top, TileCloseBadge.overhang)
             }
+            // The scroll view clips; it reaches up by the badge overhang so the first tile's close badge is whole,
+            // while the tiles stay where they were.
+            .padding(.top, -TileCloseBadge.overhang)
             .scrollIndicators(.never)
             Spacer(minLength: 0)
             if footer.contains(.extensions) && !browser.customizingToolbar { ExtensionStrip(manager: store.extensions, browser: browser, vertical: true) }

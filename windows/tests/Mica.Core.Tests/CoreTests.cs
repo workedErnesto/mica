@@ -20,6 +20,32 @@ public class CoreTests
     }
 
     [Fact]
+    public void TabsAboveLayoutRoundTripsAndUnknownLayoutFallsBack()
+    {
+        var p = new Preferences { Layout = TabLayout.TabsAbove };
+        var json = System.Text.Encoding.UTF8.GetString(System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(p, MicaJson.Info<Preferences>()));
+        Assert.Contains("\"layout\": \"tabsAbove\"", json);
+        Assert.Equal(TabLayout.TabsAbove, System.Text.Json.JsonSerializer.Deserialize(json, MicaJson.Info<Preferences>())!.Layout);
+        foreach (var (raw, layout) in new[] { ("left", TabLayout.Left), ("right", TabLayout.Right), ("top", TabLayout.Top), ("tabsAbove", TabLayout.TabsAbove) })
+            Assert.Equal(layout, System.Text.Json.JsonSerializer.Deserialize($"{{\"layout\": \"{raw}\", \"theme\": \"dark\"}}", MicaJson.Info<Preferences>())!.Layout);
+        var future = System.Text.Json.JsonSerializer.Deserialize("{\"layout\": \"bottom\", \"theme\": \"dark\"}", MicaJson.Info<Preferences>())!;
+        Assert.Equal(new Preferences().Layout, future.Layout);
+        Assert.Equal(Theme.Dark, future.Theme);
+    }
+
+    [Fact]
+    public void NarrowWindowKeepsChosenTopLayoutAndMovesSidebarToTop()
+    {
+        Assert.Equal(TabLayout.Top, TabLayout.Left.Fitting(759));
+        Assert.Equal(TabLayout.Top, TabLayout.Right.Fitting(640));
+        Assert.Equal(TabLayout.Top, TabLayout.Top.Fitting(640));
+        Assert.Equal(TabLayout.TabsAbove, TabLayout.TabsAbove.Fitting(640));
+        foreach (var layout in Enum.GetValues<TabLayout>()) Assert.Equal(layout, layout.Fitting(TabLayouts.NarrowWidth));
+        Assert.Null(TabLayout.TabsAbove.SidebarEdge());
+        Assert.Equal(TabLayout.Right, TabLayout.Right.SidebarEdge());
+    }
+
+    [Fact]
     public void MissingKeysFallBackAndValuesAreClamped()
     {
         var p = System.Text.Json.JsonSerializer.Deserialize("{\"sidebarWidth\": 9999, \"customTint\": 5, \"accent\": \"nope\"}", MicaJson.Info<Preferences>())!.Sanitized();
@@ -50,6 +76,16 @@ public class CoreTests
         Assert.Equal(2, valid.Windows[0].Tabs.Count);
         Assert.True(valid.Windows[0].Tabs[0].Pinned);
         Assert.Equal(valid.Windows[0].Tabs[0].Id, valid.Windows[0].Selected);
+    }
+
+    [Fact]
+    public void SessionKeepsOpenedLocalFilesOnly()
+    {
+        var page = new SavedTab { Url = "file:///C:/Users/me/page.html" };
+        var session = new Session { Windows = [new SavedWindow { Tabs = [page, new SavedTab { Url = "file:///C:/Windows/win.ini" }, new SavedTab { Url = "file://server/share/page.html" }] }] };
+        var valid = session.Validated();
+        Assert.Equal([page.Id], valid.Windows[0].Tabs.Select(t => t.Id));
+        Assert.False(AddressParser.Navigable(page.Url));
     }
 
     [Fact]

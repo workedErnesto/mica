@@ -115,7 +115,7 @@ public sealed partial class OnboardingView : Grid
             case 2:
                 return Ui.V(Space.Normal, new Appearance.LayoutPreview(s) { Height = 150 }, new SettingsGroup()
                     .Add(new SettingRow(s.Text("вкладки", "Вкладки"), Pickers.LayoutPicker(s, 300)))
-                    .Add(new ToggleRow(s.Text("свернуть боковую панель до иконок", "Свернуть боковую панель до иконок"), s.Preferences.SidebarCollapsed, v => s.Change(p => p.SidebarCollapsed = v), divider: false)));
+                    .Add(Pickers.SidebarToggle(s)));
             case 3:
                 return Ui.V(Space.Normal, new Appearance.LayoutPreview(s) { Height = 120 }, SettingsPages.ThemeGroup(s),
                     new SettingsGroup().Add(new ToggleRow(s.Text("матовое стекло оболочки", "Матовое стекло оболочки"), s.Preferences.Frosted, v => s.Change(p => p.Frosted = v), divider: false)),

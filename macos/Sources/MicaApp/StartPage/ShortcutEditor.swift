@@ -15,10 +15,10 @@ struct ShortcutEditor: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.normal) {
             Text(editing == nil ? store.text("новый сайт", "Новый сайт") : store.text("изменить сайт", "Изменить сайт")).font(.system(size: 14, weight: .medium)).foregroundStyle(Palette.ink)
-            VStack(alignment: .leading, spacing: 6) {
-                MTextField(placeholder: store.text("адрес, например github.com", "Адрес, например github.com"), text: $address, symbol: "globe") { save() }
+            VStack(alignment: .leading, spacing: Space.small) {
+                MTextField(placeholder: store.text("адрес, например github.com", "Адрес, например github.com"), text: $address, symbol: "globe", prominent: true) { save() }
                 if invalid { Text(store.text("нужен адрес сайта, а не поисковый запрос", "Нужен адрес сайта, а не поисковый запрос")).font(.system(size: 11.5)).foregroundStyle(Palette.danger).transition(.opacity) }
-                MTextField(placeholder: store.text("название, необязательно", "Название, необязательно"), text: $title, symbol: "textformat") { save() }
+                MTextField(placeholder: store.text("название, необязательно", "Название, необязательно"), text: $title, symbol: "textformat", prominent: true) { save() }
             }
             HStack(spacing: Space.small) {
                 Spacer()
@@ -28,6 +28,9 @@ struct ShortcutEditor: View {
         }
         .padding(16)
         .frame(width: 300)
+        // The app canvas instead of the popover material, so the fields read like the start page search field.
+        // The colour reaches past the content to cover the popover arrow too.
+        .background(Palette.canvas.padding(-40))
         .animation(Motion.hover, value: invalid)
         .onAppear {
             if let editing, let item = store.preferences.start.shortcuts.first(where: { $0.id == editing }) { address = item.url.absoluteString; title = item.title }

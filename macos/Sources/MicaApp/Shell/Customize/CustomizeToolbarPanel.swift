@@ -17,7 +17,7 @@ struct CustomizeToolbarPanel: View {
         VStack(alignment: .leading, spacing: Space.section) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(store.text("перетащите кнопки на панель", "Перетащите кнопки на панель")).font(.system(size: 15, weight: .medium)).foregroundStyle(Palette.ink)
-                Text(layout == .top
+                Text(layout.horizontal
                      ? store.text("в шапке четыре места: у краёв окна и рядом с адресом. чтобы убрать кнопку, верните её сюда.", "В шапке четыре места: у краёв окна и рядом с адресом. Чтобы убрать кнопку, верните её сюда.")
                      : store.text("в шапке четыре места: у краёв окна и рядом с адресом, ещё одно внизу боковой панели. чтобы убрать кнопку, верните её сюда.", "В шапке четыре места: у краёв окна и рядом с адресом, ещё одно внизу боковой панели. Чтобы убрать кнопку, верните её сюда."))
                     .font(.system(size: 12)).foregroundStyle(Palette.text3).fixedSize(horizontal: false, vertical: true)

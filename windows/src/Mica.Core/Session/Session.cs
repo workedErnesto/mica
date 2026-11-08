@@ -20,7 +20,8 @@ public sealed class Session
     public int Version { get; set; } = 1;
     public List<SavedWindow> Windows { get; set; } = [];
 
-    /// <summary>Drops unknown versions, unsafe addresses and repeated ids; pinned tabs first.</summary>
+    /// <summary>Drops unknown versions, unsafe addresses and repeated ids; pinned tabs first. Local files the system opened
+    /// in mica (<see cref="AddressParser.OpenableFile"/>) stay, so a restored file tab shows the file again.</summary>
     public Session Validated()
     {
         if (Version != 1) return new Session();
@@ -29,7 +30,7 @@ public sealed class Session
         foreach (var window in Windows.Take(20))
         {
             var tabs = window.Tabs.Take(300).Where(tab =>
-                (tab.Url is null || (IsWeb(tab.Url) && AddressParser.Navigable(tab.Url))) && ids.Add(tab.Id)).ToList();
+                (tab.Url is null || (IsWeb(tab.Url) && AddressParser.Navigable(tab.Url)) || AddressParser.OpenableFile(tab.Url)) && ids.Add(tab.Id)).ToList();
             tabs = [.. tabs.Where(t => t.Pinned), .. tabs.Where(t => !t.Pinned)];
             result.Windows.Add(new SavedWindow { Tabs = tabs, Selected = tabs.Any(t => t.Id == window.Selected) ? window.Selected : tabs.FirstOrDefault()?.Id });
         }

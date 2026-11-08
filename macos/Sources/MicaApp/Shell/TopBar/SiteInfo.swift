@@ -8,15 +8,24 @@ struct SiteInfo: View {
     @ObservedObject var tab: Tab
     @ObservedObject var browser: BrowserModel
     @ObservedObject var store: Store
+    private var file: URL? { tab.url?.isFileURL == true ? tab.url : nil }
     var body: some View {
         VStack(alignment: .leading, spacing: Space.normal) {
             HStack(spacing: 10) {
                 Monogram(host: tab.url?.host, size: 32)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(tab.url?.host ?? "mica").font(.system(size: 14, weight: .medium)).foregroundStyle(Palette.ink).textSelection(.enabled).lineLimit(1)
-                    Label(tab.secure ? browser.text("соединение HTTPS", "Соединение HTTPS") : browser.text("защищённое соединение не подтверждено", "Защищённое соединение не подтверждено"), systemImage: tab.secure ? "lock.fill" : "exclamationmark.shield")
-                        .font(.system(size: 11.5)).foregroundStyle(Palette.text2)
+                    Text(file?.lastPathComponent ?? tab.url?.host ?? "mica").font(.system(size: 14, weight: .medium)).foregroundStyle(Palette.ink).textSelection(.enabled).lineLimit(1)
+                    if file != nil {
+                        Label(browser.text("локальный файл на этом Mac", "Локальный файл на этом Mac"), systemImage: "doc")
+                            .font(.system(size: 11.5)).foregroundStyle(Palette.text2)
+                    } else {
+                        Label(tab.secure ? browser.text("соединение HTTPS", "Соединение HTTPS") : browser.text("защищённое соединение не подтверждено", "Защищённое соединение не подтверждено"), systemImage: tab.secure ? "lock.fill" : "exclamationmark.shield")
+                            .font(.system(size: 11.5)).foregroundStyle(Palette.text2)
+                    }
                 }
+            }
+            if let file {
+                Text(file.path).font(.system(size: 11.5)).foregroundStyle(Palette.text3).textSelection(.enabled).lineLimit(2).truncationMode(.middle).fixedSize(horizontal: false, vertical: true)
             }
             if let host = tab.url?.host {
                 Toggle(browser.text("блокировка рекламы на сайте", "Блокировка рекламы на сайте"), isOn: Binding(get: { store.preferences.blocking && !store.preferences.blockingExceptions.contains(host) }, set: { value in
@@ -45,7 +54,9 @@ struct SiteInfo: View {
                     Button(browser.text("остановить", "Остановить")) { tab.webView?.setCameraCaptureState(.none, completionHandler: nil); tab.webView?.setMicrophoneCaptureState(.none, completionHandler: nil) }.buttonStyle(MButtonStyle(kind: .secondary, compact: true))
                 }
             }
-            Text(browser.text("геолокация: управляемый доступ недоступен в публичном WebKit этой версии macOS", "Геолокация: управляемый доступ недоступен в публичном WebKit этой версии macOS")).font(.system(size: 11)).foregroundStyle(Palette.text3).fixedSize(horizontal: false, vertical: true)
+            if file == nil {
+                Text(browser.text("геолокация: управляемый доступ недоступен в публичном WebKit этой версии macOS", "Геолокация: управляемый доступ недоступен в публичном WebKit этой версии macOS")).font(.system(size: 11)).foregroundStyle(Palette.text3).fixedSize(horizontal: false, vertical: true)
+            }
         }
         .padding(16)
     }

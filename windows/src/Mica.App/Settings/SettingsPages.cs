@@ -16,7 +16,7 @@ public static class SettingsPages
         var s = b.Store;
         var layout = new SettingsGroup(s.Text("раскладка", "Раскладка"), s.Text("при ширине окна меньше 760 px вкладки временно переходят наверх. в свёрнутой боковой панели остаются иконки сайтов, ", "При ширине окна меньше 760 px вкладки временно переходят наверх. В свёрнутой боковой панели остаются иконки сайтов, ") + (Keymap.Label("sidebar") ?? "Ctrl+Shift+S") + ".")
             .Add(new SettingRow(s.Text("вкладки", "Вкладки"), Pickers.LayoutPicker(s, 260)))
-            .Add(new ToggleRow(s.Text("свернуть боковую панель до иконок", "Свернуть боковую панель до иконок"), s.Preferences.SidebarCollapsed, v => s.Change(p => p.SidebarCollapsed = v), divider: false));
+            .Add(Pickers.SidebarToggle(s));
         var customize = new MButton(s.Text("настроить", "Настроить"), compact: true);
         customize.Click += () => { dismiss(); b.CustomizingToolbar = true; };
         var toolbar = new SettingsGroup(s.Text("панель инструментов", "Панель инструментов"), s.Text("кнопки расставляются перетаскиванием прямо в окне: в шапку, вниз боковой панели или обратно в набор. то же меню есть в меню «…» и по правому клику на боковой панели.", "Кнопки расставляются перетаскиванием прямо в окне: в шапку, вниз боковой панели или обратно в набор. То же меню есть в меню «…» и по правому клику на боковой панели."))
@@ -233,16 +233,39 @@ public sealed partial class DefaultBrowserSetting : StackPanel
         Spacing = Mica.Design.Space.Small;
         var group = new SettingsGroup(s.Text("браузер по умолчанию", "Браузер по умолчанию"), s.Text("windows подтверждает выбор в параметрах: откроется раздел приложений по умолчанию с mica.", "Windows подтверждает выбор в параметрах: откроется раздел приложений по умолчанию с mica."));
         Children.Add(group);
+        var failed = Ui.Text(s.Text("не удалось зарегистрировать mica как браузер. попробуйте ещё раз", "Не удалось зарегистрировать mica как браузер. Попробуйте ещё раз"), 12.5, Palette.Danger.Brush(), wrap: true, trim: false);
+        failed.Visibility = Visibility.Collapsed;
+        Children.Add(failed);
+        bool? shown = null;
+        var busy = false;
         void Render()
         {
-            group.Rows.Children.Clear();
             var isDefault = Mica.Install.DefaultBrowser.IsDefault();
-            var button = new MButton(s.Text("сделать основным", "Сделать основным"), compact: true) { Visibility = isDefault ? Visibility.Collapsed : Visibility.Visible };
-            button.Click += async () => { Mica.Install.DefaultBrowser.Register(); await Mica.Install.DefaultBrowser.OpenSettingsAsync(); };
+            if (isDefault) failed.Visibility = Visibility.Collapsed;
+            // Rebuilding only on a real change keeps the button that has focus or is being pressed in the tree.
+            if (shown == isDefault) return;
+            shown = isDefault;
+            group.Rows.Children.Clear();
+            var button = new MButton(s.Text("сделать основным", "Сделать основным"), compact: true) { Visibility = isDefault ? Visibility.Collapsed : Visibility.Visible, IsEnabled = !busy };
+            button.Click += async () =>
+            {
+                if (busy) return;
+                busy = true; button.IsEnabled = false; failed.Visibility = Visibility.Collapsed;
+                try { Mica.Install.DefaultBrowser.Register(); await Mica.Install.DefaultBrowser.OpenSettingsAsync(); }
+                catch (Exception e) when (e is UnauthorizedAccessException or IOException or System.Security.SecurityException)
+                {
+                    Diagnostics.Log.Error(e); failed.Visibility = Visibility.Visible;
+                }
+                finally { busy = false; button.IsEnabled = true; }
+            };
             group.Add(new SettingRow(isDefault ? s.Text("mica открывает веб-ссылки", "mica открывает веб-ссылки") : s.Text("открывать веб-ссылки в mica", "Открывать веб-ссылки в mica"), button, divider: false));
         }
         Render();
-        // Returning from Windows Settings re-checks the state.
-        Loaded += (_, _) => { if (XamlRoot?.Content is FrameworkElement root) root.GotFocus += (_, _) => Render(); };
+        // Returning from Windows Settings re-checks the state. The handler lives only while the page is shown,
+        // so reopening settings does not stack handlers on the window root.
+        FrameworkElement? root = null;
+        RoutedEventHandler recheck = (_, _) => Render();
+        Loaded += (_, _) => { if (root is null && XamlRoot?.Content is FrameworkElement r) { root = r; r.GotFocus += recheck; } Render(); };
+        Unloaded += (_, _) => { if (root is not null) root.GotFocus -= recheck; root = null; };
     }
 }

@@ -3,6 +3,8 @@ using System.Text.Json;
 using Mica.Core;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.Web.WebView2.Core;
 
 namespace Mica.App;
@@ -26,10 +28,15 @@ public sealed partial class Tab : Observable
     public string? Error { get; set; }
     public CoreWebView2WebErrorStatus? Failure { get; private set; }
     public double Zoom { get; private set; } = 1;
+    /// <summary>Site icon for the current host from this window's icon store, or null until one is known.</summary>
+    public ImageSource? Favicon => Owner?.Favicons.Image(AddressParser.Host(Url));
     public WebView2? WebView { get; private set; }
     public CoreWebView2? Core { get; private set; }
     Task? initializing;
     string? pendingUrl;
+    string? pendingFile;
+    bool fileHistoryNavigation;
+    readonly HashSet<string> openedFiles = new(StringComparer.OrdinalIgnoreCase);
     bool blockingFilterInstalled;
     internal int BlockedRequestCount { get; private set; }
     readonly Passwords.PasswordBridge passwords;
@@ -84,10 +91,11 @@ public sealed partial class Tab : Observable
         settings.IsReputationCheckingRequired = true;
         core.Profile.PreferredTrackingPreventionLevel = CoreWebView2TrackingPreventionLevel.Balanced;
         core.NavigationStarting += OnNavigationStarting;
+        core.FrameNavigationStarting += (_, e) => { if (Uri.TryCreate(e.Uri, UriKind.Absolute, out var frame) && frame.IsFile) e.Cancel = true; };
         core.ContentLoading += (_, _) => { Progress = 0.45; Notify(); };
         core.DOMContentLoaded += (_, _) => { Progress = 0.75; Notify(); };
         core.NavigationCompleted += OnNavigationCompleted;
-        core.SourceChanged += (_, _) => { if (Core is { } c && c.Source.Length > 0 && c.Source != "about:blank") Url = c.Source; Notify(); Owner?.Store.ScheduleSession(); };
+        core.SourceChanged += (_, _) => { fileHistoryNavigation = false; if (Core is { } c && c.Source.Length > 0 && c.Source != "about:blank") Url = c.Source; Notify(); Owner?.Store.ScheduleSession(); };
         core.DocumentTitleChanged += (_, _) => { Title = Core?.DocumentTitle ?? Title; Notify(); Owner?.Store.ScheduleSession(); };
         core.HistoryChanged += (_, _) => { CanBack = Core?.CanGoBack ?? false; CanForward = Core?.CanGoForward ?? false; Notify(); };
         core.NewWindowRequested += OnNewWindowRequested;
@@ -103,6 +111,7 @@ public sealed partial class Tab : Observable
         core.NotificationReceived += (_, e) => Notifications.Notifier.Shared.Show(this, e);
         core.WebResourceRequested += OnResourceRequested;
         core.WebMessageReceived += (_, e) => passwords.Received(e);
+        core.FaviconChanged += OnFaviconChanged;
         ApplyBlocking();
         if (!owner.PrivateMode) await passwords.InstallAsync(core);
         if (pendingUrl is { } url) { pendingUrl = null; core.Navigate(url); }
@@ -121,12 +130,13 @@ public sealed partial class Tab : Observable
     public void EnsureLoaded()
     {
         if (Phase is TabPhase.Live or TabPhase.Terminated || Url is null) return;
-        Load(Url);
+        if (AddressParser.OpenableFile(Url)) OpenFile(Url); else Load(Url);
     }
 
     public void Load(string url)
     {
         if (!AddressParser.Navigable(url)) return;
+        pendingFile = null;
         Error = null; Failure = null; Secure = false; Phase = TabPhase.Live;
         Url = url;
         if (Core is { } core) core.Navigate(url); else { pendingUrl = url; _ = MakeWebView(); }
@@ -134,9 +144,28 @@ public sealed partial class Tab : Observable
         Owner?.Store.ScheduleSession();
     }
 
+    /// <summary>Only application activation or a restored tab calls this; address input and page links use Load.</summary>
+    public void OpenFile(string url)
+    {
+        if (!AddressParser.OpenableFile(url)) return;
+        var uri = new Uri(url);
+        Url = url; Phase = TabPhase.Live; Secure = false; Failure = null;
+        if (!File.Exists(uri.LocalPath))
+        {
+            Error = Owner?.Text("файл не найден или mica больше не может его прочитать. откройте его снова из Проводника.", "Файл не найден или mica больше не может его прочитать. Откройте его снова из Проводника.");
+            Loading = false; Notify(); Owner?.Store.ScheduleSession(); return;
+        }
+        Error = null;
+        openedFiles.Add(uri.LocalPath);
+        pendingFile = uri.LocalPath;
+        if (Core is { } core) core.Navigate(url); else { pendingUrl = url; _ = MakeWebView(); }
+        Notify(); Owner?.Store.ScheduleSession();
+    }
+
     public void Reload()
     {
-        if (Phase == TabPhase.Terminated || Core is null) { if (Url is { } url) { if (Phase == TabPhase.Terminated) Recreate(); Load(url); } return; }
+        if (Phase == TabPhase.Terminated || Core is null) { if (Url is { } url) { if (Phase == TabPhase.Terminated) Recreate(); if (AddressParser.OpenableFile(url)) OpenFile(url); else Load(url); } return; }
+        if (AddressParser.OpenableFile(Url)) { OpenFile(Url!); return; }
         Error = null; Core.Reload(); Notify();
     }
 
@@ -150,8 +179,8 @@ public sealed partial class Tab : Observable
     }
 
     public void Stop() { Core?.Stop(); Loading = false; Notify(); }
-    public void GoBack() { if (Core?.CanGoBack == true) { Error = null; Core.GoBack(); } }
-    public void GoForward() { if (Core?.CanGoForward == true) { Error = null; Core.GoForward(); } }
+    public void GoBack() { if (Core?.CanGoBack == true) { Error = null; fileHistoryNavigation = true; Core.GoBack(); } }
+    public void GoForward() { if (Core?.CanGoForward == true) { Error = null; fileHistoryNavigation = true; Core.GoForward(); } }
 
     public void SetVisible(bool visible) { if (WebView is not null) WebView.Visibility = visible ? Visibility.Visible : Visibility.Collapsed; }
 
@@ -187,11 +216,22 @@ public sealed partial class Tab : Observable
 
     void OnNavigationStarting(CoreWebView2 sender, CoreWebView2NavigationStartingEventArgs e)
     {
-        if (!AddressParser.Navigable(e.Uri) && !e.Uri.StartsWith("data:", StringComparison.Ordinal))
+        bool history = fileHistoryNavigation && e.NavigationKind == CoreWebView2NavigationKind.BackOrForward; fileHistoryNavigation = false;
+        if (Uri.TryCreate(e.Uri, UriKind.Absolute, out var uri) && uri.IsFile)
         {
+            var path = uri.LocalPath;
+            bool initiated = pendingFile is not null && string.Equals(pendingFile, path, StringComparison.OrdinalIgnoreCase);
+            pendingFile = null;
+            bool sameFile = Uri.TryCreate(sender.Source, UriKind.Absolute, out var current) && current.IsFile && string.Equals(current.LocalPath, path, StringComparison.OrdinalIgnoreCase);
+            if (!AddressParser.OpenableFile(e.Uri) || !openedFiles.Contains(path) || !(initiated || history || sameFile)) { e.Cancel = true; return; }
+        }
+        else if (!AddressParser.Navigable(e.Uri) && !e.Uri.StartsWith("data:", StringComparison.Ordinal))
+        {
+            pendingFile = null;
             e.Cancel = true;
             return;
         }
+        else pendingFile = null;
         Loading = true; Progress = 0.1; Secure = false; Error = null; Failure = null;
         Url = e.Uri;
         Notify();
@@ -216,6 +256,28 @@ public sealed partial class Tab : Observable
         }
         Owner?.Store.ScheduleSession();
         Notify();
+    }
+
+    /// <summary>WebView2 picks the page's icon itself; mica copies it as PNG into the window's icon store, keyed by host.</summary>
+    async void OnFaviconChanged(CoreWebView2 sender, object args)
+    {
+        var page = sender.Source;
+        if (string.IsNullOrEmpty(sender.FaviconUri) || !(page.StartsWith("https://", StringComparison.OrdinalIgnoreCase) || page.StartsWith("http://", StringComparison.OrdinalIgnoreCase))) return;
+        var store = Owner?.Favicons;
+        if (store is null) return;
+        try
+        {
+            using var stream = await sender.GetFaviconAsync(CoreWebView2FaviconImageFormat.Png);
+            if (stream is null || stream.Size == 0 || stream.Size > Favicons.ByteLimit) return;
+            var bytes = new byte[stream.Size];
+            using (var reader = new Windows.Storage.Streams.DataReader(stream.GetInputStreamAt(0)))
+            {
+                await reader.LoadAsync((uint)stream.Size);
+                reader.ReadBytes(bytes);
+            }
+            await store.SetAsync(AddressParser.Host(page), bytes);
+        }
+        catch (Exception e) { Diagnostics.Log.Error(e); }
     }
 
     public bool CertificateFailure => Failure is CoreWebView2WebErrorStatus.CertificateCommonNameIsIncorrect or CoreWebView2WebErrorStatus.CertificateExpired
@@ -245,6 +307,7 @@ public sealed partial class Tab : Observable
     {
         var owner = Owner;
         if (owner is null) return;
+        if (Uri.TryCreate(e.Uri, UriKind.Absolute, out var destination) && destination.IsFile) { e.Handled = true; return; }
         // Ctrl+click opens in the background, Ctrl+Shift+click in front, as Command-click does on macOS.
         bool ctrl = KeyDown(0x11), shift = KeyDown(0x10);
         var deferral = e.GetDeferral();
@@ -332,4 +395,90 @@ public sealed partial class Tab : Observable
     }
 
     public static string Json(string value) => JsonSerializer.Serialize(value, MicaJson.Info<string>());
+}
+
+/// <summary>Site icons keyed by host without "www." (macOS Favicons). The normal profile keeps a PNG per host in
+/// %LOCALAPPDATA%\mica\Favicons and reads it lazily for restored tabs; incognito windows own a separate instance
+/// that stays in memory.</summary>
+public sealed class Favicons
+{
+    public const int ByteLimit = 1_000_000;
+    readonly string? directory;
+    readonly Dictionary<string, ImageSource> icons = [];
+    readonly HashSet<string> probed = [];
+    int generation;
+    /// <summary>Raised after an icon arrives or the store is cleared, never while a caller is rendering.</summary>
+    public event Action? Changed;
+
+    public Favicons(string? directory) { this.directory = directory; }
+
+    public static string? Key(string? host)
+    {
+        if (string.IsNullOrEmpty(host)) return null;
+        var key = host.ToLowerInvariant();
+        if (key.StartsWith("www.", StringComparison.Ordinal)) key = key[4..];
+        return key.Length == 0 ? null : key;
+    }
+
+    /// <summary>Safe to call while rendering: a missing icon schedules a disk read and raises Changed later.</summary>
+    public ImageSource? Image(string? host)
+    {
+        if (Key(host) is not { } key) return null;
+        if (icons.TryGetValue(key, out var image)) return image;
+        if (File(key) is { } file && probed.Add(key)) _ = LoadAsync(key, file, generation);
+        return null;
+    }
+
+    async Task LoadAsync(string key, string file, int expected)
+    {
+        try
+        {
+            var bytes = await Task.Run(() => System.IO.File.Exists(file) ? System.IO.File.ReadAllBytes(file) : null);
+            if (bytes is null || expected != generation || icons.ContainsKey(key)) return;
+            icons[key] = await Decode(bytes);
+            Changed?.Invoke();
+        }
+        catch { }
+    }
+
+    public async Task SetAsync(string? host, byte[] png)
+    {
+        if (Key(host) is not { } key) return;
+        var expected = generation;
+        var image = await Decode(png);
+        if (expected != generation) return;
+        icons[key] = image; probed.Add(key);
+        Changed?.Invoke();
+        if (File(key) is { } file && directory is { } folder)
+            await Task.Run(() => { try { Directory.CreateDirectory(folder); System.IO.File.WriteAllBytes(file, png); } catch { } });
+    }
+
+    /// <summary>Clearing history or cache forgets every icon, in memory and on disk.</summary>
+    public void Clear()
+    {
+        generation++;
+        icons.Clear(); probed.Clear();
+        if (directory is not null) try { Directory.Delete(directory, true); } catch { }
+        Changed?.Invoke();
+    }
+
+    string? File(string key)
+    {
+        if (directory is null) return null;
+        var name = new string(key.Select(c => (c is (>= 'a' and <= 'z') or (>= '0' and <= '9') or '.' or '-') ? c : '_').Take(200).ToArray());
+        return Path.Combine(directory, name + ".png");
+    }
+
+    static async Task<ImageSource> Decode(byte[] bytes)
+    {
+        var memory = new Windows.Storage.Streams.InMemoryRandomAccessStream();
+        using (var writer = new Windows.Storage.Streams.DataWriter(memory.GetOutputStreamAt(0)))
+        {
+            writer.WriteBytes(bytes); await writer.StoreAsync(); writer.DetachStream();
+        }
+        memory.Seek(0);
+        var image = new BitmapImage();
+        await image.SetSourceAsync(memory);
+        return image;
+    }
 }

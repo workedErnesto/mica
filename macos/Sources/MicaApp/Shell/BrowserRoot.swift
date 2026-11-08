@@ -14,13 +14,32 @@ struct BrowserRoot: View {
     @State private var dragWidth: Double?
     var body: some View {
         GeometryReader { geo in
-            let layout: TabLayout = geo.size.width < 760 ? .top : store.preferences.layout
-            let edge: TabLayout? = layout == .top ? nil : layout
+            let layout = store.preferences.layout.fitting(width: geo.size.width)
+            let edge = layout.sidebarEdge
+            let lights = browser.fullScreen ? 0 : Chrome.lightsInset
             let collapsed = store.preferences.sidebarCollapsed && edge != nil
             let width = collapsed ? Chrome.rail : CGFloat(dragWidth ?? store.preferences.sidebarWidth)
             VStack(spacing: 0) {
-                TopBar(browser: browser, store: store, layout: layout, windowWidth: geo.size.width, leadingInset: browser.fullScreen ? 0 : Chrome.lightsInset)
-                if layout == .top { TabStrip(browser: browser).padding(.horizontal, Radius.gutter).padding(.bottom, Space.small) }
+                if layout == .tabsAbove {
+                    // Tabs in the title bar band next to the window buttons, the toolbar row with the address under them.
+                    TabStrip(browser: browser, titleBand: true)
+                        .padding(.leading, lights == 0 ? Radius.gutter : lights).padding(.trailing, Radius.gutter)
+                        .frame(height: Chrome.bar)
+                        .background { WindowDragArea(titleBand: true) }
+                        .micaContextMenu {
+                            MenuEntry.item(browser.text("новая вкладка", "Новая вкладка"), symbol: "plus") { _ = browser.add(); browser.focusAddress += 1 }
+                            MenuEntry.divider
+                            LayoutMenu.entries(store: store)
+                            MenuEntry.divider
+                            MenuEntry.item(store.text("настроить панель инструментов…", "Настроить панель инструментов…"), symbol: "slider.horizontal.3") { browser.customizingToolbar = true }
+                        }
+                        .transition(.opacity)
+                    TopBar(browser: browser, store: store, layout: layout, windowWidth: geo.size.width, leadingInset: Space.small)
+                        .padding(.top, -Space.micro)
+                } else {
+                    TopBar(browser: browser, store: store, layout: layout, windowWidth: geo.size.width, leadingInset: lights)
+                    if layout == .top { TabStrip(browser: browser).padding(.horizontal, Radius.gutter).padding(.bottom, Space.small).transition(.opacity) }
+                }
                 HStack(spacing: 0) {
                     if edge == .left {
                         Sidebar(browser: browser, store: store, compact: collapsed, edge: .left)
@@ -37,7 +56,7 @@ struct BrowserRoot: View {
                                         .fill(Color.black.opacity(browser.selected?.webView == nil ? 0.18 : 0))
                                         .contentShape(Rectangle())
                                         .onTapGesture {}
-                                    CustomizeToolbarPanel(store: store, browser: browser, layout: layout, maxHeight: max(200, geo.size.height - Chrome.bar - 2 * Space.normal - Radius.gutter))
+                                    CustomizeToolbarPanel(store: store, browser: browser, layout: layout, maxHeight: max(200, geo.size.height - (layout == .tabsAbove ? 2 : 1) * Chrome.bar - 2 * Space.normal - Radius.gutter))
                                         .padding(.horizontal, Space.normal).padding(.top, Space.normal)
                                 }
                                 .transition(.opacity)
@@ -56,11 +75,15 @@ struct BrowserRoot: View {
             }
             .overlay { if browser.commandBar { CommandBar(browser: browser, store: store).transition(.opacity) } }
             .onChange(of: browser.modal) { _, shown in if shown { browser.customizingToolbar = false; browser.commandBar = false } }
-            // The top bar lies in the title bar band, where AppKit would move the window instead of starting a tile drag.
-            .onChange(of: browser.customizingToolbar) { _, editing in browser.controller?.window?.isMovable = !editing }
+            // The title bar band moves the window on a mouse down, so a SwiftUI tap or drag there never starts:
+            // toolbar tiles while customizing, tabs when they sit in the band. Then only WindowDragArea moves the window.
+            .onAppear { movable(layout) }
+            .onChange(of: browser.customizingToolbar) { _, _ in movable(layout) }
+            .onChange(of: layout) { _, value in movable(value) }
             .overlay { if browser.showSettings { SettingsOverlay(store: store, browser: browser).transition(.opacity) } }
             .overlay { if browser.showOnboarding { ModalCard(width: 860, height: 660, dismissible: false) { Onboarding(store: store, browser: browser) }.transition(.opacity) } }
             .overlay { if browser.showClearData { ModalCard(width: 480, onDismiss: { browser.showClearData = false }) { ClearDataPanel(store: store, browser: browser) }.transition(.opacity) } }
+            .overlay { QuitHoldOverlay(browser: browser, store: store) }
             .background { shellBackground.ignoresSafeArea() }
             .ignoresSafeArea()
             .animation(Motion.panel, value: layout)
@@ -79,6 +102,10 @@ struct BrowserRoot: View {
         .environment(\.look, store.look)
         .environment(\.locale, store.locale)
         .frame(minWidth: 600, minHeight: 420)
+    }
+
+    private func movable(_ layout: TabLayout) {
+        browser.controller?.window?.isMovable = !browser.customizingToolbar && layout != .tabsAbove
     }
 
     @ViewBuilder private var shellBackground: some View {

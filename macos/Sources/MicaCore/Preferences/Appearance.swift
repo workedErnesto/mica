@@ -1,6 +1,18 @@
 import Foundation
 
-public enum TabLayout: String, Codable, CaseIterable, Sendable { case left, right, top }
+/// Where the tabs live. `top` puts the address bar above the tab strip; `tabsAbove` puts the strip in the title bar band
+/// next to the window buttons and the address bar under it.
+public enum TabLayout: String, Codable, CaseIterable, Sendable {
+    case left, right, top, tabsAbove
+    /// Windows narrower than this show the tabs across the top without changing the saved layout.
+    public static let narrowWidth = 760.0
+    /// Tabs run across the window and there is no sidebar.
+    public var horizontal: Bool { self == .top || self == .tabsAbove }
+    /// Side of the sidebar, nil when the tabs run across the top.
+    public var sidebarEdge: TabLayout? { horizontal ? nil : self }
+    /// Layout of a window this wide: a narrow window keeps a top layout as chosen and moves the sidebar ones to `top`.
+    public func fitting(width: Double) -> TabLayout { width < Self.narrowWidth && !horizontal ? .top : self }
+}
 
 /// `custom` uses `customBase` for light or dark and tints the shell with `accent`.
 public enum Theme: String, Codable, CaseIterable, Sendable { case system, light, dark, custom }

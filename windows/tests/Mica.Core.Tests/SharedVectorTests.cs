@@ -21,6 +21,7 @@ public class SharedVectorTests
                 var target = AddressParser.Resolve(S("input"), Engine());
                 return target.Kind switch { AddressKind.Web => "web:" + target.Value, AddressKind.External => "external:" + target.Value, _ => "rejected:" + target.Value };
             case "origin": return Origin.Of(S("url"));
+            case "localFile": return AddressParser.OpenableFile(S("url"));
             case "version":
                 var a = AppVersion.Parse(S("a")); var b = AppVersion.Parse(S("b"));
                 return a is null || b is null ? "invalid" : Math.Sign(a.CompareTo(b));

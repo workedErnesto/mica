@@ -17,7 +17,8 @@ public static class Commands
                 if (shortcut.Key is "XButton1" or "XButton2") continue;
                 if (Key(shortcut.Key) is not { } key) continue;
                 var accelerator = new KeyboardAccelerator { Key = key, Modifiers = Modifiers(shortcut), ScopeOwner = null };
-                accelerator.Invoked += (_, e) => { e.Handled = true; Run(browser, command); };
+                // Quit waits for the shortcut to be held (QuitHold); the menu item calls Run and quits at once.
+                accelerator.Invoked += (_, e) => { e.Handled = true; if (command == "quit") QuitHold.Begin(browser, shortcut, key); else Run(browser, command); };
                 root.KeyboardAccelerators.Add(accelerator);
             }
         }
@@ -81,7 +82,7 @@ public static class Commands
         }
     }
 
-    static async Task Quit(Store store)
+    internal static async Task Quit(Store store)
     {
         var running = store.Windows.Any(w => w.Model.Downloads.Items.Any(d => d.State is DownloadState.Running or DownloadState.Choosing or DownloadState.Paused));
         if (running && await Dialogs.Ask(store.Active?.Window, store.Text("завершить mica и отменить загрузки?", "Завершить mica и отменить загрузки?"), store.Text("незавершённые загрузки будут отменены", "Незавершённые загрузки будут отменены"), [store.Text("отмена", "Отмена"), store.Text("завершить", "Завершить")]) != 1) return;

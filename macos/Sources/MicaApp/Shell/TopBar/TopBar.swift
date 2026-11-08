@@ -5,6 +5,7 @@ import MicaCore
 import UniformTypeIdentifiers
 
 /// Top bar across the whole window. The address field is centred on the window, wherever the tabs are;
+/// with the tabs above the address (`tabsAbove`) this is the second row, under the tab strip.
 /// the controls come from the user's toolbar layout: at each window edge and right next to the field.
 struct TopBar: View {
     @ObservedObject var browser: BrowserModel
@@ -15,8 +16,8 @@ struct TopBar: View {
     private let gap = Space.small
     var body: some View {
         let toolbar = store.preferences.toolbar
-        let items = toolbar.resolved(sidebarAvailable: layout != .top)
-        let edge: TabLayout? = layout == .top ? nil : layout
+        let items = toolbar.resolved(sidebarAvailable: !layout.horizontal)
+        let edge = layout.sidebarEdge
         let editing = browser.customizingToolbar
         // Running extensions add their own buttons next to the puzzle.
         let extras = editing ? 0 : store.extensions.actionable(privateWindow: browser.privateMode).count

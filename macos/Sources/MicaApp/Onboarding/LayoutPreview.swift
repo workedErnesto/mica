@@ -12,17 +12,23 @@ struct LayoutPreview: View {
         let dark = mode == .dark || (mode == .system && scheme == .dark)
         let look = store.look
         let layout = store.preferences.layout
-        let collapsed = store.preferences.sidebarCollapsed && layout != .top
+        let collapsed = store.preferences.sidebarCollapsed && !layout.horizontal
         ZStack {
             look.shell
             VStack(spacing: 6) {
-                ZStack {
-                    HStack(spacing: 4) { lights; Spacer() }
-                    RoundedRectangle(cornerRadius: 4, style: .continuous).fill(Palette.track).frame(width: 130, height: 11)
-                }
-                .frame(height: 14)
-                if layout == .top {
-                    HStack(spacing: 4) { ForEach(0..<4, id: \.self) { index in RoundedRectangle(cornerRadius: 4, style: .continuous).fill(index == 0 ? Palette.selected : Palette.track).frame(width: 52, height: 12) }; Spacer() }
+                if layout == .tabsAbove {
+                    // Tabs beside the window buttons, the address row under them.
+                    HStack(spacing: 4) { lights.padding(.trailing, 4); tabs; Spacer() }
+                        .frame(height: 14)
+                        .transition(.opacity)
+                    address.frame(height: 12)
+                } else {
+                    ZStack {
+                        HStack(spacing: 4) { lights; Spacer() }
+                        address
+                    }
+                    .frame(height: 14)
+                    if layout == .top { HStack(spacing: 4) { tabs; Spacer() }.transition(.opacity) }
                 }
                 HStack(spacing: 6) {
                     if layout == .left { rail(collapsed).transition(Motion.slide(.leading)) }
@@ -48,6 +54,12 @@ struct LayoutPreview: View {
         .animation(Motion.hover, value: dark)
         .animation(Motion.hover, value: store.preferences.accent)
         .accessibilityElement().accessibilityLabel(store.text("предпросмотр оформления и раскладки", "Предпросмотр оформления и раскладки"))
+    }
+    private var address: some View {
+        RoundedRectangle(cornerRadius: 4, style: .continuous).fill(Palette.track).frame(width: 130, height: 11)
+    }
+    private var tabs: some View {
+        ForEach(0..<4, id: \.self) { index in RoundedRectangle(cornerRadius: 4, style: .continuous).fill(index == 0 ? Palette.selected : Palette.track).frame(width: 52, height: 12) }
     }
     private var lights: some View {
         HStack(spacing: 3) { ForEach(0..<3, id: \.self) { _ in Circle().fill(Palette.switchOff).frame(width: 6, height: 6) } }

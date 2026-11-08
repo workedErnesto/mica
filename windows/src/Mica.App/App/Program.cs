@@ -34,7 +34,7 @@ public static class Program
             instance.RedirectActivationToAsync(AppInstance.GetCurrent().GetActivatedEventArgs()).AsTask().Wait();
             return 0;
         }
-        instance.Activated += (_, e) => MicaApplication.Current?.Dispatcher.TryEnqueue(() => MicaApplication.Current.Activate(e));
+        instance.Activated += (_, e) => MicaApplication.Redirected(e);
         Application.Start(callback =>
         {
             var context = new DispatcherQueueSynchronizationContext(DispatcherQueue.GetForCurrentThread());

@@ -12,18 +12,28 @@ struct RailTile: View {
     var body: some View {
         let selected = browser.selectedID == tab.id
         Button { browser.select(tab) } label: {
-            TabIcon(tab: tab, size: 18)
+            // Same plate as RailPlus, so the icons read as equal tiles; the monogram drops its own box inside it.
+            TabIcon(tab: tab, size: 20, plain: true, tint: selected || hover ? Palette.ink : Palette.text2)
                 .frame(width: 36, height: 36)
-                .background(RoundedRectangle(cornerRadius: Radius.row, style: .continuous).fill(selected ? Palette.selected : hover ? Palette.hover : .clear).shadow(color: selected ? Palette.shadow : .clear, radius: 2, y: 1))
+                .background(RoundedRectangle(cornerRadius: Radius.row, style: .continuous).fill(selected ? Palette.selected : hover ? Palette.pressed : Palette.hover).shadow(color: selected ? Palette.shadow : .clear, radius: 2, y: 1))
                 .contentShape(Rectangle())
         }
+        .overlay(alignment: .topTrailing) {
+            if tab.pinned && !hover {
+                Image(systemName: "pin").font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(Palette.ink)
+                    .padding(2).background(RoundedRectangle(cornerRadius: 3).fill(Palette.raised))
+                    .accessibilityHidden(true).transition(.opacity)
+            }
+        }
         .buttonStyle(PressStyle(scale: 0.92))
-        .onHover { hover = $0 }
         .animation(Motion.hover, value: hover)
         .animation(Motion.hover, value: selected)
         .help(tab.title.isEmpty ? (tab.url?.host ?? browser.text("новая вкладка", "Новая вкладка")) : tab.title)
         .accessibilityLabel((tab.pinned ? browser.text("закреплена: ", "Закреплена: ") : "") + (tab.title.isEmpty ? browser.text("новая вкладка", "Новая вкладка") : tab.title))
         .accessibilityAddTraits(selected ? .isSelected : [])
+        // After the tile's own label and tooltip, so the badge keeps "закрыть: …" instead of inheriting them.
+        .modifier(TileCloseBadge(tab: tab, browser: browser, hover: $hover))
         .modifier(TabInteractions(tab: tab, browser: browser))
     }
 }

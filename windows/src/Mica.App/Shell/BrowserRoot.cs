@@ -21,6 +21,7 @@ public sealed partial class BrowserRoot : Grid
     readonly ContentCard card;
     readonly Grid workspace = new() { ColumnSpacing = Radius.Gutter };
     Sidebar? sidebar;
+    TabStrip? strip;
     Grid? sidePanel;
     LibraryPanel? shownPanel;
     UIElement? commandBar, settings, onboarding, clearData, customize;
@@ -52,6 +53,7 @@ public sealed partial class BrowserRoot : Grid
         Loaded += (_, _) => { Render(); ShowIssue(); };
         KeyboardAcceleratorPlacementMode = Microsoft.UI.Xaml.Input.KeyboardAcceleratorPlacementMode.Hidden;
         Commands.Install(this, browser);
+        QuitHold.Attach(overlays, browser);
     }
 
     void ShowIssue()
@@ -61,7 +63,9 @@ public sealed partial class BrowserRoot : Grid
         _ = Dialogs.Show(browser.Window, issue);
     }
 
-    public IEnumerable<FrameworkElement> CaptionInteractive() => topBar.Interactive();
+    /// <summary>Elements in the caption band that take clicks: the top bar's, or with the tabs above the address the
+    /// strip's tabs (the top bar is then the second row, outside the band).</summary>
+    public IEnumerable<FrameworkElement> CaptionInteractive() => strip is { } s && Grid.GetRow(tabStripHost) == 0 ? topBar.Interactive().Append(s.Tabs) : topBar.Interactive();
 
     public void SetActive(bool active) => topBar.Opacity = active ? 1 : 0.86;
 
@@ -72,12 +76,12 @@ public sealed partial class BrowserRoot : Grid
         Background = glass ? Palette.Clear : Look.Shell;
     }
 
-    TabLayout EffectiveLayout => ActualWidth > 0 && ActualWidth < 760 ? TabLayout.Top : Store.Preferences.Layout;
+    TabLayout EffectiveLayout => ActualWidth > 0 ? Store.Preferences.Layout.Fitting(ActualWidth) : Store.Preferences.Layout;
 
     void Render()
     {
         var layout = EffectiveLayout;
-        TabLayout? edge = layout == TabLayout.Top ? null : layout;
+        var edge = layout.SidebarEdge();
         var collapsed = Store.Preferences.SidebarCollapsed && edge is not null;
         var key = $"{layout}|{collapsed}|{browser.CustomizingToolbar}";
         if (key != layoutKey)
@@ -87,6 +91,8 @@ public sealed partial class BrowserRoot : Grid
             BuildBody(layout, edge, collapsed, animate);
         }
         topBar.Render(layout, ActualWidth);
+        // Clear of the caption buttons on the right; they are hidden in full screen.
+        if (strip is not null && layout == TabLayout.TabsAbove) strip.Margin = new Thickness(Radius.Gutter, 0, (browser.FullScreen ? 0 : Chrome.CaptionInset) + Space.Small, 0);
         if (sidebar is not null && !collapsed && dragWidth is null) sidebar.Width = Store.Preferences.SidebarWidth;
         UpdatePanel();
         UpdateOverlays();
@@ -97,12 +103,19 @@ public sealed partial class BrowserRoot : Grid
     {
         body.Children.Clear(); body.ColumnDefinitions.Clear();
         tabStripHost.Children.Clear();
-        sidebar = null;
-        if (layout == TabLayout.Top)
+        sidebar = null; strip = null;
+        // Tabs above the address: the strip takes the caption band (row 0) and the top bar moves to the second row.
+        var above = layout == TabLayout.TabsAbove;
+        Grid.SetRow(tabStripHost, above ? 0 : 1);
+        Grid.SetRow(topBar, above ? 1 : 0);
+        topBar.Margin = above ? new Thickness(0, -Space.Micro, 0, 0) : new Thickness(0);
+        if (layout.IsHorizontal())
         {
-            var strip = new TabStrip(browser) { Margin = new Thickness(Radius.Gutter, 0, Radius.Gutter, Space.Small) };
+            strip = above
+                ? new TabStrip(browser, titleBand: true) { VerticalAlignment = VerticalAlignment.Center }
+                : new TabStrip(browser) { Margin = new Thickness(Radius.Gutter, 0, Radius.Gutter, Space.Small) };
             tabStripHost.Children.Add(strip);
-            if (animate) Motion.Appear(strip, Motion.Edge.Top, Motion.Panel);
+            if (animate) Motion.Appear(strip, above ? Motion.Edge.None : Motion.Edge.Top, Motion.Panel);
         }
         body.ColumnDefinitions.Add(Ui.Auto()); body.ColumnDefinitions.Add(Ui.Star()); body.ColumnDefinitions.Add(Ui.Auto());
         if (workspace.Parent is Panel old) old.Children.Remove(workspace);

@@ -115,9 +115,17 @@ public sealed partial class SettingsView : Grid
 /// <summary>Shared pickers (macOS Pickers.swift).</summary>
 public static class Pickers
 {
+    public static ToggleRow SidebarToggle(Store s)
+    {
+        var row = new ToggleRow(s.Text("свернуть боковую панель до иконок", "Свернуть боковую панель до иконок"), s.Preferences.SidebarCollapsed, v => s.Change(p => p.SidebarCollapsed = v), divider: false);
+        void Render() => row.Switch.IsEnabled = !s.Preferences.Layout.IsHorizontal();
+        row.Bind(h => s.PreferencesUpdated += h, h => s.PreferencesUpdated -= h, Render);
+        Render();
+        return row;
+    }
     public static Segmented<TabLayout> LayoutPicker(Store s, double width = 0)
     {
-        var picker = new Segmented<TabLayout>(s.Preferences.Layout, [(TabLayout.Left, s.Text("слева", "Слева")), (TabLayout.Top, s.Text("сверху", "Сверху")), (TabLayout.Right, s.Text("справа", "Справа"))], minWidth: width, label: s.Text("вкладки", "Вкладки"), symbols: ["sidebar.left", "rectangle.topthird.inset.filled", "sidebar.right"]);
+        var picker = new Segmented<TabLayout>(s.Preferences.Layout, [(TabLayout.Left, s.Text("слева", "Слева")), (TabLayout.Top, s.Text("под адресом", "Под адресом")), (TabLayout.TabsAbove, s.Text("над адресом", "Над адресом")), (TabLayout.Right, s.Text("справа", "Справа"))], minWidth: width, label: s.Text("вкладки", "Вкладки"), symbols: ["sidebar.left", "rectangle.topthird.inset.filled", "macwindow", "sidebar.right"]);
         picker.Changed += v => s.Change(p => p.Layout = v);
         return picker;
     }

@@ -123,22 +123,29 @@ public sealed partial class LayoutPreview : Grid
         Children.Clear();
         Background = Look.Shell;
         var layout = store.Preferences.Layout;
-        var collapsed = store.Preferences.SidebarCollapsed && layout != TabLayout.Top;
+        var collapsed = store.Preferences.SidebarCollapsed && !layout.IsHorizontal();
         var root = new Grid { Padding = new Thickness(8), RowSpacing = 6 };
         root.RowDefinitions.Add(Ui.RowFixed(14)); root.RowDefinitions.Add(Ui.RowAuto()); root.RowDefinitions.Add(Ui.RowStar());
         var bar = new Grid();
         var field = Ui.Rounded(4, Palette.Track.Brush()); field.Width = 130; field.Height = 11; field.HorizontalAlignment = HorizontalAlignment.Center;
-        bar.Children.Add(field);
+        if (layout != TabLayout.TabsAbove) bar.Children.Add(field);
         var captions = Ui.H(6); captions.HorizontalAlignment = HorizontalAlignment.Right;
         foreach (var _ in Enumerable.Range(0, 3)) { var c = Ui.Rounded(1, Palette.SwitchOff.Brush()); c.Width = 8; c.Height = 2; captions.Children.Add(c); }
         captions.VerticalAlignment = VerticalAlignment.Center;
         bar.Children.Add(captions);
         root.Row(bar, 0);
-        if (layout == TabLayout.Top)
+        if (layout.IsHorizontal())
         {
             var tabs = Ui.H(4);
             for (var i = 0; i < 4; i++) { var t = Ui.Rounded(4, i == 0 ? Palette.Selected.Brush() : Palette.Track.Brush()); t.Width = 52; t.Height = 12; tabs.Children.Add(t); }
-            root.Row(tabs, 1);
+            if (layout == TabLayout.Top) root.Row(tabs, 1);
+            else
+            {
+                // Tabs in the caption band beside the caption buttons, the address row under them.
+                tabs.VerticalAlignment = VerticalAlignment.Center;
+                bar.Children.Add(tabs);
+                root.Row(field, 1);
+            }
         }
         var body = new Grid { ColumnSpacing = 6 };
         body.ColumnDefinitions.Add(Ui.Auto()); body.ColumnDefinitions.Add(Ui.Star()); body.ColumnDefinitions.Add(Ui.Auto());
@@ -148,7 +155,7 @@ public sealed partial class LayoutPreview : Grid
         var center = Ui.V(6, mark, pill); center.VerticalAlignment = VerticalAlignment.Center;
         page.Child = center;
         body.Column(page, 1);
-        if (layout != TabLayout.Top) body.Column(Rail(collapsed), layout == TabLayout.Left ? 0 : 2);
+        if (layout.SidebarEdge() is { } side) body.Column(Rail(collapsed), side == TabLayout.Left ? 0 : 2);
         root.Row(body, 2);
         Children.Add(root);
     }

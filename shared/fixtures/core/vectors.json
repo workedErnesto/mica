@@ -100,6 +100,11 @@
       "engine" : "DuckDuckGo",
       "expect" : "rejected:unsupported scheme",
       "input" : "ftp://example.com"
+    },
+    {
+      "engine" : "DuckDuckGo",
+      "expect" : "rejected:unsupported scheme",
+      "input" : "file:///Users/me/page.html"
     }
   ],
   "checksum" : [
@@ -263,6 +268,68 @@
       "lowercase" : true,
       "name" : "Ernesto",
       "seed" : 0
+    }
+  ],
+  "localFile" : [
+    {
+      "expect" : true,
+      "url" : "file:///Users/me/Desktop/page.html"
+    },
+    {
+      "expect" : true,
+      "url" : "file:///Users/me/Desktop/Page.HTM"
+    },
+    {
+      "expect" : true,
+      "url" : "file:///Users/me/doc.xhtml"
+    },
+    {
+      "expect" : true,
+      "url" : "file:///Users/me/report.pdf"
+    },
+    {
+      "expect" : true,
+      "url" : "file:///C:/Users/me/page.html"
+    },
+    {
+      "expect" : true,
+      "url" : "file://localhost/Users/me/page.html"
+    },
+    {
+      "expect" : true,
+      "url" : "file:///Users/me/page%20one.html"
+    },
+    {
+      "expect" : true,
+      "url" : "file:///Users/me/page.html#part"
+    },
+    {
+      "expect" : false,
+      "url" : "file:///Users/me/page.html?x=1"
+    },
+    {
+      "expect" : false,
+      "url" : "file://server/share/page.html"
+    },
+    {
+      "expect" : false,
+      "url" : "file:///Users/me/notes.txt"
+    },
+    {
+      "expect" : false,
+      "url" : "file:///Users/me/folder.html/"
+    },
+    {
+      "expect" : false,
+      "url" : "file:///Users/me/archive.webarchive"
+    },
+    {
+      "expect" : false,
+      "url" : "https://example.com/page.html"
+    },
+    {
+      "expect" : false,
+      "url" : "javascript:alert(1)//.html"
     }
   ],
   "luminance" : [

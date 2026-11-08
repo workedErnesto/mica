@@ -25,6 +25,8 @@ final class Store: ObservableObject {
     lazy var updater = Updater(store: self)
     lazy var passwords = Passwords(store: self)
     lazy var notifier = Notifier(store: self)
+    /// Site icons of normal windows; incognito windows keep their own (BrowserModel.favicons).
+    lazy var favicons = Favicons(persistent: true)
     var sessionWork: DispatchWorkItem?
     var preferencesWork: DispatchWorkItem?
     var shuttingDown = false
@@ -166,6 +168,8 @@ final class Store: ObservableObject {
     func clear(_ choice: ClearChoice, now: Date = Date()) async {
         let start = choice.period.start(before: now)
         if choice.history { history = History.removing(history, since: start) }
+        // Icons are not dated, so any history or cache clearing forgets all of them.
+        if choice.history || choice.cache { favicons.clear() }
         if choice.permissions {
             permissions = []
             for window in windows { for tab in window.model.tabs { tab.webView?.setCameraCaptureState(.none, completionHandler: nil); tab.webView?.setMicrophoneCaptureState(.none, completionHandler: nil); NotificationBridge.push(tab) } }

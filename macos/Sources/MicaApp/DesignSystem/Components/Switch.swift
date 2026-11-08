@@ -47,3 +47,15 @@ private struct KnobStyle: ButtonStyle {
         .animation(Motion.hover, value: hover)
     }
 }
+
+/// A switch without a visible label, for rows that already name what it controls (start page blocks while
+/// customizing). The label becomes the tooltip, and VoiceOver gets a standard Toggle with it.
+struct BareSwitch: View {
+    let label: String
+    @Binding var isOn: Bool
+    var body: some View {
+        SwitchKnob(isOn: $isOn)
+            .help(label)
+            .accessibilityRepresentation { Toggle(label, isOn: $isOn) }
+    }
+}

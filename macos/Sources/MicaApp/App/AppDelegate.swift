@@ -10,12 +10,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let launchStart = ProcessInfo.processInfo.systemUptime
     private var observer: AnyCancellable?
     private var selfTest: SmokeTest?
+    /// Links and files that arrive before `store.start()` restores the session wait here, so a cold launch from a link
+    /// neither opens a window that the restored session buries nor duplicates one.
+    private var started = false
+    private var pendingURLs: [URL] = []
     func applicationDidFinishLaunching(_ notification: Notification) {
         store.notifier.start()
         buildMenu()
+        QuitHold.shared.install()
         observer = store.$preferences.map { "\($0.lowercase)-\($0.language.rawValue)" }.removeDuplicates().sink { [weak self] _ in DispatchQueue.main.async { self?.buildMenu() } }
         Task {
             await store.start()
+            started = true
+            if !pendingURLs.isEmpty { let urls = pendingURLs; pendingURLs = []; openIncoming(urls) }
             store.updater.start()
             if ProcessInfo.processInfo.arguments.contains("--qa") {
                 let seconds = ProcessInfo.processInfo.systemUptime - launchStart
@@ -27,9 +34,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool { if !flag { _ = store.newWindow() }; return true }
+    /// Web links from other apps, and local HTML, XHTML or PDF files from Finder, another app or a drop on the Dock icon.
+    /// A file is registered in LocalFiles right away, while the sandbox extension LaunchServices granted is fresh; one
+    /// mica cannot read still gets a tab that says so instead of vanishing.
     func application(_ application: NSApplication, open urls: [URL]) {
-        let browser = store.active ?? store.newWindow()
-        for url in urls where ["https", "http"].contains(url.scheme ?? "") { browser.open(url) }
+        let accepted = urls.filter { url in
+            if url.isFileURL { guard AddressParser.openableFile(url) else { return false }; LocalFiles.shared.grant(url); return true }
+            return ["http", "https"].contains(url.scheme?.lowercased() ?? "") && AddressParser.navigable(url)
+        }
+        guard !accepted.isEmpty else { return }
+        if started { openIncoming(accepted) } else { pendingURLs += accepted }
+    }
+    /// Links and files from other apps never land in a private window. A blank new tab takes the first one instead of staying behind it.
+    private func openIncoming(_ urls: [URL]) {
+        let normal = store.windows.filter { !$0.model.privateMode }
+        let browser = (normal.first { $0.window?.isKeyWindow == true } ?? normal.last)?.model ?? store.newWindow()
+        var remaining = urls[...]
+        if let tab = browser.selected, tab.url == nil, let first = remaining.first {
+            tab.load(first); remaining = remaining.dropFirst()
+        }
+        for url in remaining { browser.open(url) }
+        browser.controller?.showWindow(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         let running = store.windows.contains { $0.model.downloads.items.contains { $0.state == .running || $0.state == .choosing } }

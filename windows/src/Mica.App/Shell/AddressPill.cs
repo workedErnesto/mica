@@ -24,7 +24,7 @@ public sealed partial class AddressPill : Grid
         this.tab = tab; this.browser = browser;
         var store = browser.Store;
         Height = Chrome.Field + 4;
-        fill = Ui.Rounded(Radius.Icon, Palette.Field.Brush(), Palette.FieldBorder.Brush(), 1);
+        fill = Ui.Rounded(Radius.Icon, Palette.Field.Brush());
         Children.Add(fill);
         var row = new Grid { Margin = new Thickness(3, 0, 3, 0), ColumnSpacing = 4 };
         row.ColumnDefinitions.Add(Ui.Auto()); row.ColumnDefinitions.Add(Ui.Star()); row.ColumnDefinitions.Add(Ui.Auto()); row.ColumnDefinitions.Add(Ui.Auto());
@@ -47,10 +47,11 @@ public sealed partial class AddressPill : Grid
         bookmark.Click += () => store.Bookmark(tab);
         row.Column(info, 0); row.Column(field, 1); row.Column(install, 2); row.Column(bookmark, 3);
         Children.Add(row);
-        progress = Ui.Rounded(1, Look.Progress);
-        progress.Height = 2; progress.VerticalAlignment = VerticalAlignment.Bottom; progress.HorizontalAlignment = HorizontalAlignment.Left;
-        progress.Margin = new Thickness(Radius.Icon, 0, Radius.Icon, 0);
-        Children.Add(progress);
+        // Load progress: flush with the bottom edge from the very left, clipped by a track with the field's own corner
+        // radius so it follows the rounded corners instead of stopping short of them. Drawn under the border stroke.
+        progress = new Border { Background = Look.Progress, Height = 3, VerticalAlignment = VerticalAlignment.Bottom, HorizontalAlignment = HorizontalAlignment.Left, Opacity = 0 };
+        Children.Add(new Border { CornerRadius = new CornerRadius(Radius.Icon), Background = Palette.Clear, IsHitTestVisible = false, Child = progress });
+        Children.Add(new Border { CornerRadius = new CornerRadius(Radius.Icon), BorderBrush = Palette.FieldBorder.Brush(), BorderThickness = new Thickness(1), IsHitTestVisible = false });
         PointerEntered += (_, _) => { hover = true; Render(); };
         PointerExited += (_, _) => { hover = false; Render(); };
         this.Bind(tab, Render);
@@ -75,7 +76,7 @@ public sealed partial class AddressPill : Grid
         var storeId = !browser.PrivateMode && tab.Url is not null ? ChromeStore.ExtensionId(tab.Url) : null;
         install.Visibility = storeId is not null && !store.Extensions.Records.Any(r => r.Source == "cws:" + storeId) ? Visibility.Visible : Visibility.Collapsed;
         fill.Background = hover ? Palette.FieldHover.Brush() : Palette.Field.Brush();
-        progress.Width = Math.Max(0, (ActualWidth - 2 * Radius.Icon) * tab.Progress);
+        progress.Width = Math.Max(0, ActualWidth * Math.Clamp(tab.Progress, 0, 1));
         Motion.Fade(progress, tab.Loading ? 1 : 0);
     }
 

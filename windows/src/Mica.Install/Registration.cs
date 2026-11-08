@@ -27,6 +27,11 @@ public static class DefaultBrowser
             using var icon = html.CreateSubKey("DefaultIcon"); icon.SetValue("", exe + ",0");
             using var open = html.CreateSubKey(@"shell\open\command"); open.SetValue("", command);
         }
+        foreach (var extension in new[] { ".html", ".htm", ".xhtml", ".xht", ".pdf" })
+        {
+            using var openWith = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{extension}\OpenWithProgids");
+            openWith.SetValue("micaHTML", Array.Empty<byte>(), RegistryValueKind.None);
+        }
         using (var app = Registry.CurrentUser.CreateSubKey(Key))
         {
             app.SetValue("", "mica");
@@ -39,7 +44,7 @@ public static class DefaultBrowser
             using var urls = capabilities.CreateSubKey("URLAssociations");
             urls.SetValue("http", "micaURL"); urls.SetValue("https", "micaURL");
             using var files = capabilities.CreateSubKey("FileAssociations");
-            files.SetValue(".html", "micaHTML"); files.SetValue(".htm", "micaHTML"); files.SetValue(".pdf", "micaHTML");
+            foreach (var extension in new[] { ".html", ".htm", ".xhtml", ".xht", ".pdf" }) files.SetValue(extension, "micaHTML");
             using var start = capabilities.CreateSubKey("StartMenu"); start.SetValue("StartMenuInternet", "mica");
         }
         using var registered = Registry.CurrentUser.CreateSubKey(@"Software\RegisteredApplications");
@@ -65,6 +70,11 @@ public static class DefaultBrowser
     /// <summary>Removes everything Register wrote. Windows forgets mica as the default when its ProgID disappears.</summary>
     public static void Unregister()
     {
+        foreach (var extension in new[] { ".html", ".htm", ".xhtml", ".xht", ".pdf" })
+        {
+            using var openWith = Registry.CurrentUser.OpenSubKey($@"Software\Classes\{extension}\OpenWithProgids", writable: true);
+            openWith?.DeleteValue("micaHTML", throwOnMissingValue: false);
+        }
         foreach (var key in new[] { @"Software\Classes\micaURL", @"Software\Classes\micaHTML", Key })
             Registry.CurrentUser.DeleteSubKeyTree(key, throwOnMissingSubKey: false);
         using var registered = Registry.CurrentUser.OpenSubKey(@"Software\RegisteredApplications", writable: true);

@@ -4,36 +4,59 @@ import WebKit
 import MicaCore
 import UniformTypeIdentifiers
 
-/// A part of the start page while customizing: a dashed outline, dimmed when hidden. With a title and an action
-/// it also gets its own show or hide button (the wordmark); sections put theirs in the header.
+/// Start page block geometry. Tiles sit centred in 88 pt columns, so a 60 pt icon is inset 14 pt; block titles and
+/// their controls use the same inset, and the customizing outline adds only vertical padding, so its left, right
+/// and top insets all come to 14 pt and the blocks do not shift sideways when customizing starts.
+enum StartLayout {
+    static let column: CGFloat = 88
+    static let inset: CGFloat = (column - 60) / 2
+}
+
+/// A block of the start page while customizing: a dashed outline. Its radius is concentric with the 20 pt switch
+/// in the header corner, 14 pt inside it.
 struct StartEditFrame: ViewModifier {
     let editing: Bool
-    let visible: Bool
-    var title: String?
-    @ObservedObject var store: Store
-    var toggle: (() -> Void)?
     func body(content: Content) -> some View {
         content
-            .opacity(editing && !visible ? 0.4 : 1)
-            .padding(editing ? Space.normal : 0)
+            .padding(.vertical, editing ? Space.normal : 0)
             .background {
                 if editing {
-                    RoundedRectangle(cornerRadius: Radius.panel + Space.normal - 4, style: .continuous)
+                    RoundedRectangle(cornerRadius: 10 + StartLayout.inset, style: .continuous)
                         .strokeBorder(Palette.hairlineStrong, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
                         .transition(.opacity)
                 }
             }
-            .overlay(alignment: .topTrailing) {
-                if editing, let title, let toggle {
-                    IconButton(symbol: visible ? "eye" : "eye.slash", label: (visible ? store.text("скрыть", "Скрыть") : store.text("показать", "Показать")) + ": " + title, selected: !visible, size: 24) {
-                        withMotion(Motion.quick) { toggle() }
-                    }
-                    .contentTransition(.symbolEffect(.replace))
-                    .padding(4)
-                    .transition(.opacity)
+    }
+}
+
+/// Title row of a start page block. While customizing it carries the block's controls on the right: optional
+/// order buttons and a switch that shows or hides the block. The row itself never dims, only the block content.
+struct StartBlockHeader<Order: View>: View {
+    let title: String
+    let editing: Bool
+    @Binding var shown: Bool
+    @ObservedObject var store: Store
+    @ViewBuilder var order: Order
+    var body: some View {
+        HStack(spacing: Space.small) {
+            Text(title).font(.system(size: 12, weight: .medium)).foregroundStyle(Palette.text3)
+            Spacer(minLength: 0)
+            if editing {
+                HStack(spacing: Space.small) {
+                    order
+                    BareSwitch(label: store.text("показывать", "Показывать") + ": " + title, isOn: $shown)
                 }
+                .transition(.opacity)
             }
-            .frame(maxWidth: editing && title != nil ? .infinity : nil)
+        }
+        .frame(minHeight: 24)
+        .padding(.horizontal, StartLayout.inset)
+    }
+}
+
+extension StartBlockHeader where Order == EmptyView {
+    init(title: String, editing: Bool, shown: Binding<Bool>, store: Store) {
+        self.init(title: title, editing: editing, shown: shown, store: store) { EmptyView() }
     }
 }
 

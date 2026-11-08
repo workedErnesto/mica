@@ -7,30 +7,42 @@ using Windows.ApplicationModel.DataTransfer;
 
 namespace Mica.App;
 
-/// <summary>Tab status glyph: error, load progress or the site monogram (dimmed until a restored tab loads).</summary>
+/// <summary>Tab status glyph: error, load progress, otherwise the site icon or its monogram (dimmed until a restored
+/// tab loads). <c>plain</c> and <c>tint</c> serve rail tiles: a monogram without its own plate.</summary>
 public sealed partial class TabIcon : Grid
 {
-    readonly Tab tab; readonly double size;
-    UIElement? shown; string state = "";
-    public TabIcon(Tab tab, double size = 16)
+    readonly Tab tab; readonly double size; readonly bool plain;
+    Brush? tint;
+    UIElement? shown; string state = ""; ImageSource? image;
+    public TabIcon(Tab tab, double size = 16, bool plain = false)
     {
-        this.tab = tab; this.size = size; Width = size; Height = size;
+        this.tab = tab; this.size = size; this.plain = plain; Width = size; Height = size;
         this.Bind(tab, Render);
+        if (tab.Owner?.Favicons is { } favicons) this.Bind(h => favicons.Changed += h, h => favicons.Changed -= h, Render);
     }
+    /// <summary>Monogram colour for rail tiles, which brighten it on hover and selection like the plus glyph.</summary>
+    public void SetTint(Brush value) { if (ReferenceEquals(tint, value)) return; tint = value; state = ""; Render(); }
     void Render()
     {
-        var next = tab.Phase == TabPhase.Terminated ? "error" : tab.Loading ? "loading" : "mono:" + AddressParser.Host(tab.Url) + tab.Phase;
-        if (next == state) { if (shown is Mica.Design.ProgressRing ring) ring.SetProgress(tab.Progress); return; }
-        state = next;
+        var favicon = tab.Phase == TabPhase.Terminated || tab.Loading ? null : tab.Favicon;
+        var host = AddressParser.Host(tab.Url);
+        var next = tab.Phase == TabPhase.Terminated ? "error" : tab.Loading ? "loading" : (favicon is null ? "mono:" : "icon:") + host + tab.Phase;
+        if (next == state && ReferenceEquals(favicon, image)) { if (shown is Mica.Design.ProgressRing ring) ring.SetProgress(tab.Progress); return; }
+        var arrived = favicon is not null && state.StartsWith("mono:", StringComparison.Ordinal);
+        state = next; image = favicon;
         Children.Clear();
+        var dim = tab.Phase == TabPhase.Restored ? 0.55 : 1;
         shown = next switch
         {
             "error" => new Glyph("exclamationmark.triangle", size * 0.7, Palette.Text2.Brush()) { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center },
             "loading" => new Mica.Design.ProgressRing(size),
-            _ => new Monogram(AddressParser.Host(tab.Url), size) { Opacity = tab.Phase == TabPhase.Restored ? 0.55 : 1 },
+            _ when favicon is not null => new Border { Width = size, Height = size, CornerRadius = new CornerRadius(size * 0.2), Background = new ImageBrush { ImageSource = favicon, Stretch = Stretch.Uniform }, Opacity = dim, IsHitTestVisible = false },
+            _ => new Monogram(host, size, plain, tint) { Opacity = dim },
         };
         if (shown is Mica.Design.ProgressRing r) r.SetProgress(tab.Progress);
         Children.Add(shown);
+        // The icon fades in over the monogram it replaces; opacity only, so Reduce Motion keeps it.
+        if (arrived) { Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(shown).Opacity = 0; Motion.Fade(shown, 1); }
     }
 }
 
@@ -59,6 +71,7 @@ public static class TabInteractions
             MenuEntry.Item(browser.Text("открыть в новом окне", "Открыть в новом окне"), () => { var window = browser.Store.NewWindow(browser.PrivateMode); if (tab.Url is { } url) window.Selected?.Load(url); }, "macwindow"),
             MenuEntry.Separator,
             MenuEntry.Item(browser.Text("закрыть остальные", "Закрыть остальные"), () => { foreach (var other in browser.Tabs.Where(o => o.Id != tab.Id && !o.Pinned).ToList()) browser.Close(other); }, "xmark.square"),
+            MenuEntry.Item(browser.Text("закрыть все", "Закрыть все"), browser.CloseAll, "xmark.rectangle"),
             MenuEntry.Item(browser.Text("закрыть вкладку", "Закрыть вкладку"), () => browser.Close(tab), "xmark", shortcut: Keymap.Label("close")),
         ]);
         // Middle click closes, as in other Windows browsers.
@@ -70,7 +83,7 @@ public static class TabInteractions
 public sealed partial class TabRow : Grid
 {
     readonly Tab tab; readonly BrowserModel browser; readonly bool horizontal;
-    readonly Border plate; readonly TextBlock title; readonly IconButton close;
+    readonly Border plate; readonly TextBlock title; readonly IconButton close; readonly Glyph pin;
     readonly Interaction interaction;
     public Guid TabId => tab.Id;
     public TabRow(Tab tab, BrowserModel browser, bool horizontal)
@@ -84,7 +97,8 @@ public sealed partial class TabRow : Grid
         row.Column(new TabIcon(tab) { VerticalAlignment = VerticalAlignment.Center }, 0); row.Column(title, 1);
         close = new IconButton("xmark", "", 22) { HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 5, 0), Opacity = 0 };
         close.Click += () => browser.Close(tab);
-        Children.Add(plate); Children.Add(row); Children.Add(close);
+        pin = new Glyph("pin", 10, Palette.Text2.Brush()) { Width = 22, Height = 22, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 5, 0), IsHitTestVisible = false, Opacity = 0 };
+        Children.Add(plate); Children.Add(row); Children.Add(pin); Children.Add(close);
         interaction = new Interaction(this, Render, 0.98, plate);
         interaction.Invoked += () => browser.Select(tab);
         TabInteractions.Attach(this, tab, browser);
@@ -102,30 +116,121 @@ public sealed partial class TabRow : Grid
         plate.Background = selected ? Palette.Selected.Brush() : hover ? (horizontal ? Palette.Pressed.Brush() : Palette.Hover.Brush()) : (horizontal ? Palette.Hover.Brush() : Palette.Clear);
         plate.Shadow = selected ? Shadows.Soft : null;
         plate.Translation = new System.Numerics.Vector3(0, 0, selected ? 2 : 0);
-        Motion.Fade(close, hover || (selected && !horizontal) ? 1 : 0);
-        close.IsHitTestVisible = hover || (selected && !horizontal);
+        var showClose = hover || (selected && !horizontal);
+        Motion.Fade(pin, horizontal && tab.Pinned && !hover ? 1 : 0);
+        Motion.Fade(close, showClose ? 1 : 0);
+        close.IsHitTestVisible = showClose;
         close.SetLabel(browser.Text("закрыть: ", "Закрыть: ") + tab.Title);
-        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(this, tab.DisplayTitle(browser.Store) + (selected ? ", " + browser.Text("выбрана", "Выбрана") : tab.Phase == TabPhase.Restored ? ", " + browser.Text("ещё не загружена", "Ещё не загружена") : ""));
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(this, (tab.Pinned ? browser.Text("закреплена: ", "Закреплена: ") : "") + tab.DisplayTitle(browser.Store) + (selected ? ", " + browser.Text("выбрана", "Выбрана") : tab.Phase == TabPhase.Restored ? ", " + browser.Text("ещё не загружена", "Ещё не загружена") : ""));
     }
 }
 
-/// <summary>Pinned tab: an icon tile in the grid above the tab list.</summary>
+/// <summary>Close badge of an icon-only tab tile (macOS TileCloseBadge). The tiles have no room for an × of their
+/// own, so after the pointer rests on a tile for a second a small raised round button pops in on its top-right
+/// corner: its centre sits on the rounded outline, half over the tile and half outside. Pressing it closes the tab and
+/// marks the press handled, so the tile underneath is not selected.</summary>
+public sealed partial class TileCloseBadge : Grid
+{
+    /// <summary>Visible diameter, hit area, and distance from the tile's bounding corner to the badge centre
+    /// (where the Radius.Row arc passes).</summary>
+    public const double Face = 16, Box = 20, Inset = 3;
+    /// <summary>Room the badge and its shadow need outside the tile; scroll viewers holding tiles keep it unclipped.</summary>
+    public const double Overhang = Face / 2 - Inset + 3;
+    static readonly TimeSpan Delay = TimeSpan.FromSeconds(1);
+    readonly Grid tile;
+    readonly Border face, tint;
+    readonly Glyph glyph;
+    readonly Interaction interaction;
+    readonly Microsoft.UI.Dispatching.DispatcherQueueTimer delay;
+    bool shown;
+
+    public TileCloseBadge(Grid tile, Tab tab, BrowserModel browser)
+    {
+        this.tile = tile;
+        Width = Box; Height = Box; Background = Palette.Clear; IsTabStop = false;
+        HorizontalAlignment = HorizontalAlignment.Right; VerticalAlignment = VerticalAlignment.Top;
+        // Negative margins put the centre at (width - Inset, Inset) of the tile; the tile's Grid does not clip.
+        Margin = new Thickness(0, Inset - Box / 2, Inset - Box / 2, 0);
+        // Hidden through the composition visual, which Motion.Fade animates, not XAML Opacity.
+        Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(this).Opacity = 0;
+        IsHitTestVisible = false;
+        tint = Ui.Rounded(Face / 2);
+        glyph = new Glyph("xmark", 8, Palette.Text2.Brush()) { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+        face = Ui.Rounded(Face / 2, Palette.Raised.Brush(), Palette.HairlineStrong.Brush(), 1, Ui.Grid(tint, glyph));
+        face.Width = Face; face.Height = Face;
+        face.HorizontalAlignment = HorizontalAlignment.Center; face.VerticalAlignment = VerticalAlignment.Center;
+        face.Shadow = Shadows.Soft; face.Translation = new System.Numerics.Vector3(0, 0, 8);
+        Children.Add(face);
+        interaction = new Interaction(this, Render, 0.88, face);
+        interaction.Invoked += () => browser.Close(tab);
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAccessibilityView(this, Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw);
+        delay = tile.DispatcherQueue.CreateTimer();
+        delay.Interval = Delay; delay.IsRepeating = false;
+        delay.Tick += (_, _) => Show();
+        // The badge is the tile's child, so moving onto its outer half does not count as leaving the tile.
+        tile.PointerEntered += (_, _) => { if (!shown) { delay.Stop(); delay.Start(); } };
+        tile.PointerExited += (_, _) => { delay.Stop(); Hide(); };
+        tile.PointerCanceled += (_, _) => { delay.Stop(); Hide(); };
+        tile.Unloaded += (_, _) => delay.Stop();
+        tile.Children.Add(this);
+        SetLabel(browser.Text("закрыть: ", "Закрыть: ") + tab.DisplayTitle(browser.Store));
+    }
+
+    public void SetLabel(string label) => this.Tip(label);
+
+    void Render()
+    {
+        glyph.Foreground = interaction.Hover || interaction.Pressed ? Palette.Ink.Brush() : Palette.Text2.Brush();
+        tint.Background = interaction.Pressed ? Palette.Pressed.Brush() : interaction.Hover ? Palette.Hover.Brush() : Palette.Clear;
+    }
+
+    void Show()
+    {
+        delay.Stop();
+        if (shown) return;
+        shown = true;
+        IsHitTestVisible = true;
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAccessibilityView(this, Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Content);
+        // The half that sticks out draws above the neighbouring tile.
+        Canvas.SetZIndex(tile, 1);
+        var visual = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(this);
+        visual.CenterPoint = new System.Numerics.Vector3((float)Box / 2, (float)Box / 2, 0);
+        if (!Motion.Reduced) { visual.StopAnimation("Scale"); visual.Scale = new System.Numerics.Vector3(0.6f, 0.6f, 1); }
+        Motion.Scale(this, 1, Motion.Press);
+        Motion.Fade(this, 1);
+    }
+
+    void Hide()
+    {
+        if (!shown) return;
+        shown = false;
+        IsHitTestVisible = false;
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAccessibilityView(this, Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw);
+        Canvas.SetZIndex(tile, 0);
+        Motion.Fade(this, 0);
+        Motion.Scale(this, 0.8, Motion.Snappy);
+    }
+}
+
+/// <summary>A pinned tab, shown as an icon tile in the sidebar and the top strip.</summary>
 public sealed partial class PinnedTile : Grid
 {
-    public Guid TabId { get; }
     public PinnedTile(Tab tab, BrowserModel browser, double height = 44)
     {
-        TabId = tab.Id; Height = height; Background = Palette.Clear; IsTabStop = true;
+        Height = height; Background = Palette.Clear; IsTabStop = true;
         var plate = Ui.Rounded(Radius.Row);
         Children.Add(plate);
         Children.Add(new TabIcon(tab, 20) { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center });
+        var badge = new TileCloseBadge(this, tab, browser);
         Interaction? interaction = null;
         void Render()
         {
             var selected = browser.SelectedId == tab.Id;
             plate.Background = selected ? Palette.Selected.Brush() : interaction?.Hover == true ? Palette.Pressed.Brush() : Palette.Hover.Brush();
-            plate.BorderBrush = selected ? Palette.HairlineStrong.Brush() : null; plate.BorderThickness = new Thickness(selected ? 1 : 0);
+            plate.BorderBrush = selected ? Palette.HairlineStrong.Brush() : null;
+            plate.BorderThickness = new Thickness(selected ? 1 : 0);
             this.Tip(browser.Text("закреплена: ", "Закреплена: ") + tab.DisplayTitle(browser.Store));
+            badge.SetLabel(browser.Text("закрыть: ", "Закрыть: ") + tab.DisplayTitle(browser.Store));
         }
         interaction = new Interaction(this, Render, 0.94, plate);
         interaction.Invoked += () => browser.Select(tab);
@@ -135,22 +240,31 @@ public sealed partial class PinnedTile : Grid
     }
 }
 
-/// <summary>Site icon of a tab in the collapsed sidebar.</summary>
+/// <summary>Site icon of a tab in the collapsed sidebar: the same filled 36 px plate as the plus below, with the
+/// favicon or a plain monogram inside instead of a nested box.</summary>
 public sealed partial class RailTile : Grid
 {
     public RailTile(Tab tab, BrowserModel browser)
     {
         Width = 36; Height = 36; Background = Palette.Clear; IsTabStop = true; HorizontalAlignment = HorizontalAlignment.Center;
-        var plate = Ui.Rounded(Radius.Row);
+        var plate = Ui.Rounded(Radius.Row, Palette.Hover.Brush());
+        var icon = new TabIcon(tab, 20, plain: true) { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
         Children.Add(plate);
-        Children.Add(new TabIcon(tab, 18) { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center });
+        Children.Add(icon);
+        var pin = new Glyph("pin", 8, Palette.Ink.Brush()) { HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, IsHitTestVisible = false };
+        Children.Add(pin);
+        var badge = new TileCloseBadge(this, tab, browser);
         Interaction? interaction = null;
         void Render()
         {
             var selected = browser.SelectedId == tab.Id;
-            plate.Background = selected ? Palette.Selected.Brush() : interaction?.Hover == true ? Palette.Hover.Brush() : Palette.Clear;
+            var hover = interaction?.Hover == true;
+            plate.Background = selected ? Palette.Selected.Brush() : hover ? Palette.Pressed.Brush() : Palette.Hover.Brush();
             plate.Shadow = selected ? Shadows.Soft : null;
+            icon.SetTint(selected || hover ? Palette.Ink.Brush() : Palette.Text2.Brush());
+            Motion.Fade(pin, tab.Pinned && !hover ? 1 : 0);
             this.Tip((tab.Pinned ? browser.Text("закреплена: ", "Закреплена: ") : "") + tab.DisplayTitle(browser.Store));
+            badge.SetLabel(browser.Text("закрыть: ", "Закрыть: ") + tab.DisplayTitle(browser.Store));
         }
         interaction = new Interaction(this, Render, 0.92, plate);
         interaction.Invoked += () => browser.Select(tab);
@@ -251,7 +365,12 @@ public sealed partial class Sidebar : Grid
             Width = Chrome.Rail; Padding = new Thickness(0, 0, 0, Space.Small);
             regular.Spacing = 6; footer.HorizontalAlignment = HorizontalAlignment.Center;
             this.Row(pinnedRail, 0);
+            // The scroll viewer clips; it reaches up by the close badge overhang so the first tile's badge is whole.
+            // The pinned column leaves that much room below it, so the scroll viewer never lies over a pinned tile.
+            pinnedRail.Margin = new Thickness(0, 0, 0, TileCloseBadge.Overhang);
+            regular.Padding = new Thickness(0, TileCloseBadge.Overhang, 0, 0);
             var scroll = Ui.Scroll(regular); scroll.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
+            scroll.Margin = new Thickness(0, -TileCloseBadge.Overhang, 0, 0);
             this.Row(scroll, 3);
         }
         else
@@ -313,18 +432,28 @@ public sealed partial class Sidebar : Grid
     }
 }
 
-/// <summary>Horizontal tabs share the width evenly; the new-tab button sits right after the last tab.</summary>
+/// <summary>Horizontal tabs share the width evenly; the new-tab button sits right after the last tab. In the caption band
+/// (titleBand) the strip keeps free space at its end, where the window can still be dragged.</summary>
 public sealed partial class TabStrip : Grid
 {
     readonly BrowserModel browser;
     readonly StackPanel row = new() { Orientation = Orientation.Horizontal, Spacing = Space.Micro };
     readonly PlusTile plus;
-    public TabStrip(BrowserModel browser)
+    readonly ScrollViewer scroll;
+    readonly bool titleBand;
+    /// <summary>Empty caption band left after the tabs, so the window always has somewhere to be dragged by.</summary>
+    const double DragRoom = 64;
+    /// <summary>The tabs and the plus button: in the caption band this area passes clicks through, the rest drags.</summary>
+    public FrameworkElement Tabs => scroll;
+    public TabStrip(BrowserModel browser, bool titleBand = false)
     {
         this.browser = browser;
-        Height = 32;
+        this.titleBand = titleBand;
+        Height = titleBand ? BrowserWindow.Bar : 32 + TileCloseBadge.Overhang * 2;
         plus = new PlusTile(browser, 32, 32);
-        var scroll = Ui.Scroll(row, horizontal: true); scroll.HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden;
+        scroll = Ui.Scroll(row, horizontal: true); scroll.HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden;
+        scroll.Padding = new Thickness(0, (Height - 32) / 2, 0, (Height - 32) / 2);
+        if (titleBand) scroll.HorizontalAlignment = HorizontalAlignment.Left;
         Children.Add(scroll);
         row.Children.Add(plus);
         this.Bind(browser, Render);
@@ -332,14 +461,15 @@ public sealed partial class TabStrip : Grid
     }
     void Render()
     {
-        var regularCount = browser.Tabs.Count(t => !t.Pinned);
-        var pinnedCount = browser.Tabs.Count - regularCount;
-        var free = ActualWidth - 32 - Space.Micro - pinnedCount * (44 + Space.Micro) - Math.Max(0, regularCount - 1) * Space.Micro;
-        var width = regularCount == 0 ? 0 : Math.Min(240, Math.Max(130, free / regularCount));
-        Reconcile.Run(row, browser.Tabs.Select(t => t.Id + (t.Pinned ? ":p" : "")).ToList(), key =>
+        var regularCount = browser.Tabs.Count;
+        var available = ActualWidth - (titleBand ? DragRoom : 0);
+        var fixedWidth = 32 + browser.Tabs.Count * Space.Micro;
+        var width = regularCount == 0 ? 0 : Math.Min(240, Math.Max(130, (available - fixedWidth) / regularCount));
+        if (titleBand && ActualWidth > 0) scroll.Width = Math.Max(0, Math.Min(fixedWidth + regularCount * width, available));
+        Reconcile.Run(row, browser.Tabs.Select(t => t.Id.ToString()).ToList(), key =>
         {
             var tab = browser.Tabs.First(t => key.StartsWith(t.Id.ToString(), StringComparison.Ordinal));
-            return tab.Pinned ? new PinnedTile(tab, browser, 32) { Width = 44 } : new TabRow(tab, browser, horizontal: true) { Width = width };
+            return new TabRow(tab, browser, horizontal: true) { Width = width };
         });
         foreach (var r in row.Children.OfType<TabRow>()) r.Width = width;
         var index = row.Children.IndexOf(plus);

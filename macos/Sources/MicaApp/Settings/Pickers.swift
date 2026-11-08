@@ -7,7 +7,7 @@ struct LayoutPicker: View {
     @ObservedObject var store: Store
     var width: CGFloat = 0
     var body: some View {
-        Segmented(selection: $store.preferences.layout, options: [(.left, store.text("слева", "Слева")), (.top, store.text("сверху", "Сверху")), (.right, store.text("справа", "Справа"))], symbols: ["sidebar.left", "rectangle.topthird.inset.filled", "sidebar.right"], width: width, label: store.text("вкладки", "Вкладки"))
+        Segmented(selection: $store.preferences.layout, options: [(.left, store.text("слева", "Слева")), (.top, store.text("под адресом", "Под адресом")), (.tabsAbove, store.text("над адресом", "Над адресом")), (.right, store.text("справа", "Справа"))], symbols: ["sidebar.left", "rectangle.topthird.inset.filled", "macwindow", "sidebar.right"], width: width, label: store.text("вкладки", "Вкладки"))
     }
 }
 

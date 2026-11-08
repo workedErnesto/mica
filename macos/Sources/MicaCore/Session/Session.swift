@@ -5,7 +5,10 @@ public struct SavedTab: Codable, Equatable, Identifiable, Sendable {
     public var url: URL?
     public var title: String
     public var pinned: Bool
-    public init(id: UUID = UUID(), url: URL? = nil, title: String = "", pinned: Bool = false) { self.id = id; self.url = url; self.title = title; self.pinned = pinned }
+    /// App-scoped security-scoped bookmark of a local file the system opened in mica (`AddressParser.openableFile`).
+    /// It carries the sandbox permission across relaunches; without it a restored file tab explains how to reopen the file.
+    public var access: Data?
+    public init(id: UUID = UUID(), url: URL? = nil, title: String = "", pinned: Bool = false, access: Data? = nil) { self.id = id; self.url = url; self.title = title; self.pinned = pinned; self.access = access }
 }
 
 public struct SavedWindow: Codable, Equatable, Sendable {
@@ -23,7 +26,7 @@ public struct Session: Codable, Sendable {
         var ids = Set<UUID>()
         return Session(windows: windows.prefix(20).map { window in
             let tabs = window.tabs.prefix(300).filter { tab in
-                (tab.url == nil || (["http", "https"].contains(tab.url!.scheme?.lowercased() ?? "") && AddressParser.navigable(tab.url!))) && ids.insert(tab.id).inserted
+                (tab.url == nil || (["http", "https"].contains(tab.url!.scheme?.lowercased() ?? "") && AddressParser.navigable(tab.url!)) || AddressParser.openableFile(tab.url!)) && ids.insert(tab.id).inserted
             }.sorted { $0.pinned && !$1.pinned }
             return SavedWindow(tabs: tabs, selected: tabs.contains(where: { $0.id == window.selected }) ? window.selected : tabs.first?.id)
         })

@@ -23,7 +23,7 @@ public static class ToolbarMoves
     /// <summary>In the top layout sidebar items show after the right-hand ones, so a drop at the end of the right zone joins them.</summary>
     public static void Append(Store store, ToolbarControl item, ToolbarZone zone, TabLayout layout)
     {
-        if (zone == ToolbarZone.Trailing && layout == TabLayout.Top && store.Preferences.Toolbar.Sidebar.Any(i => i != item)) Move(store, item, ToolbarZone.Sidebar);
+        if (zone == ToolbarZone.Trailing && layout.IsHorizontal() && store.Preferences.Toolbar.Sidebar.Any(i => i != item)) Move(store, item, ToolbarZone.Sidebar);
         else Move(store, item, zone);
     }
 
@@ -33,7 +33,7 @@ public static class ToolbarMoves
     {
         var current = store.Preferences.Toolbar.ZoneOf(item);
         foreach (var zone in Placements)
-            yield return MenuEntry.Item(zone.Title(store), () => Move(store, item, zone), @checked: current == zone, enabled: current != zone && !(zone == ToolbarZone.Sidebar && layout == TabLayout.Top));
+            yield return MenuEntry.Item(zone.Title(store), () => Move(store, item, zone), @checked: current == zone, enabled: current != zone && !(zone == ToolbarZone.Sidebar && layout.IsHorizontal()));
         yield return MenuEntry.Separator;
         yield return MenuEntry.Item(store.Text("убрать", "Убрать"), () => Move(store, item, ToolbarZone.Hidden), destructive: true, enabled: current != ToolbarZone.Hidden);
     }
@@ -112,7 +112,7 @@ public sealed partial class CustomizeToolbarPanel : Grid
         var content = new StackPanel { Spacing = Space.Section, Padding = new Thickness(Space.Section) };
         content.Children.Add(Ui.V(4,
             Ui.Text(store.Text("перетащите кнопки на панель", "Перетащите кнопки на панель"), 15, null, Ui.Medium),
-            Ui.Text(layout == TabLayout.Top
+            Ui.Text(layout.IsHorizontal()
                 ? store.Text("в шапке четыре места: у краёв окна и рядом с адресом. чтобы убрать кнопку, верните её сюда.", "В шапке четыре места: у краёв окна и рядом с адресом. Чтобы убрать кнопку, верните её сюда.")
                 : store.Text("в шапке четыре места: у краёв окна и рядом с адресом, ещё одно внизу боковой панели. чтобы убрать кнопку, верните её сюда.", "В шапке четыре места: у краёв окна и рядом с адресом, ещё одно внизу боковой панели. Чтобы убрать кнопку, верните её сюда."), 12, Palette.Text3.Brush(), wrap: true)));
         var tiles = new VariableSizedWrapGrid { Orientation = Orientation.Horizontal, ItemWidth = 112, ItemHeight = 92 };

@@ -46,15 +46,18 @@ final class BrowserWindow: NSWindowController, NSWindowDelegate {
         }
     }
     func placeWindowButtons() {
-        guard let window, !window.styleMask.contains(.fullScreen), !placingWindowButtons else { return }
+        guard let window, let content = window.contentView, !window.styleMask.contains(.fullScreen), !placingWindowButtons else { return }
         placingWindowButtons = true
         defer { placingWindowButtons = false }
         for (index, type) in BrowserWindow.buttons.enumerated() {
             guard let button = window.standardWindowButton(type), let bar = button.superview else { continue }
             let size = button.frame.size
-            let top = Chrome.bar / 2 - size.height / 2
-            let y = bar.isFlipped ? top : bar.bounds.height - top - size.height
-            let target = NSPoint(x: Chrome.lightsX + CGFloat(index) * Chrome.lightsStep, y: max(0, y))
+            // Align against the shell's first row, not AppKit's private titlebar view: its height and origin can
+            // change as the window is resized or leaves full screen.
+            let center = NSPoint(x: Chrome.lightsX + CGFloat(index) * Chrome.lightsStep + size.width / 2,
+                                 y: content.isFlipped ? Chrome.bar / 2 : content.bounds.height - Chrome.bar / 2)
+            let inBar = bar.convert(center, from: content)
+            let target = NSPoint(x: inBar.x - size.width / 2, y: inBar.y - size.height / 2)
             if button.frame.origin != target { button.setFrameOrigin(target) }
         }
     }

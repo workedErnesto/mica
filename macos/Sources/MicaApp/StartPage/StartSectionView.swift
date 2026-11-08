@@ -33,51 +33,40 @@ struct StartSectionView: View {
         let start = store.preferences.start
         let visible = start.sections.contains(section)
         VStack(alignment: .leading, spacing: Space.normal) {
-            HStack(spacing: Space.small) {
-                Text(section.title(store)).font(.system(size: 12, weight: .medium)).foregroundStyle(Palette.text3)
-                if editing && !visible {
-                    Text(store.text("скрыто", "Скрыто")).font(.system(size: 11)).foregroundStyle(Palette.text3)
-                        .padding(.horizontal, 6).frame(height: 18)
-                        .background(RoundedRectangle(cornerRadius: 5, style: .continuous).fill(Palette.track))
-                        .transition(.opacity)
+            StartBlockHeader(title: section.title(store), editing: editing, shown: Binding(get: { visible }, set: { store.preferences.start.setVisible(section, $0) }), store: store) {
+                HStack(spacing: 0) {
+                    IconButton(symbol: "chevron.up", label: store.text("выше", "Выше") + ": " + section.title(store), size: 24) { withMotion(Motion.quick) { store.preferences.start.shift(section, by: -1) } }
+                        .disabled(!visible || start.sections.first == section)
+                    IconButton(symbol: "chevron.down", label: store.text("ниже", "Ниже") + ": " + section.title(store), size: 24) { withMotion(Motion.quick) { store.preferences.start.shift(section, by: 1) } }
+                        .disabled(!visible || start.sections.last == section)
                 }
-                Spacer(minLength: 0)
-                if editing {
-                    HStack(spacing: 0) {
-                        IconButton(symbol: "chevron.up", label: store.text("выше", "Выше") + ": " + section.title(store), size: 24) { withMotion(Motion.quick) { store.preferences.start.shift(section, by: -1) } }
-                            .disabled(!visible || start.sections.first == section)
-                        IconButton(symbol: "chevron.down", label: store.text("ниже", "Ниже") + ": " + section.title(store), size: 24) { withMotion(Motion.quick) { store.preferences.start.shift(section, by: 1) } }
-                            .disabled(!visible || start.sections.last == section)
-                        IconButton(symbol: visible ? "eye" : "eye.slash", label: (visible ? store.text("скрыть", "Скрыть") : store.text("показать", "Показать")) + ": " + section.title(store), selected: !visible, size: 24) {
-                            withMotion(Motion.quick) { store.preferences.start.setVisible(section, !visible) }
+            }
+            SwiftUI.Group {
+                if editing && sites.isEmpty && section != .custom {
+                    Text(placeholder).font(.system(size: 12)).foregroundStyle(Palette.text3)
+                        .multilineTextAlignment(.center).padding(.horizontal, Space.normal)
+                        .frame(maxWidth: .infinity, minHeight: 60)
+                        .background(RoundedRectangle(cornerRadius: Radius.row, style: .continuous).strokeBorder(Palette.hairline, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
+                        .padding(.horizontal, StartLayout.inset)
+                } else {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: StartLayout.column, maximum: StartLayout.column), spacing: Space.micro)], alignment: .leading, spacing: Space.normal) {
+                        ForEach(sites) { site in
+                            SiteTile(title: site.title, host: site.host) { browser.selected?.load(site.url) }
+                                .micaContextMenu { menu(site) }
+                                .modifier(ShortcutDrag(site: site, store: store))
+                                .popover(isPresented: Binding(get: { editingSite == site }, set: { if !$0 { editingSite = nil } }), arrowEdge: .bottom) {
+                                    ShortcutEditor(store: store, editing: site.shortcut) { editingSite = nil }
+                                }
+                                .transition(Motion.pop)
                         }
-                        .contentTransition(.symbolEffect(.replace))
+                        if section == .custom { AddShortcutTile(store: store).transition(Motion.pop) }
                     }
-                    .transition(.opacity)
+                    .animation(Motion.quick, value: sites.map(\.id))
                 }
             }
-            .frame(minHeight: 24)
-            if editing && sites.isEmpty && section != .custom {
-                Text(placeholder).font(.system(size: 12)).foregroundStyle(Palette.text3)
-                    .frame(maxWidth: .infinity, minHeight: 60)
-                    .background(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous).strokeBorder(Palette.hairline, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
-            } else {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 88, maximum: 120), spacing: Space.normal)], spacing: Space.normal) {
-                ForEach(sites) { site in
-                    SiteTile(title: site.title, host: site.host) { browser.selected?.load(site.url) }
-                        .micaContextMenu { menu(site) }
-                        .modifier(ShortcutDrag(site: site, store: store))
-                        .popover(isPresented: Binding(get: { editingSite == site }, set: { if !$0 { editingSite = nil } }), arrowEdge: .bottom) {
-                            ShortcutEditor(store: store, editing: site.shortcut) { editingSite = nil }
-                        }
-                        .transition(Motion.pop)
-                }
-                if section == .custom { AddShortcutTile(store: store).transition(Motion.pop) }
-            }
-            .animation(Motion.quick, value: sites.map(\.id))
-            }
+            .opacity(editing && !visible ? 0.4 : 1)
         }
-        .modifier(StartEditFrame(editing: editing, visible: visible, store: store))
+        .modifier(StartEditFrame(editing: editing))
         .animation(Motion.quick, value: visible)
     }
     private var placeholder: String {

@@ -134,7 +134,7 @@ struct Onboarding: View {
                 LayoutPreview(store: store).frame(height: 150)
                 SettingsGroup {
                     SettingRow(title: store.text("вкладки", "Вкладки")) { LayoutPicker(store: store, width: 300) }
-                    Toggle(store.text("свернуть боковую панель до иконок", "Свернуть боковую панель до иконок"), isOn: Binding(get: { store.preferences.sidebarCollapsed }, set: { value in withMotion(Motion.panel) { store.preferences.sidebarCollapsed = value } })).toggleStyle(MToggleStyle()).modifier(RowInset(divider: false)).disabled(store.preferences.layout == .top)
+                    Toggle(store.text("свернуть боковую панель до иконок", "Свернуть боковую панель до иконок"), isOn: Binding(get: { store.preferences.sidebarCollapsed }, set: { value in withMotion(Motion.panel) { store.preferences.sidebarCollapsed = value } })).toggleStyle(MToggleStyle()).modifier(RowInset(divider: false)).disabled(store.preferences.layout.horizontal)
                 }
             }
         case 3:

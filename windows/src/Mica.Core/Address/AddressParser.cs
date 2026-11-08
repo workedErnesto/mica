@@ -46,6 +46,23 @@ public static partial class AddressParser
         return !authority.Any(c => "<>{}|\\^`\"".Contains(c));
     }
 
+    /// <summary>File types mica shows when the system hands it a file; the installer registers .html, .htm and .pdf.</summary>
+    public static readonly IReadOnlySet<string> FileExtensions = new HashSet<string>(StringComparer.Ordinal) { "html", "htm", "xhtml", "xht", "pdf" };
+
+    /// <summary>A local file the system opened in mica (Explorer, a file argument, a restored tab of such a file). Never
+    /// part of <see cref="Navigable"/> and never produced by <see cref="Resolve"/>: typed text and web pages cannot reach
+    /// local files. Network shares (a host other than localhost), queries and credentials are refused.</summary>
+    public static bool OpenableFile(string? url)
+    {
+        if (url is null || !Uri.TryCreate(url, UriKind.Absolute, out var u) || !u.Scheme.Equals("file", StringComparison.OrdinalIgnoreCase)) return false;
+        if (u.UserInfo.Length > 0 || u.Query.Length > 0) return false;
+        if (u.Host.Length > 0 && !u.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase)) return false;
+        var path = u.AbsolutePath;
+        if (path.Length == 0 || path.EndsWith('/')) return false;
+        var extension = Path.GetExtension(Uri.UnescapeDataString(path)).TrimStart('.').ToLowerInvariant();
+        return FileExtensions.Contains(extension);
+    }
+
     public static bool Navigable(string? url)
     {
         if (url is null || !Uri.TryCreate(url, UriKind.Absolute, out var u)) return false;

@@ -46,7 +46,8 @@ public struct Preferences: Codable, Equatable, Sendable {
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         let d = Preferences()
-        layout = try c.decodeIfPresent(TabLayout.self, forKey: .layout) ?? d.layout
+        // A layout this build does not know (saved by a newer one) falls back to the default instead of failing the file.
+        layout = (try? c.decodeIfPresent(TabLayout.self, forKey: .layout)) ?? d.layout
         // Builds before the language setting were Russian only; their users keep Russian.
         language = (try? c.decodeIfPresent(Language.self, forKey: .language)) ?? .ru
         userName = String(((try? c.decodeIfPresent(String.self, forKey: .userName)) ?? d.userName).prefix(Preferences.nameLimit))

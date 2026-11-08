@@ -53,6 +53,16 @@ enum UITour {
         store.preferences.theme = .dark; store.preferences.toolbar.place(.downloads, in: .trailing); store.preferences.toolbar.place(.newTab, in: .leading); await settle(); await step("toolbar-custom")
         store.preferences.toolbar = ToolbarLayout()
         store.preferences.layout = .top; await settle(); await step("top")
+        store.preferences.layout = .tabsAbove; await settle()
+        // Tabs share the title bar band with the window buttons: which view takes a mouse down on a tab, on the plus and past it.
+        if let frame = window.contentView?.superview {
+            let y = window.frame.height - Chrome.bar / 2
+            for (name, x) in [("tab in title band", Chrome.lightsInset + 60), ("free title band", window.frame.width - 40), ("address row", window.frame.width / 2)] {
+                let hit = frame.hitTest(NSPoint(x: x, y: name == "address row" ? y - Chrome.bar : y))
+                log("HIT \(name): " + (hit.map { String(describing: type(of: $0)) + " moves window: \($0.mouseDownCanMoveWindow)" } ?? "nil"))
+            }
+        }
+        await step("tabs-above")
         store.preferences.layout = .left; store.preferences.theme = .light; await settle(); await step("tabs-light")
         _ = browser.add(); await settle(); await step("start-light")
         browser.panel = .history; await settle(); await step("history-light")
@@ -68,6 +78,9 @@ enum UITour {
         browser.customizingToolbar = true; await settle(); await step("customize-toolbar")
         browser.customizingToolbar = false
         store.preferences.userName = "Алекс"; await settle(); await step("greeting")
+        browser.customizingStart = true; await settle(); await step("start-customize")
+        store.preferences.start.setVisible(.bookmarks, false); await settle(); await step("start-customize-hidden")
+        browser.customizingStart = false; store.preferences.start.setVisible(.bookmarks, true)
         store.preferences.language = .en; await settle(); await step("greeting-en")
         browser.showSettings = true; browser.settingsSection = .appearance; await settle(); await step("settings-en")
         browser.settingsSection = .about; await settle(); await step("settings-about-en")

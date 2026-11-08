@@ -30,6 +30,16 @@ final class CoreTests: XCTestCase {
         let result = Session(windows: [window]).validated().windows[0]
         XCTAssertEqual(result.tabs, [valid]); XCTAssertEqual(result.selected, valid.id)
     }
+    func testSessionsKeepOpenedLocalFilesOnly() {
+        let page = SavedTab(url: URL(string: "file:///Users/me/page.html"), access: Data([1, 2, 3]))
+        let system = SavedTab(url: URL(string: "file:///etc/passwd"))
+        let share = SavedTab(url: URL(string: "file://server/share/page.html"))
+        let result = Session(windows: [SavedWindow(tabs: [system, page, share], selected: system.id)]).validated().windows[0]
+        XCTAssertEqual(result.tabs, [page]); XCTAssertEqual(result.selected, page.id)
+        XCTAssertFalse(AddressParser.navigable(page.url!))
+        let decoded = try? JSONDecoder().decode(SavedTab.self, from: Data(#"{"id":"\#(UUID().uuidString)","title":"","pinned":false}"#.utf8))
+        XCTAssertNotNil(decoded); XCTAssertNil(decoded?.access)
+    }
     func testPinnedOrderAndMoveBoundaries() {
         let a = SavedTab(title: "a"), b = SavedTab(title: "b"), pin = SavedTab(title: "pin", pinned: true)
         let tabs = [pin, a, b]
@@ -111,6 +121,28 @@ final class CoreTests: XCTestCase {
         XCTAssertFalse(p.sidebarCollapsed); XCTAssertEqual(p.sidebarWidth, Preferences().sidebarWidth)
         let wide = try JSONDecoder().decode(Preferences.self, from: Data(#"{"sidebarWidth":9000}"#.utf8))
         XCTAssertEqual(wide.sidebarWidth, Preferences.sidebarRange.upperBound)
+    }
+    func testTabsAboveLayoutRoundTripsAndOldValuesStayValid() throws {
+        var p = Preferences(); p.layout = .tabsAbove
+        let data = try JSONEncoder().encode(p)
+        XCTAssertTrue(String(decoding: data, as: UTF8.self).contains(#""layout":"tabsAbove""#))
+        XCTAssertEqual(try JSONDecoder().decode(Preferences.self, from: data).layout, .tabsAbove)
+        for (raw, layout) in [("left", TabLayout.left), ("right", .right), ("top", .top), ("tabsAbove", .tabsAbove)] {
+            XCTAssertEqual(try JSONDecoder().decode(Preferences.self, from: Data(#"{"layout":"\#(raw)","theme":"dark"}"#.utf8)).layout, layout)
+        }
+        // An unknown layout keeps the rest of the file.
+        let future = try JSONDecoder().decode(Preferences.self, from: Data(#"{"layout":"bottom","theme":"dark"}"#.utf8))
+        XCTAssertEqual(future.layout, Preferences().layout); XCTAssertEqual(future.theme, .dark)
+    }
+    func testNarrowWindowKeepsChosenTopLayoutAndMovesSidebarToTop() {
+        XCTAssertEqual(TabLayout.left.fitting(width: 759), .top)
+        XCTAssertEqual(TabLayout.right.fitting(width: 640), .top)
+        XCTAssertEqual(TabLayout.top.fitting(width: 640), .top)
+        XCTAssertEqual(TabLayout.tabsAbove.fitting(width: 640), .tabsAbove)
+        for layout in TabLayout.allCases { XCTAssertEqual(layout.fitting(width: TabLayout.narrowWidth), layout) }
+        XCTAssertEqual(TabLayout.allCases.filter(\.horizontal), [.top, .tabsAbove])
+        XCTAssertEqual(TabLayout.left.sidebarEdge, .left); XCTAssertEqual(TabLayout.right.sidebarEdge, .right)
+        XCTAssertNil(TabLayout.top.sidebarEdge); XCTAssertNil(TabLayout.tabsAbove.sidebarEdge)
     }
     func testYandexUsesTextParameterAndUnknownEngineFallsBack() throws {
         let url = SearchEngine.yandex.search("погода")

@@ -38,7 +38,7 @@ struct ToolbarMoves {
     /// Appending in the top layout: sidebar items are shown after the right-hand ones, so an item dropped
     /// at the end of the right zone joins them to appear last.
     func append(_ item: ToolbarControl, to zone: ToolbarZone, layout: TabLayout) {
-        if zone == .trailing, layout == .top, !store.preferences.toolbar.sidebar.filter({ $0 != item }).isEmpty { move(item, to: .sidebar) }
+        if zone == .trailing, layout.horizontal, !store.preferences.toolbar.sidebar.filter({ $0 != item }).isEmpty { move(item, to: .sidebar) }
         else { move(item, to: zone) }
     }
     static let placements: [ToolbarZone] = [.leading, .leadingInner, .trailingInner, .trailing, .sidebar]
@@ -46,7 +46,7 @@ struct ToolbarMoves {
         let current = store.preferences.toolbar.zone(of: item)
         return Self.placements.map { zone in
             MenuEntry.item(zone.title(store), checked: current == zone) { move(item, to: zone) }
-                .with(enabled: current != zone && !(zone == .sidebar && layout == .top))
+                .with(enabled: current != zone && !(zone == .sidebar && layout.horizontal))
         } + [.divider, .item(store.text("убрать", "Убрать"), destructive: true) { move(item, to: .hidden) }.with(enabled: current != .hidden)]
     }
 }

@@ -16,6 +16,7 @@ final class SharedVectorTests: XCTestCase {
             case .rejected(let reason): return "rejected:" + reason
             }
         case "origin": return Origin.string(URL(string: c["url"] as! String)) ?? NSNull()
+        case "localFile": return URL(string: c["url"] as! String).map(AddressParser.openableFile) ?? false
         case "version":
             guard let a = AppVersion(c["a"] as! String), let b = AppVersion(c["b"] as! String) else { return "invalid" }
             return a < b ? -1 : a > b ? 1 : 0

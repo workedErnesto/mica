@@ -7,7 +7,8 @@ namespace Mica.App;
 
 /// <summary>Top bar across the window (macOS TopBar). The address field is centred on the window wherever the tabs
 /// are and narrows before it moves; controls come from the toolbar layout at each edge and next to the field.
-/// The caption buttons take the right edge on Windows, so that side reserves their width.</summary>
+/// The caption buttons take the right edge on Windows, so that side reserves their width. With the tabs above the
+/// address (TabsAbove) the bar is the second row, under the tab strip, and reserves nothing.</summary>
 public sealed partial class TopBar : Grid
 {
     readonly BrowserModel browser;
@@ -50,13 +51,14 @@ public sealed partial class TopBar : Grid
     {
         if (windowWidth <= 0) return;
         var toolbar = Store.Preferences.Toolbar;
-        var items = toolbar.Resolve(sidebarAvailable: layout != TabLayout.Top);
-        TabLayout? edge = layout == TabLayout.Top ? null : layout;
+        var items = toolbar.Resolve(sidebarAvailable: !layout.IsHorizontal());
+        var edge = layout.SidebarEdge();
         var editing = browser.CustomizingToolbar;
         var extras = editing ? 0 : Store.Extensions.Actionable(browser.PrivateMode).Count;
         var badge = browser.PrivateMode && !editing ? Chrome.Item : 0;
         var leadingInset = Space.Small;
-        var captionInset = browser.FullScreen ? 0 : Chrome.CaptionInset;
+        // With the tabs above the address the bar is the second row, clear of the caption buttons.
+        var captionInset = browser.FullScreen || layout == TabLayout.TabsAbove ? 0 : Chrome.CaptionInset;
         var menu = Chrome.Item;
         var inner = editing ? Math.Max(44, Math.Max(Span(items.LeadingInner, 0), Span(items.TrailingInner, 0)) + 4) : Math.Max(Span(items.LeadingInner, extras), Span(items.TrailingInner, extras));
         var innerRoom = inner > 0 || editing ? inner + Gap : 0;
@@ -158,7 +160,8 @@ public static class LayoutMenu
         return
         [
             MenuEntry.Item(store.Text("боковая панель слева", "Боковая панель слева"), () => Choose(TabLayout.Left), "sidebar.left", @checked: current == TabLayout.Left),
-            MenuEntry.Item(store.Text("вкладки сверху", "Вкладки сверху"), () => Choose(TabLayout.Top), "rectangle.topthird.inset.filled", @checked: current == TabLayout.Top),
+            MenuEntry.Item(store.Text("вкладки под адресом", "Вкладки под адресом"), () => Choose(TabLayout.Top), "rectangle.topthird.inset.filled", @checked: current == TabLayout.Top),
+            MenuEntry.Item(store.Text("вкладки над адресом", "Вкладки над адресом"), () => Choose(TabLayout.TabsAbove), "macwindow", @checked: current == TabLayout.TabsAbove),
             MenuEntry.Item(store.Text("боковая панель справа", "Боковая панель справа"), () => Choose(TabLayout.Right), "sidebar.right", @checked: current == TabLayout.Right),
         ];
     }

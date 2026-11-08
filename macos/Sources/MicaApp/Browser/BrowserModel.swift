@@ -10,6 +10,8 @@ final class BrowserModel: NSObject, ObservableObject, WKWebExtensionWindow {
     unowned let store: Store
     let privateMode: Bool
     let dataStore: WKWebsiteDataStore
+    /// Incognito windows keep their own in-memory icons, so nothing they visit reaches normal windows or the disk.
+    let favicons: Favicons
     @Published var tabs: [Tab] = []
     @Published var selectedID: UUID?
     @Published var focusAddress = 0
@@ -38,6 +40,7 @@ final class BrowserModel: NSObject, ObservableObject, WKWebExtensionWindow {
     init(store: Store, privateMode: Bool) {
         self.store = store; self.privateMode = privateMode
         dataStore = privateMode ? .nonPersistent() : store.websiteDataStore
+        favicons = privateMode ? Favicons(persistent: false) : store.favicons
         super.init()
         showOnboarding = !store.preferences.onboardingComplete && !privateMode
     }
@@ -78,6 +81,13 @@ final class BrowserModel: NSObject, ObservableObject, WKWebExtensionWindow {
             else { _ = add() }
         }
         store.scheduleSession()
+    }
+    /// Closes every unpinned tab and leaves a fresh start page selected; the window stays open.
+    /// The new tab comes first, so closing the selected tab never falls back to another one or adds a second page.
+    func closeAll() {
+        let doomed = tabs.filter { !$0.pinned }
+        _ = add()
+        for tab in doomed { close(tab) }
     }
     func reopen() { if var tab = closed.first { closed.removeFirst(); tab.id = UUID(); _ = add(saved: tab) } }
     func pin(_ tab: Tab) {

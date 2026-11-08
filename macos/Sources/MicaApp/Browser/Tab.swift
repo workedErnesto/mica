@@ -25,9 +25,16 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
     private var observations: [NSKeyValueObservation] = []
     private var passwordBridge: PasswordBridge?
     private(set) var notifications: NotificationBridge?
-    var saved: SavedTab { SavedTab(id: id, url: url, title: title, pinned: pinned) }
+    /// Bookmark of the local file this tab shows, kept for a restored tab that has not loaded yet (see LocalFiles).
+    private var fileAccess: Data?
+    /// The file load this tab itself started; the navigation policy lets exactly that one through.
+    private var pendingFile: URL?
+    var saved: SavedTab {
+        let access = url.flatMap { $0.isFileURL ? LocalFiles.shared.granted($0)?.bookmark ?? fileAccess : nil }
+        return SavedTab(id: id, url: url, title: title, pinned: pinned, access: access)
+    }
     init(saved: SavedTab, owner: BrowserModel, restored: Bool) {
-        id = saved.id; url = saved.url; title = saved.title; pinned = saved.pinned
+        id = saved.id; url = saved.url; title = saved.title; pinned = saved.pinned; fileAccess = saved.access
         phase = restored && saved.url != nil ? .restored : .fresh
         self.owner = owner; super.init()
     }
@@ -76,12 +83,49 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
         load(url)
     }
     func load(_ url: URL) {
+        if url.isFileURL { openFile(url); return }
         guard AddressParser.navigable(url) || owner?.store.extensions.controller.extensionContext(for: url) != nil else { return }
         makeWebView(); error = nil; navigationFailure = nil; secure = false; phase = .live
         self.url = url
         webView?.load(URLRequest(url: url))
         owner?.objectWillChange.send()
         owner?.store.scheduleSession()
+    }
+    /// Shows a local file the system opened in mica. Only files in LocalFiles load; for anything else, such as a
+    /// restored tab whose file was moved or deleted, the tab says so and how to reopen it.
+    private func openFile(_ url: URL) {
+        guard AddressParser.openableFile(url) else { return }
+        navigationFailure = nil; secure = false; phase = .live
+        self.url = url
+        if let grant = LocalFiles.shared.grant(for: url, bookmark: fileAccess) {
+            makeWebView(); error = nil
+            fileAccess = grant.bookmark
+            pendingFile = grant.url
+            webView?.loadFileURL(url, allowingReadAccessTo: grant.url)
+            // WebKit refuses a file it cannot pass to the page process, without any delegate call: that happens to
+            // files mica reads without a user grant, in temporary or system folders. The tab would spin forever, so
+            // a load that never reached the navigation policy is reported instead.
+            let started = grant.url
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
+                guard let self, let pending = self.pendingFile, LocalFiles.key(pending) == LocalFiles.key(started) else { return }
+                self.pendingFile = nil; self.webView?.stopLoading(); self.loading = false
+                self.error = self.owner?.text("mica не может показать файл из этой папки: macOS не даёт передать его странице. переместите файл, например, в «документы» и откройте снова.", "mica не может показать файл из этой папки: macOS не даёт передать его странице. Переместите файл, например, в «Документы» и откройте снова.")
+            }
+        } else {
+            loading = false
+            error = owner?.text("файл не найден или mica больше не может его прочитать. откройте его снова из Finder.", "Файл не найден или mica больше не может его прочитать. Откройте его снова из Finder.")
+        }
+        owner?.objectWillChange.send()
+        owner?.store.scheduleSession()
+    }
+    /// A file navigation passes only for a granted file and only when this tab started it, reloads it, steps back
+    /// or forward to it, or the same local page moves within itself (anchors). A web page can never open a file.
+    private func allowsFile(_ action: WKNavigationAction, to url: URL, in webView: WKWebView) -> Bool {
+        guard action.targetFrame?.isMainFrame == true, let grant = LocalFiles.shared.granted(url) else { return false }
+        if let pending = pendingFile, LocalFiles.key(pending) == LocalFiles.key(grant.url) { pendingFile = nil; return true }
+        if action.navigationType == .backForward || action.navigationType == .reload { return true }
+        guard let current = webView.url, current.isFileURL else { return false }
+        return LocalFiles.key(current) == LocalFiles.key(url)
     }
     func reload() {
         if phase == .terminated || webView == nil || webView?.backForwardList.currentItem == nil { if let url { load(url) } }
@@ -101,6 +145,7 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         secure = webView.url?.scheme == "https" && webView.hasOnlySecureContent && webView.serverTrust != nil
         owner?.store.record(self); owner?.store.scheduleSession()
+        if let page = webView.url { owner?.favicons.refresh(from: webView, page: page) }
         if owner?.privateMode == false { owner?.store.extensions.controller.didChangeTabProperties([.title, .URL, .loading], for: self) }
     }
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) { failed(error) }
@@ -117,6 +162,12 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
     }
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         guard let url = navigationAction.request.url else { decisionHandler(.cancel); return }
+        if url.isFileURL {
+            if allowsFile(navigationAction, to: url, in: webView) { self.url = url; decisionHandler(.allow); return }
+            decisionHandler(.cancel)
+            if navigationAction.navigationType == .linkActivated { owner?.message = owner?.text("ссылки со страниц на локальные файлы не открываются", "Ссылки со страниц на локальные файлы не открываются") }
+            return
+        }
         if navigationAction.shouldPerformDownload { decisionHandler(.download); return }
         if AddressParser.navigable(url) || owner?.store.extensions.controller.extensionContext(for: url) != nil {
             if navigationAction.modifierFlags.contains(.command), navigationAction.navigationType == .linkActivated {
@@ -145,6 +196,7 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
         if let window = owner?.controller?.window { alert.beginSheetModal(for: window, completionHandler: finish) } else { finish(alert.runModal()) }
     }
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+        guard navigationAction.request.url?.isFileURL != true else { return nil }
         guard let owner else { return nil }
         let tab = owner.add(activate: true, configuration: configuration)
         tab.phase = .live; tab.url = navigationAction.request.url

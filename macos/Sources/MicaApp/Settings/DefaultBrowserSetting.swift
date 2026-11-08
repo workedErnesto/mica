@@ -19,28 +19,66 @@ struct DefaultBrowserSetting: View {
         }
         .onAppear { refresh() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in refresh() }
-        if failed {
+        if failed && !isDefault {
             Text(store.text("не удалось изменить браузер по умолчанию. попробуйте ещё раз или откройте системные настройки", "Не удалось изменить браузер по умолчанию. Попробуйте ещё раз или откройте системные настройки"))
                 .font(.system(size: 12.5)).foregroundStyle(Palette.danger).fixedSize(horizontal: false, vertical: true)
         }
     }
 
     private func refresh() {
-        isDefault = ["http", "https"].allSatisfy { scheme in
+        isDefault = Self.handlesWebLinks()
+        if isDefault { failed = false }
+    }
+
+    private static func handlesWebLinks() -> Bool {
+        ["http", "https"].allSatisfy { scheme in
             guard let url = URL(string: "\(scheme)://example.com"), let app = NSWorkspace.shared.urlForApplication(toOpen: url) else { return false }
             return Bundle(url: app)?.bundleIdentifier == Bundle.main.bundleIdentifier
         }
     }
 
+    /// macOS shows one confirmation that switches http, https and HTML together, so a second request
+    /// for "https" right after "http" fails even though the switch happened. Only "http" is requested;
+    /// "https" is requested separately only when LaunchServices still points it elsewhere.
     private func setDefault() {
         busy = true; failed = false
-        Task {
+        Task { @MainActor in
+            defer { busy = false }
+            var lastError: Error?
             do {
-                for scheme in ["http", "https"] {
-                    try await NSWorkspace.shared.setDefaultApplication(at: Bundle.main.bundleURL, toOpenURLsWithScheme: scheme)
-                }
-            } catch { failed = true }
-            refresh(); busy = false
+                try await NSWorkspace.shared.setDefaultApplication(at: Bundle.main.bundleURL, toOpenURLsWithScheme: "http")
+            } catch { lastError = error }
+            // Keeping the current browser in the system prompt is the user's answer, not a failure.
+            if let lastError, Self.isDecline(lastError) { refresh(); return }
+            if await settle() { return }
+            if lastError == nil {
+                do {
+                    try await NSWorkspace.shared.setDefaultApplication(at: Bundle.main.bundleURL, toOpenURLsWithScheme: "https")
+                } catch { lastError = error }
+                if await settle() { return }
+            }
+            if let lastError, Self.isDecline(lastError) { return }
+            failed = true
+        }
+    }
+
+    /// LaunchServices applies the new handler asynchronously, so the result is polled for about 3 seconds.
+    private func settle() async -> Bool {
+        for _ in 0..<10 {
+            refresh()
+            if isDefault { return true }
+            try? await Task.sleep(for: .milliseconds(300))
+        }
+        refresh()
+        return isDefault
+    }
+
+    private static func isDecline(_ error: Error) -> Bool {
+        let error = error as NSError
+        switch error.domain {
+        case NSCocoaErrorDomain: return error.code == NSUserCancelledError
+        case NSOSStatusErrorDomain: return error.code == Int(userCanceledErr)
+        default: return false
         }
     }
 }

@@ -32,6 +32,8 @@ public sealed partial class Store
     public Import.ImportManager Importer { get; }
     public Update.Updater Updater { get; }
     public Passwords.PasswordManager Passwords { get; }
+    /// <summary>Site icons of normal windows; incognito windows keep their own (BrowserModel.Favicons).</summary>
+    public Favicons Favicons { get; }
 
     readonly HashSet<string> unreadable = [];
     readonly DispatcherQueue queue = DispatcherQueue.GetForCurrentThread();
@@ -42,6 +44,7 @@ public sealed partial class Store
         var app = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "mica");
         Root = Program.QA ? Path.Combine(app, "QA") : app;
         Directory.CreateDirectory(Root);
+        Favicons = new Favicons(Path.Combine(Root, "Favicons"));
         var issues = new List<string>();
         T? Read<T>(string name) where T : class
         {
@@ -151,7 +154,7 @@ public sealed partial class Store
     /// <summary>Opacity of the shell tint over the backdrop: 0.92 at zero transparency, 0.2 at full.</summary>
     public double GlassTint => 0.92 - Preferences.Transparency * 0.72;
 
-    public async Task StartAsync(IEnumerable<string> launchUrls)
+    public async Task StartAsync()
     {
         await Engine.StartAsync();
         await Blocker.RebuildAsync();
@@ -177,7 +180,6 @@ public sealed partial class Store
         }
         if (Preferences.Restore && saved is { Windows.Count: > 0 }) foreach (var window in saved.Windows) NewWindow(saved: window);
         else NewWindow();
-        foreach (var url in launchUrls) Active?.Open(url);
         Appearance.AppIcons.Apply(this);
         try { if (!Program.QA) Mica.Install.DefaultBrowser.Register(); } catch (Exception e) when (e is UnauthorizedAccessException or IOException or System.Security.SecurityException) { Diagnostics.Log.Error(e); }
         Updater.Start();
@@ -264,6 +266,8 @@ public sealed partial class Store
         var now = DateTimeOffset.Now;
         var start = choice.Period.Start(now);
         if (choice.History) SetHistory(HistoryOps.Removing(History, start));
+        // Icons are not dated, so any history or cache clearing forgets all of them.
+        if (choice.History || choice.Cache) Favicons.Clear();
         if (choice.Permissions) { Permissions = []; Save(Permissions, "permissions.json"); PermissionsChanged?.Invoke(); }
         var kinds = (CoreWebView2BrowsingDataKinds)0;
         if (choice.SiteData) kinds |= CoreWebView2BrowsingDataKinds.AllDomStorage | CoreWebView2BrowsingDataKinds.Cookies | CoreWebView2BrowsingDataKinds.ServiceWorkers;

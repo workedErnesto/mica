@@ -16,6 +16,8 @@ public sealed partial class BrowserModel : Observable
     public List<SavedTab> Closed { get; } = [];
     public List<SitePermission> TransientPermissions { get; } = [];
     public Downloads.DownloadManager Downloads { get; }
+    /// <summary>Incognito windows keep their own in-memory icons, so nothing they visit reaches normal windows or the disk.</summary>
+    public Favicons Favicons { get; }
 
     LibraryPanel? panel; bool showFind, showSettings, showClearData, showOnboarding, commandBar, customizingToolbar, customizingStart, fullScreen;
     public LibraryPanel? Panel { get => panel; set { panel = value; Notify(); } }
@@ -42,6 +44,7 @@ public sealed partial class BrowserModel : Observable
     {
         Store = store; PrivateMode = privateMode;
         Downloads = new Downloads.DownloadManager(this);
+        Favicons = privateMode ? new Favicons(null) : store.Favicons;
         showOnboarding = !store.Preferences.OnboardingComplete && !privateMode;
     }
 
@@ -98,6 +101,15 @@ public sealed partial class BrowserModel : Observable
         }
         Store.ScheduleSession();
         Notify();
+    }
+
+    /// <summary>Closes every unpinned tab and leaves a fresh start page selected; the window stays open. The new tab
+    /// comes first, so closing the selected tab never falls back to another one or adds a second page.</summary>
+    public void CloseAll()
+    {
+        var doomed = Tabs.Where(t => !t.Pinned).ToList();
+        Add();
+        foreach (var tab in doomed) Close(tab);
     }
 
     public void Reopen()

@@ -8,7 +8,7 @@ namespace Mica.Core;
 /// Keys and enum spellings follow the macOS files (camelCase keys, lowercase enum values, engine names as written).</summary>
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, WriteIndented = true,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, ReadCommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true,
-    Converters = [typeof(SearchEngineConverter), typeof(LowerEnum<TabLayout>), typeof(LowerEnum<Theme>), typeof(LowerEnum<Language>),
+    Converters = [typeof(SearchEngineConverter), typeof(TabLayoutConverter), typeof(LowerEnum<Theme>), typeof(LowerEnum<Language>),
         typeof(LowerEnum<ClearPeriod>), typeof(LowerEnum<StartSection>), typeof(LowerEnum<ToolbarControl>), typeof(LowerEnum<ToolbarZone>),
         typeof(LowerEnum<SiteCapability>), typeof(LowerEnum<Decision>)])]
 [JsonSerializable(typeof(Preferences))]
@@ -32,6 +32,15 @@ public sealed partial class MicaJson : JsonSerializerContext
 }
 
 public sealed class LowerEnum<T>() : JsonStringEnumConverter<T>(JsonNamingPolicy.CamelCase, allowIntegerValues: false) where T : struct, Enum;
+
+/// <summary>Mac spellings; a layout this build does not know (saved by a newer one) falls back to the default
+/// instead of failing the whole preferences file.</summary>
+public sealed class TabLayoutConverter : JsonConverter<TabLayout>
+{
+    public override TabLayout Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+        TabLayouts.Parse(reader.TokenType == JsonTokenType.String ? reader.GetString() : null) ?? new Preferences().Layout;
+    public override void Write(Utf8JsonWriter writer, TabLayout value, JsonSerializerOptions options) => writer.WriteStringValue(value.RawValue());
+}
 
 public sealed class SearchEngineConverter : JsonConverter<SearchEngine>
 {

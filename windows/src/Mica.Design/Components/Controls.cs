@@ -528,17 +528,20 @@ public sealed partial class NavItem : Grid
     }
 }
 
-/// <summary>Monogram stands in for a favicon: mica does not fetch icons from sites on its own.</summary>
+/// <summary>Site letter shown until a favicon is known. <c>plain</c> drops the track plate for tiles that draw their
+/// own; <c>tint</c> defaults to Text2.</summary>
 public sealed partial class Monogram : Grid
 {
-    public Monogram(string? host, double size = 16)
+    public Monogram(string? host, double size = 16, bool plain = false, Brush? tint = null)
     {
         Width = size; Height = size; IsHitTestVisible = false;
-        var bare = (host ?? "").Replace("www.", "");
+        var bare = (host ?? "").ToLowerInvariant();
+        if (bare.StartsWith("www.", StringComparison.Ordinal)) bare = bare[4..];
         var letter = bare.Length > 0 ? char.ToUpperInvariant(bare[0]).ToString() : "";
-        Children.Add(Ui.Rounded(size * 0.3, Palette.Track.Brush()));
-        if (letter.Length == 0) Children.Add(new Glyph("globe", size * 0.6, Palette.Text2.Brush()) { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center });
-        else { var t = Ui.Text(letter, size * 0.58, Palette.Text2.Brush(), Ui.Semibold); t.HorizontalAlignment = HorizontalAlignment.Center; t.TextTrimming = TextTrimming.None; Children.Add(t); }
+        var brush = tint ?? Palette.Text2.Brush();
+        if (!plain) Children.Add(Ui.Rounded(size * 0.3, Palette.Track.Brush()));
+        if (letter.Length == 0) Children.Add(new Glyph("globe", size * (plain ? 0.66 : 0.6), brush) { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center });
+        else { var t = Ui.Text(letter, size * (plain ? 0.68 : 0.58), brush, Ui.Semibold); t.HorizontalAlignment = HorizontalAlignment.Center; t.VerticalAlignment = VerticalAlignment.Center; t.TextTrimming = TextTrimming.None; Children.Add(t); }
         AutomationProperties.SetAccessibilityView(this, AccessibilityView.Raw);
     }
 }

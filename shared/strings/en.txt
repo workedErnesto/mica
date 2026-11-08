@@ -593,3 +593,17 @@ mica удалена⟩mica is removed⟩mica is removed
 Ярлык на рабочем столе⟩desktop shortcut⟩Desktop shortcut
 доступ не запрошен⟩no access requested⟩no access requested
 Камера, микрофон и уведомления, за всё время: у решений нет даты⟩camera, microphone and notifications, for all time: decisions have no date⟩Camera, microphone and notifications, for all time: decisions have no date
+Закрыть все⟩close all tabs⟩Close All Tabs
+Не удалось зарегистрировать mica как браузер. Попробуйте ещё раз⟩could not register mica as a browser. try again⟩Could not register mica as a browser. Try again
+Показывать⟩show⟩Show
+Закрытие mica⟩closing mica⟩Closing mica
+Закрытие mica: отпустите клавиши, чтобы отменить⟩closing mica: release the keys to cancel⟩Closing mica: release the keys to cancel
+Под адресом⟩below address⟩Below Address
+Над адресом⟩above address⟩Above Address
+Вкладки под адресом⟩tabs below the address⟩Tabs Below the Address
+Вкладки над адресом⟩tabs above the address⟩Tabs Above the Address
+Файл не найден или mica больше не может его прочитать. Откройте его снова из Finder.⟩the file was not found or mica can no longer read it. open it again from Finder.⟩The file was not found or mica can no longer read it. Open it again from Finder.
+Ссылки со страниц на локальные файлы не открываются⟩links from pages to local files do not open⟩Links from pages to local files do not open
+Локальный файл на этом Mac⟩a local file on this Mac⟩A local file on this Mac
+Файл не найден или mica больше не может его прочитать. Откройте его снова из Проводника.⟩the file was not found or mica can no longer read it. open it again from File Explorer.⟩The file was not found or mica can no longer read it. Open it again from File Explorer.
+mica не может показать файл из этой папки: macOS не даёт передать его странице. Переместите файл, например, в «Документы» и откройте снова.⟩mica cannot show a file from this folder: macOS does not let it pass the file to the page. move the file, for example to Documents, and open it again.⟩mica cannot show a file from this folder: macOS does not let it pass the file to the page. Move the file, for example to Documents, and open it again.

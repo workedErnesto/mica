@@ -1,6 +1,22 @@
 namespace Mica.Core;
 
-public enum TabLayout { Left, Right, Top }
+/// <summary>Where the tabs live. Top puts the address bar above the tab strip; TabsAbove puts the strip in the title bar
+/// band beside the caption buttons and the address bar under it.</summary>
+public enum TabLayout { Left, Right, Top, TabsAbove }
+
+public static class TabLayouts
+{
+    /// <summary>Windows narrower than this show the tabs across the top without changing the saved layout.</summary>
+    public const double NarrowWidth = 760;
+    /// <summary>Tabs run across the window and there is no sidebar.</summary>
+    public static bool IsHorizontal(this TabLayout layout) => layout is TabLayout.Top or TabLayout.TabsAbove;
+    /// <summary>Side of the sidebar, null when the tabs run across the top.</summary>
+    public static TabLayout? SidebarEdge(this TabLayout layout) => layout.IsHorizontal() ? null : layout;
+    /// <summary>Layout of a window this wide: a narrow window keeps a top layout as chosen and moves the sidebar ones to Top.</summary>
+    public static TabLayout Fitting(this TabLayout layout, double width) => width < NarrowWidth && !layout.IsHorizontal() ? TabLayout.Top : layout;
+    public static string RawValue(this TabLayout layout) => layout switch { TabLayout.Right => "right", TabLayout.Top => "top", TabLayout.TabsAbove => "tabsAbove", _ => "left" };
+    public static TabLayout? Parse(string? raw) => raw switch { "left" => TabLayout.Left, "right" => TabLayout.Right, "top" => TabLayout.Top, "tabsAbove" => TabLayout.TabsAbove, _ => null };
+}
 
 /// <summary>Custom uses CustomBase for light or dark and tints the shell with Accent.</summary>
 public enum Theme { System, Light, Dark, Custom }

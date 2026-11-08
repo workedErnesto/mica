@@ -20,6 +20,19 @@ public enum AddressParser {
         }
         return .web(engine.search(text))
     }
+    /// File types mica shows when the system hands it a file. PDF is registered on Windows and as an alternative viewer on macOS.
+    public static let fileExtensions: Set<String> = ["html", "htm", "xhtml", "xht", "pdf"]
+    /// A local file the system opened in mica (Finder, Dock, Explorer, a restored tab of such a file). Never part of
+    /// `navigable` and never produced by `resolve`: typed text and web pages cannot reach local files.
+    /// Network shares (a host other than localhost), queries and credentials are refused.
+    public static func openableFile(_ url: URL) -> Bool {
+        guard url.scheme?.lowercased() == "file", url.user == nil, url.password == nil, url.query == nil else { return false }
+        let host = url.host?.lowercased() ?? ""
+        guard host.isEmpty || host == "localhost" else { return false }
+        let path = url.path
+        guard path.hasPrefix("/"), !url.hasDirectoryPath, !path.hasSuffix("/") else { return false }
+        return fileExtensions.contains(url.pathExtension.lowercased())
+    }
     public static func navigable(_ url: URL) -> Bool {
         switch url.scheme?.lowercased() {
         case "http", "https": return url.host?.isEmpty == false && url.user == nil && url.password == nil

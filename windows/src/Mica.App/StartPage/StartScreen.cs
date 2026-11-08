@@ -133,8 +133,16 @@ public sealed partial class StartScreen : Grid
         {
             var text = greeting is null ? Ui.Text("mica", 40, null, Ui.Weight(300)) : Ui.Text(greeting, 34, null, Ui.Weight(300), wrap: true);
             text.CharacterSpacing = greeting is null ? -40 : -32; text.TextAlignment = TextAlignment.Center; text.MaxLines = 2;
-            var frame = new StartEditFrame(text, editing, options.Wordmark, greeting is null ? Store.Text("знак mica", "Знак mica") : Store.Text("приветствие", "Приветствие"), Store, () => Store.Change(p => p.Start.Wordmark = !p.Start.Wordmark));
-            line.Children.Add(frame);
+            if (editing)
+            {
+                // While customizing the greeting gets the same title row as the sections, so the switch never covers the text.
+                text.Opacity = options.Wordmark ? 1 : 0.4;
+                text.HorizontalAlignment = HorizontalAlignment.Center; text.Margin = new Thickness(StartLayout.Inset, 0, StartLayout.Inset, 0);
+                var title = new StartBlockHeader(greeting is null ? Store.Text("знак mica", "Знак mica") : Store.Text("приветствие", "Приветствие"), true, options.Wordmark, Store, on => Store.Change(p => p.Start.Wordmark = on));
+                header.Children.Add(new StartEditFrame(Ui.V(Space.Normal, title, text), true));
+                return;
+            }
+            line.Children.Add(text);
         }
         if (browser.PrivateMode && !editing)
         {
@@ -205,27 +213,48 @@ public sealed partial class StartScreen : Grid
     }
 }
 
-/// <summary>A part of the start page while customizing: dashed outline, dimmed when hidden, with its own show or
-/// hide button when given a title (the wordmark).</summary>
+/// <summary>Start page block geometry (macOS StartLayout): tiles sit in 88 px columns with a 4 px gap, so a 60 px
+/// icon is inset 14 px; block titles and their controls use the same inset, and the customizing outline adds only
+/// vertical padding, so blocks do not shift sideways when customizing starts.</summary>
+public static class StartLayout
+{
+    public const double Column = 88, Gap = 4, Inset = (Column - 60) / 2;
+}
+
+/// <summary>A block of the start page while customizing: a dashed outline, its radius concentric with the 20 px
+/// switch in the header corner 14 px inside it. Dimming of hidden blocks belongs to their content.</summary>
 public sealed partial class StartEditFrame : Grid
 {
-    public StartEditFrame(FrameworkElement content, bool editing, bool visible, string? title, Store store, Action? toggle)
+    public StartEditFrame(FrameworkElement content, bool editing)
     {
-        content.Opacity = editing && !visible ? 0.4 : 1;
         if (editing)
         {
-            var outline = new Microsoft.UI.Xaml.Shapes.Rectangle { Stroke = Palette.HairlineStrong.Brush(), StrokeThickness = 1, StrokeDashArray = [4, 3], RadiusX = Radius.Panel + Space.Normal - 4, RadiusY = Radius.Panel + Space.Normal - 4 };
-            Children.Add(outline);
-            Padding = new Thickness(Space.Normal);
+            var radius = 10 + StartLayout.Inset;
+            Children.Add(new Microsoft.UI.Xaml.Shapes.Rectangle { Stroke = Palette.HairlineStrong.Brush(), StrokeThickness = 1, StrokeDashArray = [4, 3], RadiusX = radius, RadiusY = radius });
+            Padding = new Thickness(0, Space.Normal, 0, Space.Normal);
         }
         Children.Add(content);
-        if (editing && title is not null && toggle is not null)
-        {
-            HorizontalAlignment = HorizontalAlignment.Stretch;
-            var button = new IconButton(visible ? "eye" : "eye.slash", (visible ? store.Text("скрыть", "Скрыть") : store.Text("показать", "Показать")) + ": " + title, 24, selected: !visible) { HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, -8, -8, 0) };
-            button.Click += toggle;
-            Children.Add(button);
-        }
+    }
+}
+
+/// <summary>Title row of a start page block (macOS StartBlockHeader). While customizing it carries the block's
+/// controls on the right: optional order buttons and a switch that shows or hides the block. The row never dims.</summary>
+public sealed partial class StartBlockHeader : Grid
+{
+    public StartBlockHeader(string title, bool editing, bool shown, Store store, Action<bool> setShown, params UIElement[] order)
+    {
+        MinHeight = 24; ColumnSpacing = Space.Small; Margin = new Thickness(StartLayout.Inset, 0, StartLayout.Inset, 0);
+        ColumnDefinitions.Add(Ui.Star()); ColumnDefinitions.Add(Ui.Auto());
+        this.Column(Ui.Text(title, 12, Palette.Text3.Brush(), Ui.Medium), 0);
+        if (!editing) return;
+        var label = store.Text("показывать", "Показывать") + ": " + title;
+        var toggle = new Switch(shown, label) { VerticalAlignment = VerticalAlignment.Center }.Tip(label);
+        toggle.Toggled += setShown;
+        var controls = Ui.H(Space.Small);
+        if (order.Length > 0) controls.Children.Add(Ui.H(0, order));
+        controls.Children.Add(toggle);
+        controls.VerticalAlignment = VerticalAlignment.Center;
+        this.Column(controls, 1);
     }
 }
 
@@ -265,43 +294,33 @@ public sealed partial class StartSectionView : Grid
         var start = store.Preferences.Start;
         var visible = start.Sections.Contains(section);
         var stack = new StackPanel { Spacing = Space.Normal };
-        var head = new Grid { MinHeight = 24, ColumnSpacing = Space.Small };
-        head.ColumnDefinitions.Add(Ui.Auto()); head.ColumnDefinitions.Add(Ui.Auto()); head.ColumnDefinitions.Add(Ui.Star()); head.ColumnDefinitions.Add(Ui.Auto());
-        head.Column(Ui.Text(section.Title(store), 12, Palette.Text3.Brush(), Ui.Medium), 0);
-        if (editing && !visible)
-        {
-            var tag = Ui.Rounded(5, Palette.Track.Brush(), child: Ui.Text(store.Text("скрыто", "Скрыто"), 11, Palette.Text3.Brush())); tag.Padding = new Thickness(6, 0, 6, 0); tag.Height = 18;
-            head.Column(tag, 1);
-        }
-        if (editing)
-        {
-            var up = new IconButton("chevron.up", store.Text("выше", "Выше") + ": " + section.Title(store), 24) { IsEnabled = visible && start.Sections.FirstOrDefault() != section };
-            up.Click += () => store.Change(p => p.Start.Shift(section, -1));
-            var down = new IconButton("chevron.down", store.Text("ниже", "Ниже") + ": " + section.Title(store), 24) { IsEnabled = visible && start.Sections.LastOrDefault() != section };
-            down.Click += () => store.Change(p => p.Start.Shift(section, 1));
-            var eye = new IconButton(visible ? "eye" : "eye.slash", (visible ? store.Text("скрыть", "Скрыть") : store.Text("показать", "Показать")) + ": " + section.Title(store), 24, selected: !visible);
-            eye.Click += () => store.Change(p => p.Start.SetVisible(section, !visible));
-            head.Column(Ui.H(0, up, down, eye), 3);
-        }
-        stack.Children.Add(head);
+        var up = new IconButton("chevron.up", store.Text("выше", "Выше") + ": " + section.Title(store), 24) { IsEnabled = visible && start.Sections.FirstOrDefault() != section };
+        up.Click += () => store.Change(p => p.Start.Shift(section, -1));
+        var down = new IconButton("chevron.down", store.Text("ниже", "Ниже") + ": " + section.Title(store), 24) { IsEnabled = visible && start.Sections.LastOrDefault() != section };
+        down.Click += () => store.Change(p => p.Start.Shift(section, 1));
+        stack.Children.Add(new StartBlockHeader(section.Title(store), editing, visible, store, on => store.Change(p => p.Start.SetVisible(section, on)), up, down));
+        FrameworkElement content;
         if (editing && sites.Count == 0 && section != StartSection.Custom)
         {
             var placeholder = section == StartSection.Frequent
                 ? (browser.PrivateMode ? store.Text("в окне инкогнито частые сайты не показываются", "В окне инкогнито частые сайты не показываются") : store.Text("появятся, когда вы начнёте открывать сайты", "Появятся, когда вы начнёте открывать сайты"))
                 : store.Text("здесь будут закладки, ", "Здесь будут закладки, ") + (Keymap.Label("bookmark") ?? "Ctrl+D") + store.Text(" добавляет страницу", " добавляет страницу");
-            var box = new Grid { MinHeight = 60 };
-            box.Children.Add(new Microsoft.UI.Xaml.Shapes.Rectangle { Stroke = Palette.Hairline.Brush(), StrokeThickness = 1, StrokeDashArray = [4, 3], RadiusX = Radius.Panel, RadiusY = Radius.Panel });
-            var t = Ui.Text(placeholder, 12, Palette.Text3.Brush()); t.HorizontalAlignment = HorizontalAlignment.Center; box.Children.Add(t);
-            stack.Children.Add(box);
+            var box = new Grid { MinHeight = 60, Margin = new Thickness(StartLayout.Inset, 0, StartLayout.Inset, 0) };
+            box.Children.Add(new Microsoft.UI.Xaml.Shapes.Rectangle { Stroke = Palette.Hairline.Brush(), StrokeThickness = 1, StrokeDashArray = [4, 3], RadiusX = Radius.Row, RadiusY = Radius.Row });
+            var t = Ui.Text(placeholder, 12, Palette.Text3.Brush(), wrap: true); t.HorizontalAlignment = HorizontalAlignment.Center; t.TextAlignment = TextAlignment.Center; t.Margin = new Thickness(Space.Normal, 0, Space.Normal, 0); box.Children.Add(t);
+            content = box;
         }
         else
         {
-            var grid = new VariableSizedWrapGrid { Orientation = Orientation.Horizontal, ItemWidth = 100, ItemHeight = 96 };
-            foreach (var site in sites) grid.Children.Add(new SiteTile(site, section, browser));
-            if (section == StartSection.Custom) grid.Children.Add(new AddShortcutTile(store));
-            stack.Children.Add(grid);
+            // Each tile is 88 px wide and starts its 92 px cell, so the first icon sits 14 px in, under the title.
+            var grid = new VariableSizedWrapGrid { Orientation = Orientation.Horizontal, ItemWidth = StartLayout.Column + StartLayout.Gap, ItemHeight = 96 };
+            foreach (var site in sites) grid.Children.Add(new SiteTile(site, section, browser) { Width = StartLayout.Column, HorizontalAlignment = HorizontalAlignment.Left });
+            if (section == StartSection.Custom) grid.Children.Add(new AddShortcutTile(store) { Width = StartLayout.Column, HorizontalAlignment = HorizontalAlignment.Left });
+            content = grid;
         }
-        Children.Add(new StartEditFrame(stack, editing, visible, null, store, null));
+        content.Opacity = editing && !visible ? 0.4 : 1;
+        stack.Children.Add(content);
+        Children.Add(new StartEditFrame(stack, editing));
     }
 }
 
@@ -315,7 +334,7 @@ public sealed partial class SiteTile : Grid
         var box = Ui.Rounded(Radius.Panel, Palette.Surface.Brush(), Palette.Hairline.Brush(), 1, new Monogram(site.Host, 30) { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center });
         box.Width = 60; box.Height = 60; box.Shadow = Shadows.Soft; box.Translation = new System.Numerics.Vector3(0, 0, 3); box.HorizontalAlignment = HorizontalAlignment.Center;
         var label = site.Title.Length > 0 ? site.Title : site.Host.StartsWith("www.", StringComparison.Ordinal) ? site.Host[4..] : site.Host;
-        var text = Ui.Text(label, 11.5, Palette.Text2.Brush()); text.HorizontalAlignment = HorizontalAlignment.Center; text.MaxWidth = 92;
+        var text = Ui.Text(label, 11.5, Palette.Text2.Brush()); text.HorizontalAlignment = HorizontalAlignment.Center; text.MaxWidth = StartLayout.Column - 4;
         Children.Add(Ui.V(Space.Small, box, text));
         Interaction? interaction = null;
         interaction = new Interaction(this, () =>
@@ -391,10 +410,18 @@ public static class ShortcutEditor
     public static void Show(FrameworkElement anchor, Store store, Guid? editing)
     {
         var existing = editing is { } id ? store.Preferences.Start.Shortcuts.FirstOrDefault(s => s.Id == id) : null;
-        var address = new MTextField(store.Text("адрес, например github.com", "Адрес, например github.com"), existing?.Url ?? "", "globe");
-        var title = new MTextField(store.Text("название, необязательно", "Название, необязательно"), existing?.Title ?? "", "textformat");
+        var address = new SurfaceField(store.Text("адрес, например github.com", "Адрес, например github.com"), existing?.Url ?? "", "globe");
+        var title = new SurfaceField(store.Text("название, необязательно", "Название, необязательно"), existing?.Title ?? "", "textformat");
+        address.ClearLabel(store.Text("очистить", "Очистить")); title.ClearLabel(store.Text("очистить", "Очистить"));
         var invalid = Ui.Text(store.Text("нужен адрес сайта, а не поисковый запрос", "Нужен адрес сайта, а не поисковый запрос"), 11.5, Palette.Danger.Brush()); invalid.Visibility = Visibility.Collapsed;
-        var flyout = new Flyout();
+        // The app canvas instead of the default acrylic, so the fields read like the start page search field.
+        var presenter = new Style(typeof(FlyoutPresenter));
+        presenter.Setters.Add(new Setter(Control.BackgroundProperty, Palette.Canvas.Brush()));
+        presenter.Setters.Add(new Setter(Control.BorderBrushProperty, Palette.HairlineStrong.Brush()));
+        presenter.Setters.Add(new Setter(Control.BorderThicknessProperty, new Thickness(1)));
+        presenter.Setters.Add(new Setter(Control.CornerRadiusProperty, new CornerRadius(Radius.Panel)));
+        presenter.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(16)));
+        var flyout = new Flyout { FlyoutPresenterStyle = presenter };
         var cancel = new MButton(store.Text("отмена", "Отмена"), ButtonKind.Ghost, compact: true);
         var save = new MButton(editing is null ? store.Text("добавить", "Добавить") : store.Text("сохранить", "Сохранить"), ButtonKind.Primary, compact: true) { IsEnabled = address.Text.Trim().Length > 0 };
         address.Box.TextChanged += (_, _) => save.IsEnabled = address.Text.Trim().Length > 0;
@@ -411,7 +438,7 @@ public static class ShortcutEditor
         }
         address.Submit += Save; title.Submit += Save; save.Click += Save; cancel.Click += flyout.Hide;
         var buttons = Ui.H(Space.Small, cancel, save); buttons.HorizontalAlignment = HorizontalAlignment.Right;
-        flyout.Content = Ui.V(Space.Normal, Ui.Text(editing is null ? store.Text("новый сайт", "Новый сайт") : store.Text("изменить сайт", "Изменить сайт"), 14, null, Ui.Medium), Ui.V(6, address, invalid, title), buttons).Size(300);
+        flyout.Content = Ui.V(Space.Normal, Ui.Text(editing is null ? store.Text("новый сайт", "Новый сайт") : store.Text("изменить сайт", "Изменить сайт"), 14, null, Ui.Medium), Ui.V(Space.Small, address, invalid, title), buttons).Size(300 - 32);
         flyout.Opened += (_, _) => address.Box.Focus(FocusState.Programmatic);
         flyout.ShowAt(anchor);
     }

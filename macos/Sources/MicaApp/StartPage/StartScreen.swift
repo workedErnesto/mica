@@ -25,17 +25,23 @@ struct StartScreen: View {
                     if options.wordmark || browser.privateMode || editing {
                         HStack(alignment: .firstTextBaseline, spacing: 10) {
                             if options.wordmark || editing {
-                                SwiftUI.Group {
-                                    if let greeting {
-                                        Text(greeting).font(.system(size: 34, weight: .light)).tracking(-1.1).foregroundStyle(Palette.ink)
-                                            .multilineTextAlignment(.center).lineLimit(2)
-                                    } else {
-                                        Text("mica").font(.system(size: 40, weight: .light)).tracking(-1.6).foregroundStyle(Palette.ink)
+                                VStack(spacing: Space.normal) {
+                                    if editing {
+                                        StartBlockHeader(title: greeting == nil ? store.text("знак mica", "Знак mica") : store.text("приветствие", "Приветствие"), editing: true, shown: $store.preferences.start.wordmark, store: store)
+                                            .transition(.opacity)
                                     }
+                                    SwiftUI.Group {
+                                        if let greeting {
+                                            Text(greeting).font(.system(size: 34, weight: .light)).tracking(-1.1).foregroundStyle(Palette.ink)
+                                                .multilineTextAlignment(.center).lineLimit(2)
+                                        } else {
+                                            Text("mica").font(.system(size: 40, weight: .light)).tracking(-1.6).foregroundStyle(Palette.ink)
+                                        }
+                                    }
+                                    .opacity(editing && !options.wordmark ? 0.4 : 1)
+                                    .padding(.horizontal, editing ? StartLayout.inset : 0)
                                 }
-                                .modifier(StartEditFrame(editing: editing, visible: options.wordmark, title: greeting == nil ? store.text("знак mica", "Знак mica") : store.text("приветствие", "Приветствие"), store: store) {
-                                    store.preferences.start.wordmark.toggle()
-                                })
+                                .modifier(StartEditFrame(editing: editing))
                                 .transition(.opacity)
                             }
                             if browser.privateMode && !editing {

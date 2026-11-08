@@ -1,16 +1,19 @@
 import AppKit
 import SwiftUI
 
-/// Monogram stands in for a favicon: mica does not fetch icons from sites on its own.
+/// Site letter shown until a favicon is known (see SiteIcon). `plain` drops the track plate for tiles that draw their own.
 struct Monogram: View {
     let host: String?
     var size: CGFloat = 16
+    var plain = false
+    var tint: Color = Palette.text2
     var body: some View {
-        let letter = (host ?? "").replacingOccurrences(of: "www.", with: "").first.map { String($0).uppercased() } ?? ""
+        let letter = (Favicons.key(host) ?? "").first.map { String($0).uppercased() } ?? ""
+        let scale: CGFloat = plain ? 0.68 : 0.58
         ZStack {
-            RoundedRectangle(cornerRadius: size * 0.3, style: .continuous).fill(Palette.track)
-            if letter.isEmpty { Image(systemName: "globe").font(.system(size: size * 0.6)).foregroundStyle(Palette.text2) }
-            else { Text(letter).font(.system(size: size * 0.58, weight: .semibold)).foregroundStyle(Palette.text2) }
+            if !plain { RoundedRectangle(cornerRadius: size * 0.3, style: .continuous).fill(Palette.track) }
+            if letter.isEmpty { Image(systemName: "globe").font(.system(size: size * (plain ? 0.66 : 0.6), weight: plain ? .medium : .regular)).foregroundStyle(tint) }
+            else { Text(letter).font(.system(size: size * scale, weight: .semibold)).foregroundStyle(tint) }
         }
         .frame(width: size, height: size)
         .accessibilityHidden(true)
