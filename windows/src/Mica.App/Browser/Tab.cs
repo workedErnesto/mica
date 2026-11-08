@@ -30,6 +30,7 @@ public sealed partial class Tab : Observable
     public CoreWebView2? Core { get; private set; }
     Task? initializing;
     string? pendingUrl;
+    bool blockingFilterInstalled;
     readonly Passwords.PasswordBridge passwords;
 
     public SavedTab Saved => new() { Id = Id, Url = Url, Title = Title, Pinned = Pinned };
@@ -106,7 +107,7 @@ public sealed partial class Tab : Observable
         if (pendingUrl is { } url) { pendingUrl = null; core.Navigate(url); }
         Notify();
         }
-        catch (Exception e) { Diagnostics.Log.Error(e); Fail(e.Message); }
+        catch (Exception e) { Diagnostics.Log.Error(e); Fail(Program.QA ? e.ToString() : e.Message); }
     }
 
     void Fail(string message)
@@ -165,8 +166,11 @@ public sealed partial class Tab : Observable
     public void ApplyBlocking()
     {
         if (Core is null) return;
-        Core.RemoveWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All, CoreWebView2WebResourceRequestSourceKinds.All);
-        if (Owner?.Store.Preferences.Blocking == true) Core.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All, CoreWebView2WebResourceRequestSourceKinds.All);
+        var enabled = Owner?.Store.Preferences.Blocking == true;
+        if (enabled == blockingFilterInstalled) return;
+        if (enabled) Core.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All, CoreWebView2WebResourceRequestSourceKinds.All);
+        else Core.RemoveWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All, CoreWebView2WebResourceRequestSourceKinds.All);
+        blockingFilterInstalled = enabled;
     }
 
     void OnResourceRequested(CoreWebView2 sender, CoreWebView2WebResourceRequestedEventArgs e)
@@ -310,7 +314,7 @@ public sealed partial class Tab : Observable
     void DisposeWebView()
     {
         var view = WebView;
-        WebView = null; Core = null; initializing = null;
+        WebView = null; Core = null; initializing = null; blockingFilterInstalled = false;
         if (view is null) return;
         if (view.Parent is Panel parent) parent.Children.Remove(view);
         view.Close();
