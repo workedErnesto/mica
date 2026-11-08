@@ -2,6 +2,7 @@ using System.Numerics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
+using Microsoft.UI.Xaml.Automation.Provider;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
@@ -96,6 +97,7 @@ public sealed partial class MButton : MicaControl
         label = Ui.Text(title, compact ? 12 : 13, null, Ui.Medium);
         label.HorizontalAlignment = HorizontalAlignment.Center;
         label.Margin = new Thickness(compact ? 10 : 14, 0, compact ? 10 : 14, 0);
+        AutomationProperties.SetAccessibilityView(label, AccessibilityView.Raw);
         Root.Children.Add(fill); Root.Children.Add(label);
         Root.Background = Palette.Clear;
         interaction = new Interaction(this, Render, 0.965);
@@ -120,7 +122,17 @@ public sealed partial class MButton : MicaControl
         };
         Opacity = IsEnabled ? 1 : 0.42;
     }
-    protected override AutomationPeer OnCreateAutomationPeer() => new FrameworkElementAutomationPeer(this);
+    internal void Invoke() { if (IsEnabled) Click?.Invoke(); }
+    protected override AutomationPeer OnCreateAutomationPeer() => new MButtonPeer(this);
+}
+
+/// <summary>Exposes MButton as a button that screen readers and UI Automation can press.</summary>
+public sealed partial class MButtonPeer(MButton owner) : FrameworkElementAutomationPeer(owner), IInvokeProvider
+{
+    protected override AutomationControlType GetAutomationControlTypeCore() => AutomationControlType.Button;
+    protected override string GetClassNameCore() => nameof(MButton);
+    protected override object GetPatternCore(PatternInterface pattern) => pattern == PatternInterface.Invoke ? this : base.GetPatternCore(pattern);
+    public void Invoke() => owner.Invoke();
 }
 
 /// <summary>Square icon button with hover fill and press scale (macOS IconButton).</summary>

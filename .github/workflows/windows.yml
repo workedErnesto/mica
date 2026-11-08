@@ -57,22 +57,6 @@ jobs:
               Select-Object -First 10 | Format-List TimeCreated, ProviderName, Message
             throw "setup exit code $($p.ExitCode)"
           }
-      - name: TEMP 3.0.0 setup with real mouse clicks
-        if: matrix.arch == 'x64'
-        continue-on-error: true
-        shell: powershell
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release download v3.0.0 -p 'mica-3.0.0-win-x64-setup.exe' -D old
-          windows/scripts/setup-click.ps1 -Setup (Resolve-Path old/mica-3.0.0-win-x64-setup.exe) -Timeout 30 -Report "$env:TEMP\mica-setup-click-old"
-      - name: Upload 3.0.0 click report
-        if: always() && matrix.arch == 'x64'
-        uses: actions/upload-artifact@v4
-        with:
-          name: setup-click-old
-          path: ~/AppData/Local/Temp/mica-setup-click-old
-          if-no-files-found: ignore
       - name: Setup installs with real mouse clicks
         shell: powershell
         run: |
