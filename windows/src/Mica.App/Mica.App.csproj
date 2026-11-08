@@ -3,6 +3,7 @@
   <Import Project="../../WinUI.props" />
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
     <RootNamespace>Mica.App</RootNamespace>
     <AssemblyName>mica</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
