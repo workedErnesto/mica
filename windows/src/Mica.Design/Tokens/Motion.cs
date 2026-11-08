@@ -2,7 +2,6 @@ using System.Numerics;
 using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Hosting;
-using Microsoft.UI.Xaml.Media.Animation;
 
 namespace Mica.Design;
 
@@ -69,8 +68,13 @@ public static class Motion
 
     public static void Fade(UIElement element, double opacity, TimeSpan? duration = null)
     {
-        element.OpacityTransition ??= new ScalarTransition { Duration = duration ?? Hover };
-        element.Opacity = opacity;
+        var visual = Visual(element);
+        var time = duration ?? Hover;
+        if (time <= TimeSpan.Zero) { visual.StopAnimation("Opacity"); visual.Opacity = (float)opacity; return; }
+        var animation = visual.Compositor.CreateScalarKeyFrameAnimation();
+        animation.InsertKeyFrame(1, (float)opacity);
+        animation.Duration = time;
+        visual.StartAnimation("Opacity", animation);
     }
 
     /// <summary>Layout moves (reordered tabs, panels opening beside) animate from the old position with a spring.</summary>
@@ -96,8 +100,7 @@ public static class Motion
     {
         var s = spring ?? Snappy;
         var visual = Visual(element);
-        element.Opacity = 0;
-        element.OpacityTransition = new ScalarTransition { Duration = TimeSpan.FromSeconds(Reduced ? 0.12 : 0.18) };
+        visual.Opacity = 0;
         if (!Reduced)
         {
             if (edge == Edge.None)
@@ -113,7 +116,7 @@ public static class Motion
                 element.DispatcherQueue.TryEnqueue(() => Translate(element, Vector3.Zero, s));
             }
         }
-        element.DispatcherQueue.TryEnqueue(() => element.Opacity = 1);
+        element.DispatcherQueue.TryEnqueue(() => Fade(element, 1, TimeSpan.FromSeconds(Reduced ? 0.12 : 0.18)));
         static void Center(object sender, SizeChangedEventArgs e) { var fe = (FrameworkElement)sender; Visual(fe).CenterPoint = new Vector3((float)fe.ActualWidth / 2, (float)fe.ActualHeight / 2, 0); }
     }
 
@@ -121,8 +124,7 @@ public static class Motion
     public static void Disappear(UIElement element, Action done, Edge edge = Edge.None)
     {
         element.IsHitTestVisible = false;
-        element.OpacityTransition = new ScalarTransition { Duration = TimeSpan.FromSeconds(0.14) };
-        element.Opacity = 0;
+        Fade(element, 0, TimeSpan.FromSeconds(0.14));
         if (!Reduced)
         {
             if (edge == Edge.None) Scale(element, MotionTokens.PopScale, Snappy);

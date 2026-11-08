@@ -56,11 +56,11 @@ jobs:
           }
       - name: Quiet install and smoke test with real WebView2
         if: matrix.arch == 'x64'
-        continue-on-error: true
         shell: pwsh
         run: |
           $setup = Get-ChildItem windows/artifacts -Filter 'mica-*-win-x64-setup.exe' | Select-Object -First 1
-          Start-Process $setup.FullName -ArgumentList '--quiet' -Wait
+          $install = Start-Process $setup.FullName -ArgumentList '--quiet' -Wait -PassThru
+          if ($install.ExitCode -ne 0) { throw "setup exit code $($install.ExitCode)" }
           windows/scripts/smoke.ps1
       - name: Upload smoke report
         if: always() && matrix.arch == 'x64'
