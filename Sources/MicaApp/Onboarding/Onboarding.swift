@@ -66,18 +66,20 @@ struct Onboarding: View {
     private func stepName(_ index: Int) -> String {
         switch index {
         case 0: return store.text("знакомство", "Знакомство")
-        case 1: return store.text("пространство", "Пространство")
-        case 2: return store.text("оформление", "Оформление")
-        case 3: return store.text("поиск и защита", "Поиск и защита")
+        case 1: return store.text("перенос данных", "Перенос данных")
+        case 2: return store.text("пространство", "Пространство")
+        case 3: return store.text("оформление", "Оформление")
+        case 4: return store.text("поиск и защита", "Поиск и защита")
         default: return store.text("сессия", "Сессия")
         }
     }
     private func stepSymbol(_ index: Int) -> String {
         switch index {
         case 0: return "hand.wave"
-        case 1: return "sidebar.squares.left"
-        case 2: return "paintbrush"
-        case 3: return "shield.lefthalf.filled"
+        case 1: return "square.and.arrow.down.on.square"
+        case 2: return "sidebar.squares.left"
+        case 3: return "paintbrush"
+        case 4: return "shield.lefthalf.filled"
         default: return "square.stack"
         }
     }
@@ -86,7 +88,7 @@ struct Onboarding: View {
         forward = index > step
         withMotion(Motion.panel ?? .easeInOut(duration: 0.12)) { browser.onboardingStep = index }
     }
-    static let steps = 5
+    static let steps = 6
     private var stepTransition: AnyTransition {
         Motion.reduced ? .opacity : .asymmetric(insertion: .offset(x: forward ? 24 : -24).combined(with: .opacity), removal: .opacity)
     }
@@ -94,18 +96,20 @@ struct Onboarding: View {
     private var title: String {
         switch step {
         case 0: return store.text("привет, это mica", "Привет, это mica")
-        case 1: return store.text("ваше пространство", "Ваше пространство")
-        case 2: return store.text("цвет и иконка", "Цвет и иконка")
-        case 3: return store.text("спокойнее с первого запуска", "Спокойнее с первого запуска")
+        case 1: return store.text("всё уже на месте", "Всё уже на месте")
+        case 2: return store.text("ваше пространство", "Ваше пространство")
+        case 3: return store.text("цвет и иконка", "Цвет и иконка")
+        case 4: return store.text("спокойнее с первого запуска", "Спокойнее с первого запуска")
         default: return store.text("работа остаётся с вами", "Работа остаётся с вами")
         }
     }
     private var subtitle: String {
         switch step {
         case 0: return store.text("язык, имя и стиль текста. всё можно поменять позже в настройках", "Язык, имя и стиль текста. Всё можно поменять позже в настройках")
-        case 1: return store.text("изменения видны сразу", "Изменения видны сразу")
-        case 2: return store.text("тема окна, акцент и иконка mica в Доке", "Тема окна, акцент и иконка mica в Доке")
-        case 3: return store.text("поиск, блокировка и разрешения", "Поиск, блокировка и разрешения")
+        case 1: return store.text("история и закладки из другого браузера. шаг можно пропустить", "История и закладки из другого браузера. Шаг можно пропустить")
+        case 2: return store.text("изменения видны сразу", "Изменения видны сразу")
+        case 3: return store.text("тема окна, акцент и иконка mica в Доке", "Тема окна, акцент и иконка mica в Доке")
+        case 4: return store.text("поиск, блокировка и разрешения", "Поиск, блокировка и разрешения")
         default: return store.text("вкладки, сессия и клавиши", "Вкладки, сессия и клавиши")
         }
     }
@@ -121,6 +125,8 @@ struct Onboarding: View {
                 }
             }
         case 1:
+            ScrollView { ImportView(store: store, manager: store.importer).frame(maxWidth: .infinity, alignment: .leading) }.scrollIndicators(.never)
+        case 2:
             VStack(alignment: .leading, spacing: Space.normal) {
                 LayoutPreview(store: store).frame(height: 150)
                 SettingsGroup {
@@ -128,7 +134,7 @@ struct Onboarding: View {
                     Toggle(store.text("свернуть боковую панель до иконок", "Свернуть боковую панель до иконок"), isOn: Binding(get: { store.preferences.sidebarCollapsed }, set: { value in withMotion(Motion.panel) { store.preferences.sidebarCollapsed = value } })).toggleStyle(MToggleStyle()).modifier(RowInset(divider: false)).disabled(store.preferences.layout == .top)
                 }
             }
-        case 2:
+        case 3:
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.normal) {
                     LayoutPreview(store: store).frame(height: 120)
@@ -140,7 +146,7 @@ struct Onboarding: View {
                 }
             }
             .scrollIndicators(.never)
-        case 3:
+        case 4:
             VStack(alignment: .leading, spacing: Space.normal) {
                 SettingsGroup {
                     VStack(alignment: .leading, spacing: 8) { Text(store.text("поисковик", "Поисковик")).font(.system(size: 13)).foregroundStyle(Palette.ink); SearchPicker(store: store) }.padding(.horizontal, 14).padding(.vertical, 10)

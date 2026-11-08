@@ -15,6 +15,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         observer = store.$preferences.map { "\($0.lowercase)-\($0.language.rawValue)" }.removeDuplicates().sink { [weak self] _ in DispatchQueue.main.async { self?.buildMenu() } }
         Task {
             await store.start()
+            store.updater.start()
             if ProcessInfo.processInfo.arguments.contains("--qa") {
                 let seconds = ProcessInfo.processInfo.systemUptime - launchStart
                 try? String(seconds).write(to: store.root.appendingPathComponent("startup-seconds.txt"), atomically: true, encoding: .utf8)

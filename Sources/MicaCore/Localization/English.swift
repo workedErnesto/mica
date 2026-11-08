@@ -13,6 +13,52 @@ public enum English {
         return result
     }()
     static let source = """
+Ищем браузеры на этом Mac⟩looking for browsers on this Mac⟩Looking for browsers on this Mac
+Доступные профили не найдены. Можно выбрать папку профиля или файл экспорта⟩no accessible profiles found. choose a profile folder or an export file⟩No accessible profiles found. Choose a profile folder or an export file
+Выбрать папку профиля…⟩choose a profile folder…⟩Choose a profile folder…
+Выберите папку профиля браузера или папку с его профилями⟩choose a browser profile folder or the folder containing its profiles⟩Choose a browser profile folder or the folder containing its profiles
+Профили в этой папке не найдены⟩no profiles found in this folder⟩No profiles found in this folder
+macOS ограничивает доступ к файлам Safari. Экспортируйте данные в Safari: «Файл», «Экспортировать», «Данные браузера в файл», затем выберите архив здесь⟩macOS restricts access to Safari files. export from Safari using File, Export, Browsing Data to File, then select the archive here⟩macOS restricts access to Safari files. Export from Safari using File, Export, Browsing Data to File, then select the archive here
+Откуда⟩from⟩From
+Что перенести⟩what to import⟩What to import
+Входы на сайты и пароли не переносятся. Исходный браузер не изменяется⟩sign-ins and passwords are not imported. the original browser is not changed⟩Sign-ins and passwords are not imported. The original browser is not changed
+Закладки и избранное⟩bookmarks and favorites⟩Bookmarks and favorites
+Перенести⟩import⟩Import
+Из файла экспорта…⟩from an export file…⟩From an export file…
+Готово: ⟩done: ⟩Done:\u{20}
+История: ⟩history: ⟩History:\u{20}
+Закладки: ⟩bookmarks: ⟩Bookmarks:\u{20}
+Выберите архив экспорта Safari, его папку или HTML-файл с закладками⟩choose a Safari export archive, its folder, or an HTML bookmarks file⟩Choose a Safari export archive, its folder, or an HTML bookmarks file
+В файле нет закладок или истории в известном формате⟩the file contains no bookmarks or history in a recognized format⟩The file contains no bookmarks or history in a recognized format
+: нет доступа к файлу⟩: no access to the file⟩: no access to the file
+: файл не прочитан, возможно, браузер сменил формат⟩: could not read the file, the browser may have changed its format⟩: could not read the file, the browser may have changed its format
+Доступна mica ⟩mica is available: ⟩mica is available:\u{20}
+Образ будет проверен по SHA-256 и открыт в Finder. Установку вы завершите сами⟩the disk image will be checked against its SHA-256 checksum and opened in Finder. you will finish installation yourself⟩The disk image will be checked against its SHA-256 checksum and opened in Finder. You will finish installation yourself
+Позже⟩later⟩Later
+Не предлагать эту версию⟩skip this version⟩Skip this version
+Не предлагать никогда⟩never offer updates⟩Never offer updates
+Сохраните проверенный образ mica⟩save the verified mica disk image⟩Save the verified mica disk image
+Контрольная сумма не совпала. Образ не открыт⟩the checksum did not match. the disk image was not opened⟩The checksum did not match. The disk image was not opened
+Не удалось включить проверку Gatekeeper. Образ не открыт⟩could not enable Gatekeeper verification. the disk image was not opened⟩Could not enable Gatekeeper verification. The disk image was not opened
+Не удалось скачать или открыть образ. Попробуйте позже⟩could not download or open the disk image. try again later⟩Could not download or open the disk image. Try again later
+Обновление не установлено⟩update not installed⟩Update not installed
+Понятно⟩OK⟩OK
+Установить mica в «Программы»?⟩install mica in Applications?⟩Install mica in Applications?
+Выберите папку «Программы» для установки⟩choose the Applications folder to install⟩Choose the Applications folder to install
+Обновить mica в «Программах»?⟩update mica in Applications?⟩Update mica in Applications?
+Установлена версия ⟩installed version: ⟩Installed version:\u{20}
+, на образе версия ⟩, disk image version: ⟩, disk image version:\u{20}
+Продолжить⟩continue⟩Continue
+Выберите папку «Программы»⟩choose the Applications folder⟩Choose the Applications folder
+Выбрать⟩choose⟩Choose
+mica установлена⟩mica is installed⟩mica is installed
+Откройте mica из папки «Программы»⟩open mica from the Applications folder⟩Open mica from the Applications folder
+Не удалось установить mica⟩could not install mica⟩Could not install mica
+Проверьте доступ к папке «Программы» и установленную версию⟩check access to the Applications folder and the installed version⟩Check access to the Applications folder and the installed version
+Перенос данных⟩import data⟩Import data
+Всё уже на месте⟩everything is in place⟩Everything is in place
+История и закладки из другого браузера. Шаг можно пропустить⟩history and bookmarks from another browser. you can skip this step⟩History and bookmarks from another browser. You can skip this step
+Проверять обновления каждый день⟩check for updates daily⟩Check for updates daily
 Закрыть окно и отменить загрузки?⟩close the window and cancel downloads?⟩Close the window and cancel downloads?
 Незавершённые загрузки этого окна будут отменены⟩unfinished downloads in this window will be cancelled⟩Unfinished downloads in this window will be cancelled
 Отмена⟩cancel⟩Cancel

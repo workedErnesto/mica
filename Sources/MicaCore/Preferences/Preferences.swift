@@ -31,6 +31,10 @@ public struct Preferences: Codable, Equatable, Sendable {
     public var sidebarWidth = 248.0
     /// Last choice in the clear-data panel.
     public var clearing = ClearChoice()
+    /// Look for new releases on GitHub. "Never offer" turns this off; settings turn it back on.
+    public var updateChecks = true
+    /// Release the user asked not to be offered again.
+    public var skippedVersion: String?
     public init() {}
     // Missing keys fall back to defaults, so preferences saved by an older build still load.
     public init(from decoder: Decoder) throws {
@@ -61,6 +65,8 @@ public struct Preferences: Codable, Equatable, Sendable {
         onboardingComplete = try c.decodeIfPresent(Bool.self, forKey: .onboardingComplete) ?? d.onboardingComplete
         sidebarCollapsed = try c.decodeIfPresent(Bool.self, forKey: .sidebarCollapsed) ?? d.sidebarCollapsed
         clearing = (try? c.decodeIfPresent(ClearChoice.self, forKey: .clearing)) ?? d.clearing
+        updateChecks = (try? c.decodeIfPresent(Bool.self, forKey: .updateChecks)) ?? d.updateChecks
+        skippedVersion = try? c.decodeIfPresent(String.self, forKey: .skippedVersion)
         sidebarWidth = min(Preferences.sidebarRange.upperBound, max(Preferences.sidebarRange.lowerBound, try c.decodeIfPresent(Double.self, forKey: .sidebarWidth) ?? d.sidebarWidth))
     }
     public static let sidebarRange = 200.0...380.0

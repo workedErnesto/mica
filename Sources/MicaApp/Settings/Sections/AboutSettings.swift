@@ -18,9 +18,11 @@ struct AboutSettings: View {
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: 520, alignment: .leading)
             SettingsGroup {
-                SettingRow(title: store.text("версия", "Версия"), divider: false) {
-                    Text("0.2.0").font(.system(size: 12).monospacedDigit()).foregroundStyle(Palette.text2)
+                SettingRow(title: store.text("версия", "Версия")) {
+                    Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.3.0").font(.system(size: 12).monospacedDigit()).foregroundStyle(Palette.text2)
                 }
+                Toggle(store.text("проверять обновления каждый день", "Проверять обновления каждый день"), isOn: Binding(get: { store.preferences.updateChecks }, set: { store.updater.enableChecks($0) }))
+                    .toggleStyle(MToggleStyle()).modifier(RowInset(divider: false))
             }
             Button(store.text("пройти знакомство ещё раз", "Пройти знакомство ещё раз")) {
                 dismiss(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { browser.onboardingStep = 0; browser.showOnboarding = true }

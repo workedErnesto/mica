@@ -66,6 +66,7 @@ struct SettingsView: View {
         case .start: StartSettings(store: store)
         case .search: SearchSettings(store: store, browser: browser)
         case .session: SessionSettings(store: store)
+        case .transfer: ImportView(store: store, manager: store.importer)
         case .permissions: PermissionSettings(store: store)
         case .about: AboutSettings(store: store, browser: browser, dismiss: dismiss)
         }

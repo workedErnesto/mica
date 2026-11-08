@@ -20,6 +20,8 @@ final class Store: ObservableObject {
     var windows: [BrowserWindow] = []
     lazy var blocker = Blocker(store: self)
     lazy var extensions = ExtensionManager(store: self)
+    lazy var importer = ImportManager(store: self)
+    lazy var updater = Updater(store: self)
     var sessionWork: DispatchWorkItem?
     var preferencesWork: DispatchWorkItem?
     var shuttingDown = false

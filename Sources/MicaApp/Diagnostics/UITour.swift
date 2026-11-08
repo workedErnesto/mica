@@ -74,8 +74,9 @@ enum UITour {
         browser.showSettings = false; store.preferences.language = .ru; store.preferences.userName = ""
         try? await Task.sleep(nanoseconds: 500_000_000)
         browser.onboardingStep = 0; browser.showOnboarding = true; await settle(); await step("onboarding")
-        browser.onboardingStep = 1; await settle(); await step("onboarding-space")
-        browser.onboardingStep = 2; await settle(); await step("onboarding-appearance")
+        browser.onboardingStep = 1; await settle(); await step("onboarding-import")
+        browser.onboardingStep = 2; await settle(); await step("onboarding-space")
+        browser.onboardingStep = 3; await settle(); await step("onboarding-appearance")
         store.preferences.theme = .custom; store.preferences.accent = "#D6409F"; store.preferences.appIcon = "kitty-kuromi"; await settle(); await step("onboarding-custom")
         store.preferences.theme = .dark; store.preferences.appIcon = nil; browser.onboardingStep = 0; await settle(); await step("onboarding-dark")
         store.preferences.theme = .light
