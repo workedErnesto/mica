@@ -50,6 +50,12 @@ public sealed partial class SetupApplication : Application, IXamlMetadataProvide
 {
     public SetupApplication()
     {
+        ResourceManagerRequested += (_, e) =>
+        {
+            var pri = Path.Combine(AppContext.BaseDirectory, "mica-setup.pri");
+            Program.Trace("resource index: " + pri + " exists=" + File.Exists(pri));
+            if (File.Exists(pri)) e.CustomResourceManager = new Microsoft.Windows.ApplicationModel.Resources.ResourceManager(pri);
+        };
         UnhandledException += (_, e) => Program.Trace("unhandled: " + e.Message + " " + e.Exception);
         Program.Trace("application constructor");
     }
