@@ -8,13 +8,14 @@ struct Segmented<Value: Hashable>: View {
     var compact = false
     /// Least width of the whole control. Segments share it equally and grow past it rather than cut a word.
     var width: CGFloat = 0
+    var fillsWidth = false
     var label = ""
     @Namespace private var space
     @State private var hovered: Value?
     @Environment(\.accessibilityReduceMotion) private var reduced
     @Environment(\.isEnabled) private var enabled
     var body: some View {
-        EqualSegments(spacing: 2, minWidth: max(0, width - 4)) {
+        EqualSegments(spacing: 2, minWidth: max(0, width - 4), fillsWidth: fillsWidth) {
             ForEach(Array(options.enumerated()), id: \.offset) { index, option in
                 let chosen = option.value == selection
                 Button { withMotion(reduced ? nil : Motion.snappySpring) { selection = option.value } } label: {
@@ -57,11 +58,14 @@ struct Segmented<Value: Hashable>: View {
 struct EqualSegments: Layout {
     var spacing: CGFloat
     var minWidth: CGFloat
+    var fillsWidth = false
     private func widest(_ subviews: Subviews) -> CGFloat { subviews.map { $0.sizeThatFits(.unspecified).width }.max() ?? 0 }
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         guard !subviews.isEmpty else { return .zero }
         let gaps = spacing * CGFloat(subviews.count - 1)
-        let width = max(minWidth, widest(subviews) * CGFloat(subviews.count) + gaps)
+        let intrinsic = widest(subviews) * CGFloat(subviews.count) + gaps
+        let proposed = fillsWidth && proposal.width?.isFinite == true ? proposal.width! : 0
+        let width = max(minWidth, intrinsic, proposed)
         let height = subviews.map { $0.sizeThatFits(.unspecified).height }.max() ?? 0
         return CGSize(width: width, height: height)
     }

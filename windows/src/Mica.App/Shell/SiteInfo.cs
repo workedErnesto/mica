@@ -38,6 +38,7 @@ public sealed partial class SiteInfo : StackPanel
             {
                 var segmented = new Segmented<Decision>(store.DecisionFor(origin, capability, browser),
                     [(Decision.Ask, browser.Text("спрашивать", "Спрашивать")), (Decision.Allow, browser.Text("разрешить", "Разрешить")), (Decision.Deny, browser.Text("запретить", "Запретить"))], compact: true, label: store.CapabilityName(capability));
+                segmented.HorizontalAlignment = HorizontalAlignment.Stretch;
                 segmented.Changed += decision => store.SetPermission(origin, capability, decision, browser);
                 Children.Add(Ui.V(6, Ui.Text(store.CapabilityName(capability), 12, Palette.Text2.Brush()), segmented));
             }

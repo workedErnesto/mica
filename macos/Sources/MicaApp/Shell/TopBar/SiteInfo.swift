@@ -34,7 +34,7 @@ struct SiteInfo: View {
                         Segmented(selection: Binding(get: { records.first { $0.origin == origin && $0.capability == capability }?.decision ?? .ask }, set: { decision in
                             if browser.privateMode { browser.transientPermissions.removeAll { $0.origin == origin && $0.capability == capability }; browser.transientPermissions.append(.init(origin: origin, capability: capability, decision: decision)); if decision != .allow { tab.webView?.setCameraCaptureState(.none, completionHandler: nil); tab.webView?.setMicrophoneCaptureState(.none, completionHandler: nil) } }
                             else { store.setPermission(origin: origin, capability: capability, decision: decision) }
-                        }), options: [(.ask, browser.text("спрашивать", "Спрашивать")), (.allow, browser.text("разрешить", "Разрешить")), (.deny, browser.text("запретить", "Запретить"))], compact: true, label: store.capabilityName(capability))
+                        }), options: [(.ask, browser.text("спрашивать", "Спрашивать")), (.allow, browser.text("разрешить", "Разрешить")), (.deny, browser.text("запретить", "Запретить"))], compact: true, fillsWidth: true, label: store.capabilityName(capability))
                     }
                 }
             }
