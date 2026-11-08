@@ -13,6 +13,44 @@ public enum English {
         return result
     }()
     static let source = """
+Выберите браузер, чтобы открыть его данные⟩choose a browser to open its data⟩Choose a browser to open its data
+Другие источники…⟩other sources…⟩Other sources…
+В Safari выберите «Файл», «Экспортировать», «Данные браузера в файл», затем откройте архив здесь⟩in Safari, choose File, Export, Browser Data to File, then open the archive here⟩In Safari, choose File, Export, Browser Data to File, then open the archive here
+Браузер по умолчанию⟩default browser⟩Default browser
+mica открывает веб-ссылки⟩mica opens web links⟩mica opens web links
+Открывать веб-ссылки в mica⟩open web links in mica⟩Open web links in mica
+Сделать основным⟩make default⟩Make default
+Не удалось изменить браузер по умолчанию. Попробуйте ещё раз или откройте системные настройки⟩could not change the default browser. try again or open System Settings⟩Could not change the default browser. Try again or open System Settings
+macOS попросит открыть папку данных браузера. mica предложит её расположение⟩macOS will ask you to open the browser data folder. mica will suggest its location⟩macOS will ask you to open the browser data folder. mica will suggest its location
+Открыть папку браузера…⟩open browser folder…⟩Open browser folder…
+Выберите папку выбранного браузера⟩choose the selected browser’s folder⟩Choose the selected browser’s folder
+Открываем хранилище…⟩opening vault…⟩Opening vault…
+Удалить пароль?⟩delete password?⟩Delete password?
+Пароли⟩passwords⟩Passwords
+Автозаполнение⟩autofill⟩Autofill
+Предлагать сохранение и создание паролей⟩offer to save and generate passwords⟩Offer to save and generate passwords
+Предлагать сохранённые учётные записи⟩offer saved accounts⟩Offer saved accounts
+Хранилище недоступно: ⟩vault unavailable: ⟩Vault unavailable: \u{20}
+Сохранённые пароли⟩saved passwords⟩Saved passwords
+Поиск по сайту или имени⟩search sites or usernames⟩Search sites or usernames
+Пароли не найдены⟩no passwords found⟩No passwords found
+Без имени пользователя⟩no username⟩No username
+Скрыть⟩hide⟩Hide
+Показать⟩show⟩Show
+Копировать⟩copy⟩Copy
+Удалить⟩delete⟩Delete
+Скопировано⟩copied⟩Copied
+Сайты без сохранения⟩sites excluded from saving⟩Sites excluded from saving
+Исключений нет⟩no excluded sites⟩No excluded sites
+Подтвердите доступ к паролю⟩confirm access to the password⟩Confirm access to the password
+Создать стойкий пароль?⟩generate a strong password?⟩Generate a strong password?
+Использовать⟩use⟩Use
+Не сейчас⟩not now⟩Not now
+Заполнить учётную запись?⟩fill an account?⟩Fill an account?
+Заполнить⟩fill⟩Fill
+Сохранить пароль?⟩save password?⟩Save password?
+Сохранить⟩save⟩Save
+Никогда для этого сайта⟩never for this site⟩Never for this site
 Ищем браузеры на этом Mac⟩looking for browsers on this Mac⟩Looking for browsers on this Mac
 Доступные профили не найдены. Можно выбрать папку профиля или файл экспорта⟩no accessible profiles found. choose a profile folder or an export file⟩No accessible profiles found. Choose a profile folder or an export file
 Выбрать папку профиля…⟩choose a profile folder…⟩Choose a profile folder…

@@ -14,6 +14,23 @@ final class ImportUpdateTests: XCTestCase {
         XCTAssertTrue(ImportDiscovery.profiles(authorizedFolder: root.appendingPathComponent("missing")).isEmpty)
     }
 
+    func testOrionDiscoveryAndImport() throws {
+        let home = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let root = home.appendingPathComponent("Library/Application Support/Orion")
+        let profile = root.appendingPathComponent("Defaults")
+        try FileManager.default.createDirectory(at: profile, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: home) }
+        let plist: [String: Any] = ["a": ["url": "https://example.com", "title": "Example", "index": 0]]
+        try PropertyListSerialization.data(fromPropertyList: plist, format: .binary, options: 0).write(to: profile.appendingPathComponent("favourites.plist"))
+        try sqlite(profile.appendingPathComponent("history"), "CREATE TABLE history_items(URL TEXT, TITLE TEXT, LAST_VISIT_TIME TEXT); INSERT INTO history_items VALUES('https://example.org', 'History', '2021-01-01 00:00:00');")
+        let found = ImportDiscovery.profiles(authorizedFolder: root, home: home)
+        XCTAssertEqual(found.first?.browser.id, "orion")
+        let read = ImportReader.read(try XCTUnwrap(found.first), kinds: [.history, .bookmarks])
+        XCTAssertTrue(read.failures.isEmpty)
+        XCTAssertEqual(read.bundle.history.first?.date.timeIntervalSince1970, 1_609_459_200)
+        XCTAssertEqual(read.bundle.bookmarks.first?.title, "Example")
+    }
+
     func testChromiumTimeAndBookmarks() throws {
         // 2021-01-01T00:00:00Z
         XCTAssertEqual(ChromiumReader.date(13_253_932_800_000_000)?.timeIntervalSince1970, 1_609_459_200)

@@ -1,7 +1,7 @@
 import Foundation
 
 /// Browser engine family: decides where profiles live and how their files are read.
-public enum BrowserFamily: String, Codable, Sendable { case chromium, gecko, safari }
+public enum BrowserFamily: String, Codable, Sendable { case chromium, gecko, safari, orion }
 
 /// A browser mica can read from. Paths are relative to the real home folder, not the sandbox container.
 public struct ImportBrowser: Identifiable, Hashable, Sendable {
@@ -13,6 +13,7 @@ public struct ImportBrowser: Identifiable, Hashable, Sendable {
     public let bundleID: String
 
     public static let all: [ImportBrowser] = [
+        ImportBrowser(id: "orion", name: "Orion", family: .orion, folder: "Library/Application Support/Orion", bundleID: "com.kagi.kagimacOS"),
         ImportBrowser(id: "safari", name: "Safari", family: .safari, folder: "Library/Safari", bundleID: "com.apple.Safari"),
         ImportBrowser(id: "chrome", name: "Google Chrome", family: .chromium, folder: "Library/Application Support/Google/Chrome", bundleID: "com.google.Chrome"),
         ImportBrowser(id: "arc", name: "Arc", family: .chromium, folder: "Library/Application Support/Arc/User Data", bundleID: "company.thebrowser.Browser"),
@@ -80,6 +81,7 @@ public enum ImportDiscovery {
         else { family = .chromium }
         let fallbackID = family == .chromium ? "chromium" : family == .gecko ? "firefox" : "safari"
         let browser = known ?? ImportBrowser.all.first { $0.id == fallbackID }!
+        if family == .orion && !has("favourites.plist") && !has("history") { return OrionReader.profiles(browser: browser, root: folder) }
         if family == .gecko && !has("places.sqlite") { return GeckoReader.profiles(browser: browser, root: folder) }
         if family == .chromium && !has("History") && !has("Bookmarks") { return ChromiumReader.profiles(browser: browser, root: folder) }
         if family == .safari && !has("History.db") && !has("Bookmarks.plist") { return [] }
@@ -98,6 +100,7 @@ public enum ImportDiscovery {
             case .safari: result.append(ImportProfile(browser: browser, name: "", path: root))
             case .chromium: result += ChromiumReader.profiles(browser: browser, root: root)
             case .gecko: result += GeckoReader.profiles(browser: browser, root: root)
+            case .orion: result += OrionReader.profiles(browser: browser, root: root)
             }
         }
         return result

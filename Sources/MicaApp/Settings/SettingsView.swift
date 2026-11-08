@@ -29,6 +29,7 @@ struct SettingsView: View {
             .padding(Space.normal)
             .frame(width: compact ? 60 : 228)
             .background(store.look.shell)
+            .onTapGesture { endEditing() }
             Rectangle().fill(Palette.hairline).frame(width: 1)
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.section) {
@@ -50,9 +51,14 @@ struct SettingsView: View {
                 }
             }
             .background(Palette.canvas)
+            .onTapGesture { endEditing() }
         }
         .animation(Motion.quick, value: section)
         }
+    }
+
+    private func endEditing() {
+        browser.controller?.window?.makeFirstResponder(nil)
     }
 
     private func navItem(_ item: SettingsSection, compact: Bool) -> some View {
@@ -68,6 +74,7 @@ struct SettingsView: View {
         case .session: SessionSettings(store: store)
         case .transfer: ImportView(store: store, manager: store.importer)
         case .permissions: PermissionSettings(store: store)
+        case .passwords: PasswordSettings(store: store, passwords: store.passwords)
         case .about: AboutSettings(store: store, browser: browser, dismiss: dismiss)
         }
     }

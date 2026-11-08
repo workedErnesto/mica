@@ -23,6 +23,7 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
     var webView: WKWebView?
     var navigationFailure: NSError?
     private var observations: [NSKeyValueObservation] = []
+    private var passwordBridge: PasswordBridge?
     var saved: SavedTab { SavedTab(id: id, url: url, title: title, pinned: pinned) }
     init(saved: SavedTab, owner: BrowserModel, restored: Bool) {
         id = saved.id; url = saved.url; title = saved.title; pinned = saved.pinned
@@ -38,6 +39,7 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
         config.mediaTypesRequiringUserActionForPlayback = .all
         config.preferences.isElementFullscreenEnabled = true
         config.applicationNameForUserAgent = Tab.userAgentSuffix
+        if configuration == nil && !owner.privateMode { passwordBridge = PasswordBridge(tab: self, controller: config.userContentController) }
         let view = WKWebView(frame: .zero, configuration: config)
         view.navigationDelegate = self; view.uiDelegate = self
         view.allowsBackForwardNavigationGestures = true
@@ -85,6 +87,7 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
     }
     func dispose() {
         observations.removeAll()
+        if passwordBridge != nil { webView?.configuration.userContentController.removeScriptMessageHandler(forName: "micaPasswords", contentWorld: .world(name: "mica.passwords")); passwordBridge = nil }
         webView?.stopLoading(); webView?.setCameraCaptureState(.none, completionHandler: nil); webView?.setMicrophoneCaptureState(.none, completionHandler: nil)
         webView?.navigationDelegate = nil; webView?.uiDelegate = nil; webView?.removeFromSuperview(); webView = nil
     }

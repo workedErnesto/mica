@@ -9,6 +9,7 @@ struct SpaceSettings: View {
     let dismiss: () -> Void
     var body: some View {
         VStack(alignment: .leading, spacing: Space.section) {
+            DefaultBrowserSetting(store: store)
             LayoutPreview(store: store).frame(height: 168)
             SettingsGroup(title: store.text("раскладка", "Раскладка"), footnote: store.text("при ширине окна меньше 760 pt вкладки временно переходят наверх. в свёрнутой боковой панели остаются иконки сайтов, ⌃⌘S.", "При ширине окна меньше 760 pt вкладки временно переходят наверх. В свёрнутой боковой панели остаются иконки сайтов, ⌃⌘S.")) {
                 SettingRow(title: store.text("вкладки", "Вкладки")) { LayoutPicker(store: store, width: 260) }

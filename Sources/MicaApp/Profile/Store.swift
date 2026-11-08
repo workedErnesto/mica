@@ -22,6 +22,7 @@ final class Store: ObservableObject {
     lazy var extensions = ExtensionManager(store: self)
     lazy var importer = ImportManager(store: self)
     lazy var updater = Updater(store: self)
+    lazy var passwords = Passwords(store: self)
     var sessionWork: DispatchWorkItem?
     var preferencesWork: DispatchWorkItem?
     var shuttingDown = false

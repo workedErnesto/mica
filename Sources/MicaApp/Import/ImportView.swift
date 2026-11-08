@@ -20,7 +20,10 @@ struct ImportView: View {
                         SourceRow(store: store, manager: manager, profile: profile, divider: index < manager.profiles.count - 1)
                     }
                 }
-                if manager.selected?.browser.family == .safari && manager.safariLocked {
+                if manager.selected == nil {
+                    Text(store.text("выберите браузер, чтобы открыть его данные", "Выберите браузер, чтобы открыть его данные"))
+                        .font(.system(size: 12.5)).foregroundStyle(Palette.text2).fixedSize(horizontal: false, vertical: true)
+                } else if manager.selected?.browser.family == .safari && manager.safariLocked {
                     safariHelp
                 } else if manager.selected != nil {
                     SettingsGroup(title: store.text("что перенести", "Что перенести"), footnote: store.text("входы на сайты и пароли не переносятся. исходный браузер не изменяется", "Входы на сайты и пароли не переносятся. Исходный браузер не изменяется")) {
@@ -29,18 +32,13 @@ struct ImportView: View {
                     }
                 }
             }
-            VStack(alignment: .leading, spacing: Space.small) {
-                if manager.selected != nil && !(manager.selected?.browser.family == .safari && manager.safariLocked) {
-                    HStack(spacing: Space.small) {
-                        Button(store.text("перенести", "Перенести")) { manager.run() }
-                            .buttonStyle(MButtonStyle(kind: .primary))
-                            .disabled(manager.phase == .reading || manager.kinds.intersection(manager.selected?.browser.kinds ?? []).isEmpty)
-                    }
+            HStack(spacing: Space.small) {
+                if manager.selected != nil && !manager.selectedNeedsAccess && !(manager.selected?.browser.family == .safari && manager.safariLocked) {
+                    Button(store.text("перенести", "Перенести")) { manager.run() }
+                        .buttonStyle(MButtonStyle(kind: .primary))
+                        .disabled(manager.phase == .reading || manager.kinds.intersection(manager.selected?.browser.kinds ?? []).isEmpty)
                 }
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: Space.small) { profileButton; exportButton }
-                    VStack(alignment: .leading, spacing: Space.small) { profileButton; exportButton }
-                }
+                OtherImportSources(store: store, manager: manager)
                 if manager.phase == .reading { ProgressView().controlSize(.small).transition(.opacity) }
             }
             result
@@ -48,15 +46,6 @@ struct ImportView: View {
         .onAppear { if !manager.discovered { manager.discover() } }
         .animation(Motion.quick, value: manager.selection)
         .animation(Motion.quick, value: manager.phase)
-    }
-
-    private var profileButton: some View {
-        Button(store.text("выбрать папку профиля…", "Выбрать папку профиля…")) { manager.chooseProfile() }
-            .buttonStyle(MButtonStyle(kind: .secondary)).disabled(manager.phase == .reading)
-    }
-    private var exportButton: some View {
-        Button(store.text("из файла экспорта…", "Из файла экспорта…")) { manager.chooseExport() }
-            .buttonStyle(MButtonStyle(kind: .secondary)).disabled(manager.phase == .reading)
     }
 
     private func kindToggle(_ kind: ImportKind, _ title: String, divider: Bool) -> some View {
@@ -104,7 +93,7 @@ private struct SourceRow: View {
     private var chosen: Bool { manager.selection == profile.id }
     var body: some View {
         VStack(spacing: 0) {
-            Button { withMotion(Motion.quick) { manager.selection = profile.id; manager.reset() } } label: {
+            Button { manager.select(profile) } label: {
                 HStack(spacing: 10) {
                     Image(nsImage: Self.icon(profile.browser.bundleID)).resizable().interpolation(.high).frame(width: 22, height: 22)
                     VStack(alignment: .leading, spacing: 1) {
@@ -122,6 +111,7 @@ private struct SourceRow: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(PressStyle(scale: 0.99))
+            .disabled(manager.phase == .reading)
             .onHover { hover = $0 }
             .animation(Motion.hover, value: hover)
             .accessibilityAddTraits(chosen ? .isSelected : [])
@@ -132,5 +122,26 @@ private struct SourceRow: View {
     static func icon(_ bundleID: String) -> NSImage {
         if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) { return NSWorkspace.shared.icon(forFile: url.path) }
         return NSImage(systemSymbolName: "globe", accessibilityDescription: nil) ?? NSImage()
+    }
+}
+
+/// Less common inputs stay together, beside the main import action.
+private struct OtherImportSources: View {
+    @ObservedObject var store: Store
+    @ObservedObject var manager: ImportManager
+    @State private var anchor = PopupAnchor()
+
+    var body: some View {
+        Button(store.text("другие источники…", "Другие источники…")) {
+            guard let view = anchor.view, let window = view.window else { return }
+            let rect = window.convertToScreen(view.convert(view.bounds, to: nil))
+            MicaMenu.shared.show([
+                .item(store.text("выбрать папку профиля…", "Выбрать папку профиля…")) { manager.chooseProfile() },
+                .item(store.text("из файла экспорта…", "Из файла экспорта…")) { manager.chooseExport() }
+            ], below: rect, in: window)
+        }
+        .buttonStyle(MButtonStyle(kind: .secondary))
+        .disabled(manager.phase == .reading)
+        .background(PopupAnchorView(anchor: anchor))
     }
 }

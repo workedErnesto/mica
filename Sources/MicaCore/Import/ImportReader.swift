@@ -18,6 +18,9 @@ public enum ImportReader {
         case .gecko:
             attempt(.history) { bundle.history = try GeckoReader.history(path) }
             attempt(.bookmarks) { bundle.bookmarks = try GeckoReader.bookmarks(path) }
+        case .orion:
+            attempt(.history) { bundle.history = try OrionReader.history(path) }
+            attempt(.bookmarks) { bundle.bookmarks = try OrionReader.bookmarks(path) }
         case .safari:
             attempt(.history) { bundle.history = try SafariReader.history(path) }
             attempt(.bookmarks) { bundle.bookmarks = try SafariReader.bookmarks(path) }

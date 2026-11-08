@@ -116,14 +116,17 @@ struct Onboarding: View {
     @ViewBuilder private var stepContent: some View {
         switch step {
         case 0:
-            VStack(alignment: .leading, spacing: Space.normal) {
-                GreetingPreview(store: store)
-                SettingsGroup {
-                    SettingRow(title: store.text("язык", "Язык")) { LanguagePicker(store: store, width: 300) }
-                    SettingRow(title: store.text("текст интерфейса", "Текст интерфейса")) { CasePicker(store: store, width: 300) }
-                    NameSettingRows(store: store)
+            ScrollView {
+                VStack(alignment: .leading, spacing: Space.normal) {
+                    GreetingPreview(store: store)
+                    DefaultBrowserSetting(store: store)
+                    SettingsGroup {
+                        SettingRow(title: store.text("язык", "Язык")) { LanguagePicker(store: store, width: 300) }
+                        SettingRow(title: store.text("текст интерфейса", "Текст интерфейса")) { CasePicker(store: store, width: 300) }
+                        NameSettingRows(store: store)
+                    }
                 }
-            }
+            }.scrollIndicators(.never)
         case 1:
             ScrollView { ImportView(store: store, manager: store.importer).frame(maxWidth: .infinity, alignment: .leading) }.scrollIndicators(.never)
         case 2:

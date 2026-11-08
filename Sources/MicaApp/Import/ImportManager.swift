@@ -28,6 +28,8 @@ final class ImportManager: ObservableObject {
     private unowned let store: Store
     private var authorizedFolder: URL?
     private var authorizedProfileIDs: Set<ImportProfile.ID> = []
+    private var pendingProfileIDs: Set<ImportProfile.ID> = []
+    var selectedNeedsAccess: Bool { selection.map { pendingProfileIDs.contains($0) } ?? false }
 
     init(store: Store) { self.store = store }
 
@@ -41,10 +43,15 @@ final class ImportManager: ObservableObject {
     func discover() {
         Task {
             let found = await Task.detached(priority: .userInitiated) { ImportDiscovery.profiles() }.value
-            profiles = found
-            if selection == nil || !found.contains(where: { $0.id == selection }) {
-                selection = found.first(where: { $0.browser.family != .safari }).map(\.id) ?? found.first?.id
+            var combined = found
+            for browser in ImportBrowser.all where browser.family != .safari && !found.contains(where: { $0.browser.id == browser.id }) {
+                guard let app = NSWorkspace.shared.urlForApplication(withBundleIdentifier: browser.bundleID), FileManager.default.fileExists(atPath: app.path) else { continue }
+                let candidate = ImportProfile(browser: browser, name: "", path: realHome().appendingPathComponent(browser.folder, isDirectory: true))
+                combined.append(candidate)
+                pendingProfileIDs.insert(candidate.id)
             }
+            profiles = combined
+            if let selection, !combined.contains(where: { $0.id == selection }) { self.selection = nil }
             discovered = true
         }
     }
@@ -66,11 +73,13 @@ final class ImportManager: ObservableObject {
     }
 
     /// Safari export (ZIP or unpacked folder), or a bookmarks HTML file from any browser.
-    func chooseExport() {
+    func chooseExport(safari: Bool = false) {
         let panel = NSOpenPanel()
         panel.canChooseFiles = true; panel.canChooseDirectories = true; panel.allowsMultipleSelection = false
         panel.allowedContentTypes = [.zip, .html, .json, .folder]
-        panel.message = store.text("выберите архив экспорта Safari, его папку или HTML-файл с закладками", "Выберите архив экспорта Safari, его папку или HTML-файл с закладками")
+        panel.message = safari
+            ? store.text("в Safari выберите «Файл», «Экспортировать», «Данные браузера в файл», затем откройте архив здесь", "В Safari выберите «Файл», «Экспортировать», «Данные браузера в файл», затем откройте архив здесь")
+            : store.text("выберите архив экспорта Safari, его папку или HTML-файл с закладками", "Выберите архив экспорта Safari, его папку или HTML-файл с закладками")
         panel.prompt = store.text("перенести", "Перенести")
         guard panel.runModal() == .OK, let url = panel.url else { return }
         phase = .reading
@@ -98,27 +107,57 @@ final class ImportManager: ObservableObject {
         }
     }
 
-    func chooseProfile() {
+    func chooseProfile(forCandidate candidate: ImportProfile? = nil) {
         let panel = NSOpenPanel()
         panel.canChooseFiles = false; panel.canChooseDirectories = true; panel.allowsMultipleSelection = false
-        panel.directoryURL = realHome().appendingPathComponent("Library/Application Support", isDirectory: true)
+        if let candidate {
+            panel.directoryURL = candidate.path
+        } else {
+            panel.directoryURL = realHome().appendingPathComponent("Library/Application Support", isDirectory: true)
+        }
         panel.message = store.text("выберите папку профиля браузера или папку с его профилями", "Выберите папку профиля браузера или папку с его профилями")
         panel.prompt = store.text("выбрать", "Выбрать")
         guard panel.runModal() == .OK, let folder = panel.url else { return }
         let scoped = folder.startAccessingSecurityScopedResource()
         let found = ImportDiscovery.profiles(authorizedFolder: folder)
+        if let candidate, found.contains(where: { $0.browser.id != candidate.browser.id }) {
+            if scoped { folder.stopAccessingSecurityScopedResource() }
+            phase = .failed(store.text("выберите папку выбранного браузера", "Выберите папку выбранного браузера"))
+            return
+        }
         guard !found.isEmpty else {
             if scoped { folder.stopAccessingSecurityScopedResource() }
             phase = .failed(store.text("профили в этой папке не найдены", "Профили в этой папке не найдены"))
             return
         }
+        let previousBrowsers = Set(profiles.filter { authorizedProfileIDs.contains($0.id) }.map(\.browser))
         if let authorizedFolder { authorizedFolder.stopAccessingSecurityScopedResource() }
         authorizedFolder = scoped ? folder : nil
-        profiles.removeAll { authorizedProfileIDs.contains($0.id) }
+        profiles.removeAll { authorizedProfileIDs.contains($0.id) || (pendingProfileIDs.contains($0.id) && $0.browser.id == found[0].browser.id) }
+        pendingProfileIDs = pendingProfileIDs.filter { id in profiles.contains { $0.id == id } }
+        for browser in previousBrowsers where browser != found[0].browser && !profiles.contains(where: { $0.browser == browser }) {
+            let placeholder = ImportProfile(browser: browser, name: "", path: realHome().appendingPathComponent(browser.folder, isDirectory: true))
+            profiles.append(placeholder)
+            pendingProfileIDs.insert(placeholder.id)
+        }
         authorizedProfileIDs = Set(found.map(\.id))
         for profile in found where !profiles.contains(where: { $0.id == profile.id }) { profiles.append(profile) }
         selection = found[0].id
         reset()
+    }
+
+    func select(_ profile: ImportProfile) {
+        guard phase != .reading else { return }
+        reset()
+        if profile.browser.family == .safari {
+            withMotion(Motion.quick) { selection = profile.id }
+            if safariLocked { chooseExport(safari: true); return }
+        }
+        if !authorizedProfileIDs.contains(profile.id) {
+            chooseProfile(forCandidate: profile)
+        } else {
+            withMotion(Motion.quick) { selection = profile.id }
+        }
     }
 
     func reset() { withMotion(Motion.quick) { phase = .idle } }

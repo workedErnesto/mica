@@ -35,6 +35,10 @@ public struct Preferences: Codable, Equatable, Sendable {
     public var updateChecks = true
     /// Release the user asked not to be offered again.
     public var skippedVersion: String?
+    /// Offer to save a password after signing in, and suggest strong ones in new-password fields.
+    public var offerPasswords = true
+    /// Suggest saved logins when a sign-in field gets focus.
+    public var fillPasswords = true
     public init() {}
     // Missing keys fall back to defaults, so preferences saved by an older build still load.
     public init(from decoder: Decoder) throws {
@@ -67,6 +71,8 @@ public struct Preferences: Codable, Equatable, Sendable {
         clearing = (try? c.decodeIfPresent(ClearChoice.self, forKey: .clearing)) ?? d.clearing
         updateChecks = (try? c.decodeIfPresent(Bool.self, forKey: .updateChecks)) ?? d.updateChecks
         skippedVersion = try? c.decodeIfPresent(String.self, forKey: .skippedVersion)
+        offerPasswords = (try? c.decodeIfPresent(Bool.self, forKey: .offerPasswords)) ?? d.offerPasswords
+        fillPasswords = (try? c.decodeIfPresent(Bool.self, forKey: .fillPasswords)) ?? d.fillPasswords
         sidebarWidth = min(Preferences.sidebarRange.upperBound, max(Preferences.sidebarRange.lowerBound, try c.decodeIfPresent(Double.self, forKey: .sidebarWidth) ?? d.sidebarWidth))
     }
     public static let sidebarRange = 200.0...380.0
