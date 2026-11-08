@@ -21,6 +21,8 @@ public static class Desk {
   [DllImport("user32.dll")] public static extern IntPtr GetAncestor(IntPtr hwnd, uint flags);
   [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
   [DllImport("user32.dll")] static extern void mouse_event(uint flags, uint x, uint y, uint data, UIntPtr extra);
+  [DllImport("user32.dll")] static extern void keybd_event(byte key, byte scan, uint flags, UIntPtr extra);
+  public static void Escape() { keybd_event(0x1B, 0, 0, UIntPtr.Zero); keybd_event(0x1B, 0, 2, UIntPtr.Zero); }
   public static void Raise(IntPtr hwnd) { SetWindowPos(hwnd, new IntPtr(-1), 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0040); SetForegroundWindow(hwnd); }
   public static uint OwnerAt(int x, int y) {
     var top = GetAncestor(WindowFromPoint(new POINT { X = x, Y = y }), 2);
@@ -94,6 +96,13 @@ function Click-Id([string] $id) {
   $r = $element.Current.BoundingRectangle
   $x = [int]($r.X + $r.Width / 2); $y = [int]($r.Y + $r.Height / 2)
   $owner = [Desk]::OwnerAt($x, $y)
+  for ($try = 0; $owner -ne $process.Id -and $try -lt 3; $try++) {
+    # A runner may start with the Start menu or a first-run window open; Esc closes them, then Setup goes on top again.
+    Write-Host "Setup is covered by process $owner, pressing Esc"
+    [Desk]::Escape(); Start-Sleep -Milliseconds 600
+    [Desk]::Raise([IntPtr](Get-Windows)[0].Current.NativeWindowHandle); Start-Sleep -Milliseconds 600
+    $owner = [Desk]::OwnerAt($x, $y)
+  }
   if ($owner -ne $process.Id) {
     $name = (Get-Process -Id $owner -ErrorAction SilentlyContinue).ProcessName
     throw "another window covers Setup at $x, $y (process $owner $name)"
