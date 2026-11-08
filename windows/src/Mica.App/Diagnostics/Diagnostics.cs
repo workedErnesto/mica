@@ -53,8 +53,10 @@ public static class QA
             results.Add(new("ten genuinely live tabs", browser.Tabs.Count(t => t.Core is not null) >= 10));
             browser.Select(first);
             results.Add(new("switch preserves JS identity", await first.EvaluateAsync("window.identity") == identity));
-            var blocked = await first.EvaluateAsync("fetch('https://www.google-analytics.com/analytics.js',{mode:'no-cors',cache:'no-store'}).then(()=>true).catch(()=>false)");
-            results.Add(new("third-party blocker", blocked == "false", blocked ?? "null"));
+            var before = first.BlockedRequestCount;
+            await first.EvaluateAsync("fetch('https://www.google-analytics.com/analytics.js',{mode:'no-cors',cache:'no-store'}).catch(()=>{}); true");
+            var blocked = await Wait(() => first.BlockedRequestCount > before);
+            results.Add(new("third-party blocker", blocked));
             foreach (var t in others) browser.Close(t);
         }
         var privateWindow = store.NewWindow(privateMode: true);

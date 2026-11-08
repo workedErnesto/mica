@@ -31,6 +31,7 @@ public sealed partial class Tab : Observable
     Task? initializing;
     string? pendingUrl;
     bool blockingFilterInstalled;
+    internal int BlockedRequestCount { get; private set; }
     readonly Passwords.PasswordBridge passwords;
 
     public SavedTab Saved => new() { Id = Id, Url = Url, Title = Title, Pinned = Pinned };
@@ -178,7 +179,10 @@ public sealed partial class Tab : Observable
         var store = Owner?.Store;
         if (store is null || e.ResourceContext == CoreWebView2WebResourceContext.Document) return;
         if (store.Blocker.ShouldBlock(e.Request.Uri, sender.Source))
+        {
             e.Response = store.Engine.Environment?.CreateWebResourceResponse(null, 403, "Blocked by mica", "");
+            if (e.Response is not null) BlockedRequestCount++;
+        }
     }
 
     void OnNavigationStarting(CoreWebView2 sender, CoreWebView2NavigationStartingEventArgs e)
