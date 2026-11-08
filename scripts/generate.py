@@ -6,7 +6,7 @@
 
 Outputs are committed so each platform builds without Python; never edit them by hand.
 """
-import json, pathlib, sys
+import json, pathlib, re, sys
 
 root = pathlib.Path(__file__).resolve().parent.parent
 shared = root / 'shared'
@@ -33,6 +33,15 @@ def cs_argb(value):
 def generate():
     tokens = json.loads((shared / 'tokens.json').read_text())
     out = {}
+    version = (shared / 'version.txt').read_text().strip()
+    if not re.fullmatch(r'\d+\.\d+\.\d+', version):
+        sys.exit('shared/version.txt must contain a three-part numeric version')
+    for path in ('macos/Resources/App/Info.plist', 'macos/Sources/MicaDockTile/Info.plist'):
+        plist = (root / path).read_text()
+        updated, count = re.subn(r'(<key>CFBundleShortVersionString</key>\s*<string>)[^<]+(</string>)',
+                                 lambda match: match.group(1) + version + match.group(2), plist)
+        if count != 1: sys.exit(f'{path}: expected one CFBundleShortVersionString')
+        out[path] = updated
     head = '// ' + HEADER.format(src='tokens.json') + '\n'
     # Swift palette
     lines = [head + 'import AppKit\nimport SwiftUI\n', '/// Light: bright paper shell around a pure white page and panels, near-black neutral ink, light hairlines',
