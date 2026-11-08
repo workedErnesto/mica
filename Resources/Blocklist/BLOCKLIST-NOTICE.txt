@@ -1,0 +1,8 @@
+mica includes a snapshot of Peter Lowe's ad and tracking server list.
+Source: https://pgl.yoyo.org/adservers/serverlist.php?hostformat=plain&showintro=0&mimetype=plaintext
+Retrieved: 2026-11-07
+Author: Peter Lowe, pgl@yoyo.org
+Policy: https://pgl.yoyo.org/as/policy.php
+Redistribution permission: https://pgl.yoyo.org/adservers/ , section "submit a hostname for the list": the author permits combining this list and publishing the result.
+The bundled list is unmodified plain hostnames. mica adds its own small fallback list at runtime and blocks third-party requests only. A domain list does not implement cosmetic filtering or full uBlock Origin syntax.
+List updates are manual, initiated by the user in Settings, over HTTPS to pgl.yoyo.org. No scheduled network updates occur.

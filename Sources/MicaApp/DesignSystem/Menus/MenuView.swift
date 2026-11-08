@@ -1,0 +1,69 @@
+import AppKit
+import SwiftUI
+import MicaCore
+
+struct MenuView: View {
+    @ObservedObject var model: MenuModel
+    let choose: (Int) -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduced
+    var body: some View {
+        let checks = model.entries.contains { $0.checked }
+        let symbols = model.entries.contains { $0.symbol != nil }
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(model.entries.enumerated()), id: \.element.id) { index, entry in
+                if entry.kind == .divider {
+                    Rectangle().fill(Palette.hairline).frame(height: 1).padding(.vertical, 4).padding(.horizontal, 8)
+                } else {
+                    MenuRow(entry: entry, highlighted: model.highlighted == index, checks: checks, symbols: symbols) { choose(index) }
+                        .onHover { inside in
+                            if inside { model.highlighted = entry.enabled ? index : nil } else if model.highlighted == index { model.highlighted = nil }
+                        }
+                }
+            }
+        }
+        .padding(5)
+        .frame(minWidth: 196, alignment: .leading)
+        .fixedSize()
+        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Palette.raised))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Palette.hairlineStrong, lineWidth: 1))
+        .shadow(color: Palette.shadowStrong, radius: 12, y: 5)
+        .scaleEffect(model.shown || reduced ? 1 : 0.95, anchor: model.anchor)
+        .opacity(model.shown ? 1 : 0)
+        .padding(18)
+        .animation(Motion.hover, value: model.highlighted)
+        .accessibilityElement(children: .contain)
+        .accessibilityAddTraits(.isModal)
+    }
+}
+
+private struct MenuRow: View {
+    let entry: MenuEntry
+    let highlighted: Bool
+    let checks: Bool
+    let symbols: Bool
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                if checks {
+                    Image(systemName: "checkmark").font(.system(size: 10, weight: .semibold)).frame(width: 12).opacity(entry.checked ? 1 : 0)
+                }
+                if symbols {
+                    if let symbol = entry.symbol { Glyph(name: symbol, size: 12).frame(width: 16) }
+                    else { Color.clear.frame(width: 16, height: 1) }
+                }
+                Text(entry.title).font(.system(size: 13)).lineLimit(1).fixedSize()
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(!entry.enabled ? Palette.text3.opacity(0.7) : entry.destructive ? Palette.danger : Palette.ink)
+            .padding(.horizontal, 8)
+            .frame(height: 26)
+            .background(RoundedRectangle(cornerRadius: 7, style: .continuous).fill(highlighted && entry.enabled ? Palette.pressed : .clear))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!entry.enabled)
+        .accessibilityLabel(entry.title)
+        .accessibilityAddTraits(entry.checked ? .isSelected : [])
+    }
+}

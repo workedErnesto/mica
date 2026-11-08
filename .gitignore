@@ -1,0 +1,20 @@
+# build products and local scratch
+.build/
+build/
+work/
+.swiftpm/
+*.xcodeproj/
+DerivedData/
+.DS_Store
+__pycache__/
+*.pyc
+
+# AI agents, skills and prompts never go to git
+AGENTS.md
+CLAUDE.md
+PROMPT.md
+.agents/
+.claude/
+.codex/
+.cursor/
+references/

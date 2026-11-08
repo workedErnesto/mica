@@ -1,0 +1,5 @@
+Orbit Icon Pack, 24 icons, supplied by the owner of this build (Orbit_Icon_Pack_24.zip).
+The pack's README describes it as a personal fan-art pack; character properties (Sonic, Hello Kitty and Sanrio
+characters, My Little Pony) belong to their respective rights holders. These icons are for the owner's personal
+build only and are not licensed for redistribution with mica.
+Converted by scripts/app-icons.swift: Apple icon grid, 512 px HEIC with alpha.

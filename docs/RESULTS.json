@@ -1,0 +1,578 @@
+{
+  "date": "2026-11-07",
+  "machine": {
+    "model": "MacBookAir10,1",
+    "chip": "Apple M1",
+    "memoryGiB": 8,
+    "macOS": "15.7.5",
+    "build": "24G624"
+  },
+  "unit": "MiB (1024*1024 bytes)",
+  "runs": [
+    {
+      "id": "benchmark-20261107-221446",
+      "binarySHA256": "65d4c8af92a59d434d9789ea87a4c72b8a224c4c91e6ad6b1e6f1c83742084bd",
+      "cases": [
+        {
+          "tabsRequested": 0,
+          "liveWebViews": 0,
+          "completedUnderHarnessPredicate": 0,
+          "pages": [],
+          "viewportPoints": null,
+          "startSeconds": 0.6598096249999799,
+          "modelDispatchMedianMilliseconds": 1.342333333013812,
+          "modelDispatchLimit": "Measures model dispatch plus one executor yield, not input-to-photon latency.",
+          "snapshots": [
+            {
+              "label": "loaded",
+              "groupFootprintMiB": 22.3929443359375,
+              "processes": 1,
+              "errors": [],
+              "systemSwap": "vm.swapusage: total = 2048.00M  used = 1457.50M  free = 590.50M  (encrypted)",
+              "pressureTool": "The system has 8589934592 (524288 pages with a page size of 16384).\nSystem-wide memory free percentage: 39%",
+              "localTime": "2026-11-07T22:14:47.289099+05:00"
+            }
+          ]
+        },
+        {
+          "tabsRequested": 1,
+          "liveWebViews": 1,
+          "completedUnderHarnessPredicate": 1,
+          "pages": [
+            {
+              "error": "",
+              "loaded": true,
+              "seconds": 1.2711273333334248,
+              "title": "Wikipedia",
+              "url": "https://www.wikipedia.org"
+            }
+          ],
+          "viewportPoints": null,
+          "startSeconds": 0.3317179169989686,
+          "modelDispatchMedianMilliseconds": 1.0795624993988895,
+          "modelDispatchLimit": "Measures model dispatch plus one executor yield, not input-to-photon latency.",
+          "snapshots": [
+            {
+              "label": "loaded",
+              "groupFootprintMiB": 151.53863525390625,
+              "processes": 4,
+              "errors": [],
+              "systemSwap": "vm.swapusage: total = 2048.00M  used = 1457.50M  free = 590.50M  (encrypted)",
+              "pressureTool": "The system has 8589934592 (524288 pages with a page size of 16384).\nSystem-wide memory free percentage: 31%",
+              "localTime": "2026-11-07T22:15:06.491191+05:00"
+            }
+          ],
+          "background": {
+            "elapsedSeconds": 59.576570540999455,
+            "cpuSecondsPerProcess": {
+              "3560": 0.050000000000000044,
+              "3561": 0.020000000000000018,
+              "3562": 0.01999999999999999,
+              "3563": 0.04999999999999993
+            },
+            "groupCpuPercent": 0.23499170685505416,
+            "limit": "Excludes processes created or exited during this interval. Frozen PID set."
+          }
+        },
+        {
+          "tabsRequested": 10,
+          "liveWebViews": 10,
+          "completedUnderHarnessPredicate": 8,
+          "pages": [
+            {
+              "error": "",
+              "loaded": true,
+              "seconds": 1.5086989999999787,
+              "title": "Wikipedia",
+              "url": "https://www.wikipedia.org"
+            },
+            {
+              "error": "",
+              "loaded": true,
+              "seconds": 1.2759292499995354,
+              "title": "GitHub - WebKit/WebKit: Home of the WebKit project, the browser engine used by Safari, Mail, App Store and many other applications on macOS, iOS and Linux. · GitHub",
+              "url": "https://github.com/WebKit/WebKit"
+            },
+            {
+              "error": "",
+              "loaded": true,
+              "seconds": 2.6169867499993416,
+              "title": "Blog | WebKit",
+              "url": "https://webkit.org/blog/"
+            },
+            {
+              "error": "",
+              "loaded": true,
+              "seconds": 1.0759792083335924,
+              "title": "WebKit | Apple Developer Documentation",
+              "url": "https://developer.apple.com/documentation/webkit"
+            },
+            {
+              "error": "",
+              "loaded": false,
+              "seconds": 35.07369045833366,
+              "title": "Swift Documentation | Documentation",
+              "url": "https://www.swift.org/documentation/"
+            },
+            {
+              "error": "",
+              "loaded": false,
+              "seconds": 35.01473987499958,
+              "title": "WebSockets Standard",
+              "url": "https://www.w3.org/TR/websockets/"
+            },
+            {
+              "error": "",
+              "loaded": true,
+              "seconds": 1.174439958334915,
+              "title": "WebRTC API - Web APIs | MDN",
+              "url": "https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API"
+            },
+            {
+              "error": "",
+              "loaded": true,
+              "seconds": 3.0765038749996165,
+              "title": "Big Buck Bunny 60fps 4K - Official Blender Foundation Short Film - YouTube",
+              "url": "https://www.youtube.com/watch?v=aqz-KE-bpKQ"
+            },
+            {
+              "error": "",
+              "loaded": true,
+              "seconds": 2.2197897499991086,
+              "title": "OpenStreetMap",
+              "url": "https://www.openstreetmap.org"
+            },
+            {
+              "error": "",
+              "loaded": true,
+              "seconds": 2.2144103333339444,
+              "title": "BBC News - Breaking news, video and the latest top stories from the U.S. and around the world",
+              "url": "https://www.bbc.com/news"
+            }
+          ],
+          "viewportPoints": null,
+          "startSeconds": 0.33945725000012317,
+          "modelDispatchMedianMilliseconds": 24.652354166391888,
+          "modelDispatchLimit": "Measures model dispatch plus one executor yield, not input-to-photon latency.",
+          "snapshots": [
+            {
+              "label": "loaded",
+              "groupFootprintMiB": 1256.8132934570312,
+              "processes": 15,
+              "errors": [],
+              "systemSwap": "vm.swapusage: total = 2048.00M  used = 1781.06M  free = 266.94M  (encrypted)",
+              "pressureTool": "The system has 8589934592 (524288 pages with a page size of 16384).\nSystem-wide memory free percentage: 30%",
+              "localTime": "2026-11-07T22:17:45.483680+05:00"
+            },
+            {
+              "label": "after-300s",
+              "groupFootprintMiB": 986.7350463867188,
+              "processes": 15,
+              "errors": [],
+              "systemSwap": "vm.swapusage: total = 2048.00M  used = 1765.06M  free = 282.94M  (encrypted)",
+              "pressureTool": "The system has 8589934592 (524288 pages with a page size of 16384).\nSystem-wide memory free percentage: 46%",
+              "localTime": "2026-11-07T22:21:18.122591+05:00"
+            },
+            {
+              "label": "after-600s",
+              "groupFootprintMiB": 967.7508544921875,
+              "processes": 15,
+              "errors": [],
+              "systemSwap": "vm.swapusage: total = 2048.00M  used = 1757.06M  free = 290.94M  (encrypted)",
+              "pressureTool": "The system has 8589934592 (524288 pages with a page size of 16384).\nSystem-wide memory free percentage: 42%",
+              "localTime": "2026-11-07T22:26:18.373790+05:00"
+            },
+            {
+              "label": "after-850s",
+              "groupFootprintMiB": 1005.5949096679688,
+              "processes": 15,
+              "errors": [],
+              "systemSwap": "vm.swapusage: total = 2048.00M  used = 1749.06M  free = 298.94M  (encrypted)",
+              "pressureTool": "The system has 8589934592 (524288 pages with a page size of 16384).\nSystem-wide memory free percentage: 43%",
+              "localTime": "2026-11-07T22:30:28.343277+05:00"
+            }
+          ],
+          "background": {
+            "elapsedSeconds": 59.75973495799917,
+            "cpuSecondsPerProcess": {
+              "4041": 0.16999999999999993,
+              "4042": 0.48,
+              "4043": 2.9699999999999998,
+              "4044": 0.010000000000000009,
+              "4048": 0.07999999999999985,
+              "4063": 0.020000000000000018,
+              "4074": 0.010000000000000009,
+              "4078": 0.010000000000000009,
+              "4256": 0.020000000000000018,
+              "4257": 0.009999999999999995,
+              "4467": 0.010000000000000009,
+              "4478": 2.12,
+              "4492": 0.010000000000000002,
+              "4493": 0.030000000000000027,
+              "4497": 0.10999999999999988
+            },
+            "groupCpuPercent": 10.14060722367517,
+            "limit": "Excludes processes created or exited during this interval. Frozen PID set."
+          },
+          "background-late": {
+            "elapsedSeconds": 59.63225316600074,
+            "cpuSecondsPerProcess": {
+              "4041": 0.22000000000000064,
+              "4042": 0.41999999999999993,
+              "4043": 2.620000000000001,
+              "4044": 0.0,
+              "4048": 0.009999999999999787,
+              "4063": 0.009999999999999953,
+              "4074": 0.0,
+              "4078": 0.0,
+              "4256": 0.0,
+              "4257": 0.0,
+              "4467": 0.0,
+              "4478": 1.4300000000000015,
+              "4492": 0.0,
+              "4493": 0.010000000000000009,
+              "4497": 0.06000000000000005
+            },
+            "groupCpuPercent": 8.01579639577549,
+            "limit": "Excludes processes created or exited during this interval. Frozen PID set."
+          }
+        }
+      ]
+    },
+    {
+      "id": "benchmark-20261107-224404",
+      "binarySHA256": "b864faa3d972d6aefda77485a5aef2ae2927c3e04544500b4843850444f136cd",
+      "cases": [
+        {
+          "tabsRequested": 0,
+          "liveWebViews": 0,
+          "completedUnderHarnessPredicate": 0,
+          "pages": [],
+          "viewportPoints": {
+            "height": 752,
+            "width": 1180
+          },
+          "startSeconds": 0.49463545799881103,
+          "modelDispatchMedianMilliseconds": 1.9020625004486647,
+          "modelDispatchLimit": "Measures model dispatch plus one executor yield, not input-to-photon latency.",
+          "snapshots": [
+            {
+              "label": "loaded",
+              "groupFootprintMiB": 22.127197265625,
+              "processes": 1,
+              "errors": [],
+              "systemSwap": "vm.swapusage: total = 3072.00M  used = 1873.56M  free = 1198.44M  (encrypted)",
+              "pressureTool": "The system has 8589934592 (524288 pages with a page size of 16384).\nSystem-wide memory free percentage: 45%",
+              "localTime": "2026-11-07T22:44:05.423212+05:00"
+            }
+          ]
+        },
+        {
+          "tabsRequested": 1,
+          "liveWebViews": 1,
+          "completedUnderHarnessPredicate": 1,
+          "pages": [
+            {
+              "error": "",
+              "finalURL": "https://www.wikipedia.org/",
+              "loaded": true,
+              "seconds": 1.2622005416669708,
+              "title": "Wikipedia",
+              "url": "https://www.wikipedia.org"
+            }
+          ],
+          "viewportPoints": {
+            "height": 752,
+            "width": 1180
+          },
+          "startSeconds": 0.2750684159982484,
+          "modelDispatchMedianMilliseconds": 1.6370416669815313,
+          "modelDispatchLimit": "Measures model dispatch plus one executor yield, not input-to-photon latency.",
+          "snapshots": [
+            {
+              "label": "loaded",
+              "groupFootprintMiB": 162.63238525390625,
+              "processes": 4,
+              "errors": [],
+              "systemSwap": "vm.swapusage: total = 3072.00M  used = 1873.56M  free = 1198.44M  (encrypted)",
+              "pressureTool": "The system has 8589934592 (524288 pages with a page size of 16384).\nSystem-wide memory free percentage: 38%",
+              "localTime": "2026-11-07T22:44:19.576883+05:00"
+            }
+          ],
+          "background": {
+            "elapsedSeconds": 59.51006029199925,
+            "cpuSecondsPerProcess": {
+              "14552": 0.040000000000000036,
+              "14553": 0.020000000000000018,
+              "14554": 0.030000000000000013,
+              "14555": 0.050000000000000044
+            },
+            "groupCpuPercent": 0.23525434071661028,
+            "limit": "Excludes processes created or exited during this interval. Frozen PID set."
+          }
+        },
+        {
+          "tabsRequested": 10,
+          "liveWebViews": 10,
+          "completedUnderHarnessPredicate": 10,
+          "pages": [
+            {
+              "error": "",
+              "finalURL": "https://www.wikipedia.org/",
+              "loaded": true,
+              "seconds": 1.014004250002472,
+              "title": "Wikipedia",
+              "url": "https://www.wikipedia.org"
+            },
+            {
+              "error": "",
+              "finalURL": "https://github.com/WebKit/WebKit",
+              "loaded": true,
+              "seconds": 1.3663989583328657,
+              "title": "GitHub - WebKit/WebKit: Home of the WebKit project, the browser engine used by Safari, Mail, App Store and many other applications on macOS, iOS and Linux. · GitHub",
+              "url": "https://github.com/WebKit/WebKit"
+            },
+            {
+              "error": "",
+              "finalURL": "https://webkit.org/blog/",
+              "loaded": true,
+              "seconds": 2.9387345833347354,
+              "title": "Blog | WebKit",
+              "url": "https://webkit.org/blog/"
+            },
+            {
+              "error": "",
+              "finalURL": "https://developer.apple.com/documentation/webkit",
+              "loaded": true,
+              "seconds": 2.9386498749991006,
+              "title": "WebKit | Apple Developer Documentation",
+              "url": "https://developer.apple.com/documentation/webkit"
+            },
+            {
+              "error": "",
+              "finalURL": "https://docs.swift.org/latest/documentation/",
+              "loaded": true,
+              "seconds": 3.5848138333349198,
+              "title": "Documentation",
+              "url": "https://www.swift.org/documentation/"
+            },
+            {
+              "error": "",
+              "finalURL": "https://websockets.spec.whatwg.org//",
+              "loaded": true,
+              "seconds": 2.099321666668402,
+              "title": "WebSockets Standard",
+              "url": "https://www.w3.org/TR/websockets/"
+            },
+            {
+              "error": "",
+              "finalURL": "https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API",
+              "loaded": true,
+              "seconds": 0.4281491250003455,
+              "title": "WebRTC API - Web APIs | MDN",
+              "url": "https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API"
+            },
+            {
+              "error": "",
+              "finalURL": "https://www.youtube.com/watch?v=aqz-KE-bpKQ",
+              "loaded": true,
+              "seconds": 2.728083791665995,
+              "title": "Big Buck Bunny 60fps 4K - Official Blender Foundation Short Film - YouTube",
+              "url": "https://www.youtube.com/watch?v=aqz-KE-bpKQ"
+            },
+            {
+              "error": "",
+              "finalURL": "https://www.openstreetmap.org/#map=5/46.44/2.20",
+              "loaded": true,
+              "seconds": 1.6825707083335146,
+              "title": "OpenStreetMap",
+              "url": "https://www.openstreetmap.org"
+            },
+            {
+              "error": "",
+              "finalURL": "https://www.bbc.com/news",
+              "loaded": true,
+              "seconds": 1.6974653333345486,
+              "title": "BBC News - Breaking news, video and the latest top stories from the U.S. and around the world",
+              "url": "https://www.bbc.com/news"
+            }
+          ],
+          "viewportPoints": {
+            "height": 752,
+            "width": 1180
+          },
+          "startSeconds": 0.2674676660026307,
+          "modelDispatchMedianMilliseconds": 29.52766666567186,
+          "modelDispatchLimit": "Measures model dispatch plus one executor yield, not input-to-photon latency.",
+          "snapshots": [
+            {
+              "label": "loaded",
+              "groupFootprintMiB": 1506.5651245117188,
+              "processes": 15,
+              "errors": [],
+              "systemSwap": "vm.swapusage: total = 3072.00M  used = 1873.56M  free = 1198.44M  (encrypted)",
+              "pressureTool": "The system has 8589934592 (524288 pages with a page size of 16384).\nSystem-wide memory free percentage: 33%",
+              "localTime": "2026-11-07T22:45:53.510153+05:00"
+            }
+          ],
+          "background": {
+            "elapsedSeconds": 59.47198099999878,
+            "cpuSecondsPerProcess": {
+              "15003": 0.040000000000000036,
+              "15013": 0.1399999999999999,
+              "15014": 0.1299999999999999,
+              "15015": 0.020000000000000018,
+              "15021": 0.14000000000000012,
+              "15024": 0.019999999999999962,
+              "15036": 0.15000000000000013,
+              "15046": 0.07999999999999985,
+              "15062": 0.03999999999999998,
+              "15063": 0.020000000000000004,
+              "15091": 0.010000000000000009,
+              "15093": 0.03,
+              "15094": 1.7000000000000002,
+              "15113": 0.04999999999999999,
+              "15126": 0.17000000000000015
+            },
+            "groupCpuPercent": 4.60721158758787,
+            "limit": "Excludes processes created or exited during this interval. Frozen PID set."
+          }
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Group footprint from the Apple tool, not summed RSS. Includes WebKit processes selected relative to a baseline; attribution is a candidate method.",
+    "The long run used an overly strict original-host completion check; two successful redirects have title but loaded=false. The repeat records final URLs and accepts redirects.",
+    "Background CPU measures a fixed PID set and may miss processes that exited or started during the interval. Other user applications remained running.",
+    "The repeat also requires a user gesture for autoplay and fixes the window at 1180x780 points. These conditions differ, so differences are not a controlled causal A/B comparison."
+  ],
+  "integration": {
+    "durationSeconds": 11.05940983333494,
+    "failed": 0,
+    "generated": "2026-11-07T17:43:51Z",
+    "limits": "Fixture tests exercise live WKWebViews; permission grants, download panels and popular extension behavior require separate tests.",
+    "tests": [
+      {
+        "detail": "",
+        "name": "media permission delegate connected",
+        "passed": true
+      },
+      {
+        "detail": "",
+        "name": "ten genuinely live tabs",
+        "passed": true
+      },
+      {
+        "detail": "",
+        "name": "switch preserves JS identity",
+        "passed": true
+      },
+      {
+        "detail": "",
+        "name": "switch preserves unsaved form",
+        "passed": true
+      },
+      {
+        "detail": "",
+        "name": "drag reorder model",
+        "passed": true
+      },
+      {
+        "detail": "",
+        "name": "pin places tab in pinned group",
+        "passed": true
+      },
+      {
+        "detail": "",
+        "name": "close and reopen",
+        "passed": true
+      },
+      {
+        "detail": "",
+        "name": "private nonpersistent data store",
+        "passed": true
+      },
+      {
+        "detail": "",
+        "name": "private extensions disabled",
+        "passed": true
+      },
+      {
+        "detail": "",
+        "name": "private navigation excluded from history",
+        "passed": true
+      },
+      {
+        "detail": "",
+        "name": "private objects disposed on close",
+        "passed": true
+      },
+      {
+        "detail": "",
+        "name": "lazy restore loads selected only",
+        "passed": true
+      },
+      {
+        "detail": "",
+        "name": "restored state distinct",
+        "passed": true
+      },
+      {
+        "detail": "",
+        "name": "WebKit content rule execution",
+        "passed": true
+      },
+      {
+        "detail": "WebKit",
+        "name": "real HTTPS navigation",
+        "passed": true
+      },
+      {
+        "detail": "blocked=Optional(false), unblocked=Optional(true)",
+        "name": "built-in network blocker A/B",
+        "passed": true
+      },
+      {
+        "detail": "The certificate for this server is invalid. You might be connecting to a server that is pretending to be “self-signed.badssl.com” which could put your confidential information at risk.",
+        "name": "TLS rejects untrusted certificate",
+        "passed": true
+      },
+      {
+        "detail": "",
+        "name": "failed navigation preserves address",
+        "passed": true
+      },
+      {
+        "detail": "",
+        "name": "retry remains secure and retains address",
+        "passed": true
+      },
+      {
+        "detail": "version 4.9.135",
+        "name": "Dark Reader actual DOM theme injection",
+        "passed": true
+      },
+      {
+        "detail": "",
+        "name": "WebExtension content script",
+        "passed": true
+      },
+      {
+        "detail": "ok",
+        "name": "WebExtension runtime messaging and storage",
+        "passed": true
+      },
+      {
+        "detail": "",
+        "name": "WebExtension unload",
+        "passed": true
+      },
+      {
+        "detail": "",
+        "name": "closed WebView released",
+        "passed": true
+      }
+    ]
+  }
+}

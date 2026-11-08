@@ -1,0 +1,2 @@
+"NSCameraUsageDescription" = "mica asks for the camera only for a site you allowed to make a video call or recording.";
+"NSMicrophoneUsageDescription" = "mica asks for the microphone only for a site you allowed to make a call or recording.";
