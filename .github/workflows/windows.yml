@@ -44,6 +44,11 @@ jobs:
           if (-not $p.WaitForExit(60000)) { $p.Kill(); throw 'setup did not exit' }
           if ($p.ExitCode -ne 0) {
             if (Test-Path "$env:TEMP\mica-setup-self-test.log") { Get-Content "$env:TEMP\mica-setup-self-test.log" }
+            Get-ChildItem windows/artifacts/setup-x64 -Recurse | Select-Object FullName, Length | Format-Table -AutoSize
+            Get-ChildItem "$env:TEMP\.net" -Recurse -Filter '*.pri' -ErrorAction SilentlyContinue | Select-Object FullName, Length | Format-Table -AutoSize
+            $original = Start-Process windows/artifacts/setup-x64/mica-setup.exe -ArgumentList '--self-test' -PassThru
+            if (-not $original.WaitForExit(60000)) { $original.Kill() }
+            Write-Host "Original setup exit code: $($original.ExitCode)"
             Get-WinEvent -FilterHashtable @{LogName='Application'; StartTime=(Get-Date).AddMinutes(-5)} -ErrorAction SilentlyContinue |
               Where-Object { $_.ProviderName -in @('Application Error', '.NET Runtime', 'Windows Error Reporting') } |
               Select-Object -First 10 | Format-List TimeCreated, ProviderName, Message
