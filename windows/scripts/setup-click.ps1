@@ -3,9 +3,10 @@
   Buttons are found by their accessible name, then clicked with SendInput at the centre of the button.
     windows/scripts/setup-click.ps1 -Setup windows\artifacts\mica-3.0.0-win-x64-setup.exe
 #>
-param([Parameter(Mandatory)] [string] $Setup, [int] $Timeout = 120)
+param([Parameter(Mandatory)] [string] $Setup, [int] $Timeout = 120, [string] $Report = (Join-Path $env:TEMP 'mica-setup-click'))
 $ErrorActionPreference = 'Stop'
-Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
+Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes, System.Drawing, System.Windows.Forms
+New-Item -ItemType Directory -Force $Report | Out-Null
 Add-Type @'
 using System;
 using System.Runtime.InteropServices;
@@ -40,12 +41,29 @@ function Find-Named($window, [string[]] $names, [int] $seconds = 20) {
   throw "element not found: $($names -join ', ')"
 }
 
+function Show-State($window, [string] $label) {
+  $file = Join-Path $Report "$label.png"
+  $bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+  $bitmap = New-Object System.Drawing.Bitmap $bounds.Width, $bounds.Height
+  [System.Drawing.Graphics]::FromImage($bitmap).CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
+  $bitmap.Save($file); $bitmap.Dispose()
+  Write-Host "--- $label (screenshot $file)"
+  if ($window) {
+    foreach ($element in $window.FindAll([System.Windows.Automation.TreeScope]::Descendants, $any)) {
+      $c = $element.Current
+      if ($c.Name) { Write-Host ("  {0} '{1}' {2} offscreen={3}" -f $c.ControlType.ProgrammaticName, $c.Name, $c.BoundingRectangle, $c.IsOffscreen) }
+    }
+  }
+}
+
 function Click-Named($window, [string[]] $names) {
   $element = Find-Named $window $names
   Start-Sleep -Milliseconds 700 # let the appear animation settle
   $r = $element.Current.BoundingRectangle
   Write-Host "click '$($element.Current.Name)' at $([int]($r.X + $r.Width / 2)), $([int]($r.Y + $r.Height / 2))"
   [Mouse]::Click([int]($r.X + $r.Width / 2), [int]($r.Y + $r.Height / 2))
+  Start-Sleep -Milliseconds 1500
+  Show-State $window "after-$($element.Current.Name)"
 }
 
 $exe = Join-Path $env:LOCALAPPDATA 'Programs\mica\mica.exe'
@@ -60,6 +78,8 @@ try {
   }
   if (-not $window) { throw 'setup window did not appear' }
   [Mouse]::SetForegroundWindow([IntPtr]$window.Current.NativeWindowHandle) | Out-Null
+  Start-Sleep -Seconds 2
+  Show-State $window 'start'
 
   Click-Named $window @('параметры', 'options')
   Find-Named $window @('ярлык на рабочем столе', 'desktop shortcut') | Out-Null
@@ -72,6 +92,10 @@ try {
   if (-not $process.WaitForExit($Timeout * 1000)) { throw 'setup did not close after the close button' }
   if (-not (Test-Path $exe)) { throw "mica.exe not installed at $exe" }
   Write-Host "installed by clicks: $exe"
+}
+catch {
+  Show-State $window 'failure'
+  throw
 }
 finally {
   if (-not $process.HasExited) { $process.Kill() }

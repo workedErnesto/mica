@@ -62,6 +62,13 @@ jobs:
         run: |
           $setup = Get-ChildItem windows/artifacts -Filter 'mica-*-win-${{ matrix.arch }}-setup.exe' | Select-Object -First 1
           windows/scripts/setup-click.ps1 -Setup $setup.FullName
+      - name: Upload setup click report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: setup-click-${{ matrix.arch }}
+          path: ~/AppData/Local/Temp/mica-setup-click
+          if-no-files-found: ignore
       - name: Quiet install and smoke test with real WebView2
         shell: pwsh
         run: |
