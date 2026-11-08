@@ -1,4 +1,4 @@
-﻿﻿<#
+﻿<#
   Walks mica Setup the way a person does: real mouse clicks through options, back, install and close.
   Buttons are found by AutomationId and clicked with the system mouse at their centre, after checking that
   the point really belongs to the Setup window. A screenshot and the UI Automation tree are saved after each step.
