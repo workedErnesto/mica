@@ -1,78 +1,141 @@
 ﻿<#
-  Walks mica Setup the way a person does: real mouse clicks on "options", "install" and "close".
-  Buttons are found by their accessible name, then clicked with SendInput at the centre of the button.
-    windows/scripts/setup-click.ps1 -Setup windows\artifacts\mica-3.0.0-win-x64-setup.exe
+  Walks mica Setup the way a person does: real mouse clicks through options, back, install and close.
+  Buttons are found by AutomationId and clicked with the system mouse at their centre, after checking that
+  the point really belongs to the Setup window. A screenshot and the UI Automation tree are saved after each step.
+    windows/scripts/setup-click.ps1 -Setup windows\artifacts\mica-3.0.1-win-x64-setup.exe
 #>
-param([Parameter(Mandatory)] [string] $Setup, [int] $Timeout = 120)
+param([Parameter(Mandatory)] [string] $Setup, [int] $Timeout = 120, [string] $Report = (Join-Path $env:TEMP 'mica-setup-click'))
 $ErrorActionPreference = 'Stop'
-Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
+Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes, System.Drawing, System.Windows.Forms
+New-Item -ItemType Directory -Force $Report | Out-Null
 Add-Type @'
 using System;
 using System.Runtime.InteropServices;
-public static class Mouse {
+public static class Desk {
+  [StructLayout(LayoutKind.Sequential)] public struct POINT { public int X, Y; }
   [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
   [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hwnd);
+  [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int cx, int cy, uint flags);
+  [DllImport("user32.dll")] public static extern IntPtr WindowFromPoint(POINT p);
+  [DllImport("user32.dll")] public static extern IntPtr GetAncestor(IntPtr hwnd, uint flags);
+  [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
   [DllImport("user32.dll")] static extern void mouse_event(uint flags, uint x, uint y, uint data, UIntPtr extra);
+  [DllImport("user32.dll")] static extern void keybd_event(byte key, byte scan, uint flags, UIntPtr extra);
+  public static void Escape() { keybd_event(0x1B, 0, 0, UIntPtr.Zero); keybd_event(0x1B, 0, 2, UIntPtr.Zero); }
+  public static void Raise(IntPtr hwnd) { SetWindowPos(hwnd, new IntPtr(-1), 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0040); SetForegroundWindow(hwnd); }
+  public static uint OwnerAt(int x, int y) {
+    var top = GetAncestor(WindowFromPoint(new POINT { X = x, Y = y }), 2);
+    uint pid; GetWindowThreadProcessId(top, out pid); return pid;
+  }
   public static void Click(int x, int y) {
+    SetCursorPos(x - 1, y); System.Threading.Thread.Sleep(150);
     SetCursorPos(x, y); System.Threading.Thread.Sleep(150);
-    SetCursorPos(x + 1, y); System.Threading.Thread.Sleep(150);
     mouse_event(0x0002, 0, 0, 0, UIntPtr.Zero); System.Threading.Thread.Sleep(80);
     mouse_event(0x0004, 0, 0, 0, UIntPtr.Zero);
   }
 }
 '@
-[Mouse]::SetProcessDPIAware() | Out-Null
-$root = [System.Windows.Automation.AutomationElement]::RootElement
-$any = [System.Windows.Automation.Condition]::TrueCondition
+[Desk]::SetProcessDPIAware() | Out-Null
+$automation = [System.Windows.Automation.AutomationElement]
+$scope = [System.Windows.Automation.TreeScope]
+$exe = Join-Path $env:LOCALAPPDATA 'Programs\mica\mica.exe'
+$process = $null
 
-function Find-Named($window, [string[]] $names, [int] $seconds = 20) {
+function Get-Windows {
+  $condition = New-Object System.Windows.Automation.PropertyCondition($automation::ProcessIdProperty, $process.Id)
+  $automation::RootElement.FindAll($scope::Children, $condition)
+}
+
+function Find-Id([string] $id, [int] $seconds = 20) {
+  $condition = New-Object System.Windows.Automation.PropertyCondition($automation::AutomationIdProperty, $id)
   $deadline = (Get-Date).AddSeconds($seconds)
   while ((Get-Date) -lt $deadline) {
-    foreach ($element in $window.FindAll([System.Windows.Automation.TreeScope]::Descendants, $any)) {
-      $name = $element.Current.Name
-      # Title bar caption buttons are Buttons named "Close"; mica's own controls are not, so they are skipped.
-      if ($element.Current.ControlType -eq [System.Windows.Automation.ControlType]::Button) { continue }
-      if ($name -and ($names | Where-Object { $_ -ieq $name }) -and -not $element.Current.IsOffscreen) { return $element }
+    foreach ($window in Get-Windows) {
+      $element = $window.FindFirst($scope::Descendants, $condition)
+      if ($element -and -not $element.Current.IsOffscreen) { return $element }
     }
     Start-Sleep -Milliseconds 300
   }
-  throw "element not found: $($names -join ', ')"
+  throw "element not found: $id"
 }
 
-function Click-Named($window, [string[]] $names) {
-  $element = Find-Named $window $names
-  Start-Sleep -Milliseconds 700 # let the appear animation settle
+function Find-Name([string[]] $names, [int] $seconds = 10) {
+  $deadline = (Get-Date).AddSeconds($seconds)
+  while ((Get-Date) -lt $deadline) {
+    foreach ($window in Get-Windows) {
+      foreach ($element in $window.FindAll($scope::Descendants, [System.Windows.Automation.Condition]::TrueCondition)) {
+        $name = $element.Current.Name
+        if ($name -and ($names | Where-Object { $_ -ieq $name }) -and -not $element.Current.IsOffscreen) { return $element }
+      }
+    }
+    Start-Sleep -Milliseconds 300
+  }
+  throw "text not found: $($names -join ', ')"
+}
+
+function Save-State([string] $label) {
+  $file = Join-Path $Report "$label.png"
+  $bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+  $bitmap = New-Object System.Drawing.Bitmap $bounds.Width, $bounds.Height
+  [System.Drawing.Graphics]::FromImage($bitmap).CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
+  $bitmap.Save($file); $bitmap.Dispose()
+  Write-Host "--- $label"
+  if (-not $process -or $process.HasExited) { return }
+  foreach ($window in Get-Windows) {
+    foreach ($element in $window.FindAll($scope::Descendants, [System.Windows.Automation.Condition]::TrueCondition)) {
+      $c = $element.Current
+      if ($c.Name -or $c.AutomationId) { Write-Host ("  {0} id='{1}' '{2}' {3} offscreen={4}" -f $c.ControlType.ProgrammaticName, $c.AutomationId, $c.Name, $c.BoundingRectangle, $c.IsOffscreen) }
+    }
+  }
+}
+
+function Click-Id([string] $id) {
+  $element = Find-Id $id
+  Start-Sleep -Milliseconds 700 # the page slides in; click where it comes to rest
   $r = $element.Current.BoundingRectangle
-  Write-Host "click '$($element.Current.Name)' at $([int]($r.X + $r.Width / 2)), $([int]($r.Y + $r.Height / 2))"
-  [Mouse]::Click([int]($r.X + $r.Width / 2), [int]($r.Y + $r.Height / 2))
+  $x = [int]($r.X + $r.Width / 2); $y = [int]($r.Y + $r.Height / 2)
+  $owner = [Desk]::OwnerAt($x, $y)
+  for ($try = 0; $owner -ne $process.Id -and $try -lt 3; $try++) {
+    # A runner may start with the Start menu or a first-run window open; Esc closes them, then Setup goes on top again.
+    Write-Host "Setup is covered by process $owner, pressing Esc"
+    [Desk]::Escape(); Start-Sleep -Milliseconds 600
+    [Desk]::Raise([IntPtr](Get-Windows)[0].Current.NativeWindowHandle); Start-Sleep -Milliseconds 600
+    $owner = [Desk]::OwnerAt($x, $y)
+  }
+  if ($owner -ne $process.Id) {
+    $name = (Get-Process -Id $owner -ErrorAction SilentlyContinue).ProcessName
+    throw "another window covers Setup at $x, $y (process $owner $name)"
+  }
+  Write-Host "click $id at $x, $y"
+  [Desk]::Click($x, $y)
+  Start-Sleep -Milliseconds 1200
+  Save-State "after-$id"
 }
 
-$exe = Join-Path $env:LOCALAPPDATA 'Programs\mica\mica.exe'
 $process = Start-Process -FilePath $Setup -PassThru
 try {
-  $window = $null
-  $deadline = (Get-Date).AddSeconds(60)
-  while (-not $window -and (Get-Date) -lt $deadline) {
-    $condition = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ProcessIdProperty, $process.Id)
-    $window = $root.FindFirst([System.Windows.Automation.TreeScope]::Children, $condition)
-    if (-not $window) { Start-Sleep -Milliseconds 500 }
-  }
-  if (-not $window) { throw 'setup window did not appear' }
-  [Mouse]::SetForegroundWindow([IntPtr]$window.Current.NativeWindowHandle) | Out-Null
+  Find-Id 'setup.install' 60 | Out-Null
+  [Desk]::Raise([IntPtr](Get-Windows)[0].Current.NativeWindowHandle)
+  Start-Sleep -Seconds 1
+  Save-State 'start'
 
-  Click-Named $window @('параметры', 'options')
-  Find-Named $window @('ярлык на рабочем столе', 'desktop shortcut') | Out-Null
-  Write-Host 'options opened'
-
-  Click-Named $window @('установить', 'обновить', 'install', 'update')
-  Find-Named $window @('открыть mica', 'open mica') $Timeout | Out-Null
-  Write-Host 'install finished'
-  Click-Named $window @('закрыть', 'close')
-  if (-not $process.WaitForExit($Timeout * 1000)) { throw 'setup did not close after the close button' }
+  Click-Id 'setup.options'
+  Find-Name @('ярлык на рабочем столе', 'desktop shortcut') | Out-Null
+  Find-Name @('сделать браузером по умолчанию', 'make the default browser') | Out-Null
+  Click-Id 'setup.back'
+  Click-Id 'setup.options'
+  Click-Id 'setup.install'
+  Find-Id 'setup.open' $Timeout | Out-Null
+  Click-Id 'setup.close'
+  if (-not $process.WaitForExit(30000)) { throw 'Setup did not close after the close button' }
   if (-not (Test-Path $exe)) { throw "mica.exe not installed at $exe" }
   Write-Host "installed by clicks: $exe"
 }
+catch {
+  Save-State 'failure'
+  throw
+}
 finally {
-  if (-not $process.HasExited) { $process.Kill() }
+  if ($process -and -not $process.HasExited) { $process.Kill() }
 }
