@@ -60,6 +60,8 @@ jobs:
       - name: Setup installs with real mouse clicks
         shell: powershell
         run: |
+          # The arm64 image keeps the Windows first-run privacy window (WWAHost) over the desktop; it would take the clicks.
+          Get-Process WWAHost -ErrorAction SilentlyContinue | Stop-Process -Force
           $setup = Get-ChildItem windows/artifacts -Filter 'mica-*-win-${{ matrix.arch }}-setup.exe' | Select-Object -First 1
           windows/scripts/setup-click.ps1 -Setup $setup.FullName
       - name: Upload setup click report
