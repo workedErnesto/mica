@@ -15,11 +15,15 @@ env:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
-        arch: [x64, arm64]
+        include:
+          - arch: x64
+            runner: windows-latest
+          - arch: arm64
+            runner: windows-11-arm
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -36,17 +40,16 @@ jobs:
         shell: pwsh
         run: windows/scripts/build.ps1 -Arch ${{ matrix.arch }} -SkipTests
       - name: Setup starts (WinUI single-file)
-        if: matrix.arch == 'x64'
         shell: pwsh
         run: |
-          $setup = Get-ChildItem windows/artifacts -Filter 'mica-*-win-x64-setup.exe' | Select-Object -First 1
+          $setup = Get-ChildItem windows/artifacts -Filter 'mica-*-win-${{ matrix.arch }}-setup.exe' | Select-Object -First 1
           $p = Start-Process $setup.FullName -ArgumentList '--self-test' -PassThru
           if (-not $p.WaitForExit(60000)) { $p.Kill(); throw 'setup did not exit' }
           if ($p.ExitCode -ne 0) {
             if (Test-Path "$env:TEMP\mica-setup-self-test.log") { Get-Content "$env:TEMP\mica-setup-self-test.log" }
-            Get-ChildItem windows/artifacts/setup-x64 -Recurse | Select-Object FullName, Length | Format-Table -AutoSize
+            Get-ChildItem windows/artifacts/setup-${{ matrix.arch }} -Recurse | Select-Object FullName, Length | Format-Table -AutoSize
             Get-ChildItem "$env:TEMP\.net" -Recurse -Filter '*.pri' -ErrorAction SilentlyContinue | Select-Object FullName, Length | Format-Table -AutoSize
-            $original = Start-Process windows/artifacts/setup-x64/mica-setup.exe -ArgumentList '--self-test' -PassThru
+            $original = Start-Process windows/artifacts/setup-${{ matrix.arch }}/mica-setup.exe -ArgumentList '--self-test' -PassThru
             if (-not $original.WaitForExit(60000)) { $original.Kill() }
             Write-Host "Original setup exit code: $($original.ExitCode)"
             Get-WinEvent -FilterHashtable @{LogName='Application'; StartTime=(Get-Date).AddMinutes(-5)} -ErrorAction SilentlyContinue |
@@ -55,18 +58,17 @@ jobs:
             throw "setup exit code $($p.ExitCode)"
           }
       - name: Quiet install and smoke test with real WebView2
-        if: matrix.arch == 'x64'
         shell: pwsh
         run: |
-          $setup = Get-ChildItem windows/artifacts -Filter 'mica-*-win-x64-setup.exe' | Select-Object -First 1
+          $setup = Get-ChildItem windows/artifacts -Filter 'mica-*-win-${{ matrix.arch }}-setup.exe' | Select-Object -First 1
           $install = Start-Process $setup.FullName -ArgumentList '--quiet' -Wait -PassThru
           if ($install.ExitCode -ne 0) { throw "setup exit code $($install.ExitCode)" }
           windows/scripts/smoke.ps1
       - name: Upload smoke report
-        if: always() && matrix.arch == 'x64'
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: smoke-report
+          name: smoke-report-${{ matrix.arch }}
           path: ~/AppData/Local/mica/QA/smoke-report.json
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
@@ -77,7 +79,7 @@ jobs:
             windows/artifacts/mica-*-setup.exe
             windows/artifacts/mica-*-setup.exe.sha256
       - name: Attach to release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: false
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
