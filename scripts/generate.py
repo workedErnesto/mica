@@ -76,6 +76,8 @@ enum MotionTokens {{
     static let snappy = (response: {num(m['snappy']['response'])}, damping: {num(m['snappy']['damping'])})
     static let panel = (response: {num(m['panel']['response'])}, damping: {num(m['panel']['damping'])})
     static let popScale = {num(m['popScale'])}
+    /// {m['hoverIntent']['doc']}
+    static let hoverIntent = {num(m['hoverIntent']['delay'])}
 }}
 '''
     # C#
@@ -105,6 +107,8 @@ public static class MotionTokens
     public static readonly Spring Snappy = new({num(m['snappy']['response'])}, {num(m['snappy']['damping'])});
     public static readonly Spring Panel = new({num(m['panel']['response'])}, {num(m['panel']['damping'])});
     public const double PopScale = {num(m['popScale'])};
+    /// <summary>{m['hoverIntent']['doc']}</summary>
+    public const double HoverIntent = {num(m['hoverIntent']['delay'])};
 }}
 '''
     sizes = tokens['typography']['sizes']

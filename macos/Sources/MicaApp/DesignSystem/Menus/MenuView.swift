@@ -25,11 +25,13 @@ struct MenuView: View {
         .frame(minWidth: 196, alignment: .leading)
         .fixedSize()
         .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Palette.raised))
-        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Palette.hairlineStrong, lineWidth: 1))
-        .shadow(color: Palette.shadowStrong, radius: 12, y: 5)
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Palette.hairline, lineWidth: 1))
+        // The blur of a SwiftUI shadow reaches about twice its radius; with radius 8 and offset 3 it fades out inside
+        // MicaMenu.margin, so the edge of the menu window never cuts it into a visible box.
+        .shadow(color: Palette.menuShadow, radius: 8, y: 3)
         .scaleEffect(model.shown || reduced ? 1 : 0.95, anchor: model.anchor)
         .opacity(model.shown ? 1 : 0)
-        .padding(18)
+        .padding(MicaMenu.margin)
         .animation(Motion.hover, value: model.highlighted)
         .accessibilityElement(children: .contain)
         .accessibilityAddTraits(.isModal)

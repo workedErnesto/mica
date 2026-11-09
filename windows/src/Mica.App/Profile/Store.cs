@@ -153,6 +153,9 @@ public sealed partial class Store
 
     /// <summary>Opacity of the shell tint over the backdrop: 0.92 at zero transparency, 0.2 at full.</summary>
     public double GlassTint => 0.92 - Preferences.Transparency * 0.72;
+    /// <summary>Opacity of the start page fill over the glass: opaque at zero transparency, 0.45 at full, denser than the
+    /// shell tint so the start page still reads as the card. Web pages are never made transparent.</summary>
+    public double StartTint => 1 - Preferences.Transparency * 0.55;
 
     public async Task StartAsync()
     {

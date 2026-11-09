@@ -27,6 +27,8 @@ public static partial class Palette
     public static readonly Swatch Live = new(0xFFDC2626, 0xFFF87171, 0xFFDC2626, 0xFFF87171);
     public static readonly Swatch Shadow = new(0x12111113, 0x73000000, 0x12111113, 0x73000000);
     public static readonly Swatch ShadowStrong = new(0x24111113, 0x99000000, 0x24111113, 0x99000000);
+    /// <summary>Shadow of shell menus: soft enough that its blur fades out well inside the menu window, so no edge of it shows.</summary>
+    public static readonly Swatch MenuShadow = new(0x1A111113, 0x4C000000, 0x1A111113, 0x4C000000);
     /// <summary>Dims the window under a modal card. Lighter in light mode, so the white card does not sit in a grey haze.</summary>
     public static readonly Swatch Scrim = new(0x2E111113, 0x73000000, 0x2E111113, 0x73000000);
     /// <summary>Address field in the top bar. In light mode a white fill with a hairline lifts it off the paper shell; in dark mode the faint white fill already reads, so it keeps no border.</summary>

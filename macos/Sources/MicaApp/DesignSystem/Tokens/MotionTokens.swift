@@ -9,4 +9,6 @@ enum MotionTokens {
     static let snappy = (response: 0.3, damping: 0.86)
     static let panel = (response: 0.36, damping: 0.9)
     static let popScale = 0.96
+    /// Pointer rest before a tab tile shows its close badge, so passing over the rail does not light up crosses.
+    static let hoverIntent = 0.5
 }

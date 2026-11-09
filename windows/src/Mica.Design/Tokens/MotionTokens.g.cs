@@ -10,4 +10,6 @@ public static class MotionTokens
     public static readonly Spring Snappy = new(0.3, 0.86);
     public static readonly Spring Panel = new(0.36, 0.9);
     public const double PopScale = 0.96;
+    /// <summary>Pointer rest before a tab tile shows its close badge, so passing over the rail does not light up crosses.</summary>
+    public const double HoverIntent = 0.5;
 }

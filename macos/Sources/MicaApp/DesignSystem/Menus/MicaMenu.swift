@@ -19,7 +19,8 @@ final class MicaMenu {
     private var panel: MenuPanel?
     private var monitors: [Any] = []
     private var observers: [NSObjectProtocol] = []
-    private static let margin: CGFloat = 18
+    /// Transparent room around the menu in its window for the shadow and the opening scale.
+    static let margin: CGFloat = 24
 
     var isOpen: Bool { panel?.isVisible == true && model.shown }
 

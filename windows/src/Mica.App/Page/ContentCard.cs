@@ -20,6 +20,8 @@ public sealed partial class ContentCard : Grid
     readonly Border shade;
     Tab? shownTab;
     StartPage.StartScreen? startScreen;
+    bool glass, startShown;
+    double startTint = 1;
 
     public ContentCard(BrowserModel browser)
     {
@@ -35,6 +37,17 @@ public sealed partial class ContentCard : Grid
         Children.Add(find);
         browser.WebViewCreated += tab => { if (tab.WebView is { } view && view.Parent is null) pages.Children.Add(view); Render(); };
         this.Bind(browser, Render);
+    }
+
+    /// <summary>The start page is mica's own surface, so with glass on it lets the frosted shell through; a site keeps an
+    /// opaque card. A see-through card drops its raised shadow, which would show through the fill.</summary>
+    public void SetGlass(bool glass, double startTint) { this.glass = glass; this.startTint = startTint; ApplyFill(); }
+
+    void ApplyFill()
+    {
+        var see = glass && startShown;
+        Background = see ? new SolidColorBrush(Palette.Canvas.Resolve()) { Opacity = startTint } : Palette.Canvas.Brush();
+        Translation = new System.Numerics.Vector3(0, 0, see ? 0 : 6);
     }
 
     public void SetCovered(bool covered)
@@ -65,6 +78,7 @@ public sealed partial class ContentCard : Grid
         var tab = shownTab;
         tab?.SetVisible(tab.Error is null);
         var showStart = tab is not null && tab.WebView is null && tab.Url is null;
+        if (showStart != startShown) { startShown = showStart; ApplyFill(); }
         if (showStart && startScreen is null) { startScreen = new StartPage.StartScreen(browser); start.Children.Add(startScreen); Motion.Appear(startScreen); }
         else if (!showStart && startScreen is not null) { start.Children.Clear(); startScreen = null; }
         errors.Children.Clear();
@@ -102,11 +116,13 @@ public sealed partial class ErrorPage : Grid
 public sealed partial class FindBar : Grid
 {
     readonly Tab tab;
+    readonly BrowserModel browser;
     readonly TextBox box;
     readonly TextBlock missing;
     public FindBar(Tab tab, BrowserModel browser)
     {
-        this.tab = tab;
+        this.tab = tab; this.browser = browser;
+        browser.FindStepRequested += Step;
         box = MTextField.Bare(new TextBox { PlaceholderText = browser.Text("найти на странице", "Найти на странице"), Width = 180, FontSize = 13 });
         missing = Ui.Text(browser.Text("не найдено", "Не найдено"), 11.5, Palette.Danger.Brush()); missing.Opacity = 0;
         var up = new IconButton("chevron.up", browser.Text("предыдущее совпадение", "Предыдущее совпадение"), 24);
@@ -145,5 +161,5 @@ public sealed partial class FindBar : Grid
         if (back) core.Find.FindPrevious(); else core.Find.FindNext();
     }
 
-    public void Clear() => tab.Core?.Find.Stop();
+    public void Clear() { browser.FindStepRequested -= Step; tab.Core?.Find.Stop(); }
 }

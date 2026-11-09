@@ -8,7 +8,7 @@ struct Monogram: View {
     var plain = false
     var tint: Color = Palette.text2
     var body: some View {
-        let letter = (Favicons.key(host) ?? "").first.map { String($0).uppercased() } ?? ""
+        let letter = (Favicons.site(host) ?? "").first.map { String($0).uppercased() } ?? ""
         let scale: CGFloat = plain ? 0.68 : 0.58
         ZStack {
             if !plain { RoundedRectangle(cornerRadius: size * 0.3, style: .continuous).fill(Palette.track) }

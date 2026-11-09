@@ -36,6 +36,13 @@ public sealed partial class BrowserModel : Observable
     public event Action? FocusAddressRequested;
     /// <summary>F10 or Alt+F: the "…" menu that stands in for the macOS menu bar.</summary>
     public event Action? MenuRequested;
+    /// <summary>F3, Ctrl+G and their Shift forms: the open find bar steps to the next or previous match; a closed bar opens instead.</summary>
+    public event Action<bool>? FindStepRequested;
+    public void StepFind(bool back)
+    {
+        if (Selected?.Core is null) return;
+        if (ShowFind) FindStepRequested?.Invoke(back); else ShowFind = true;
+    }
     public void RequestMenu() => MenuRequested?.Invoke();
     public event Action<Tab>? WebViewCreated;
     public event Action<string>? Message;

@@ -19,7 +19,8 @@ struct StartScreen: View {
         let greeting = Greeting.text(store.preferences, hour: Calendar.current.component(.hour, from: Date()), seed: seed)
         let sections = visibleSections(options, editing: editing)
         ZStack {
-            Palette.canvas
+            // ContentCard draws the canvas under the start page, translucent when the shell is frosted.
+            Color.clear
             ScrollView {
                 VStack(spacing: 28) {
                     if options.wordmark || browser.privateMode || editing {

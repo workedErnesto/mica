@@ -26,19 +26,19 @@ struct BrowserRoot: View {
                         .padding(.leading, lights == 0 ? Radius.gutter : lights).padding(.trailing, Radius.gutter)
                         .frame(height: Chrome.bar)
                         .background { WindowDragArea(titleBand: true) }
-                        .micaContextMenu {
-                            MenuEntry.item(browser.text("новая вкладка", "Новая вкладка"), symbol: "plus") { _ = browser.add(); browser.focusAddress += 1 }
-                            MenuEntry.divider
-                            LayoutMenu.entries(store: store)
-                            MenuEntry.divider
-                            MenuEntry.item(store.text("настроить панель инструментов…", "Настроить панель инструментов…"), symbol: "slider.horizontal.3") { browser.customizingToolbar = true }
-                        }
+                        .micaContextMenu { TabStrip.menu(browser: browser, store: store) }
                         .transition(.opacity)
                     TopBar(browser: browser, store: store, layout: layout, windowWidth: geo.size.width, leadingInset: Space.small)
                         .padding(.top, -Space.micro)
                 } else {
                     TopBar(browser: browser, store: store, layout: layout, windowWidth: geo.size.width, leadingInset: lights)
-                    if layout == .top { TabStrip(browser: browser).padding(.horizontal, Radius.gutter).padding(.bottom, Space.small).transition(.opacity) }
+                    if layout == .top {
+                        // The whole band, gutters and the free space after the tabs included, opens the strip menu;
+                        // a tab's own smaller area keeps its tab menu.
+                        TabStrip(browser: browser).padding(.horizontal, Radius.gutter).padding(.bottom, Space.small)
+                            .micaContextMenu { TabStrip.menu(browser: browser, store: store) }
+                            .transition(.opacity)
+                    }
                 }
                 HStack(spacing: 0) {
                     if edge == .left {
@@ -109,7 +109,7 @@ struct BrowserRoot: View {
     }
 
     @ViewBuilder private var shellBackground: some View {
-        ShellBackground(store: store, glass: store.preferences.frosted && !reduceTransparency && contrast != .increased)
+        ShellBackground(store: store, glass: store.glass(reduceTransparency: reduceTransparency, contrast: contrast))
     }
 
     private func workspace(_ geo: GeometryProxy) -> some View {

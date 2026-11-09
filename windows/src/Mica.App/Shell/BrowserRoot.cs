@@ -74,6 +74,7 @@ public sealed partial class BrowserRoot : Grid
         shell.Background = Look.Shell;
         shell.Opacity = glass ? tint : 1;
         Background = glass ? Palette.Clear : Look.Shell;
+        card.SetGlass(glass, Store.StartTint);
     }
 
     TabLayout EffectiveLayout => ActualWidth > 0 ? Store.Preferences.Layout.Fitting(ActualWidth) : Store.Preferences.Layout;

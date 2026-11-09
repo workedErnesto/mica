@@ -20,6 +20,10 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
     @Published var secure = false
     @Published var error: String?
     @Published var capturing = false
+    /// The icon the current page declared on its latest load (Favicons.refresh); until then the tab shows the stored
+    /// icon of the page's origin. Cleared when the tab moves to another origin.
+    @Published var favicon: NSImage?
+    private var faviconKey: String?
     var webView: WKWebView?
     var navigationFailure: NSError?
     private var observations: [NSKeyValueObservation] = []
@@ -49,7 +53,11 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
         config.applicationNameForUserAgent = Tab.userAgentSuffix
         if configuration == nil && !owner.privateMode { passwordBridge = PasswordBridge(tab: self, controller: config.userContentController) }
         if configuration == nil { notifications = NotificationBridge(tab: self, controller: config.userContentController, privateMode: owner.privateMode, permissions: owner.store.permissions) }
-        let view = WKWebView(frame: .zero, configuration: config)
+        // A popup shares the opener's content controller, which already carries the context script and its handler.
+        if configuration == nil { ContextTargets.shared.install(in: config.userContentController) }
+        let page = PageView(frame: .zero, configuration: config)
+        page.tab = self
+        let view: WKWebView = page
         view.navigationDelegate = self; view.uiDelegate = self
         view.allowsBackForwardNavigationGestures = true
         view.allowsLinkPreview = true
@@ -131,6 +139,11 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
         if phase == .terminated || webView == nil || webView?.backForwardList.currentItem == nil { if let url { load(url) } }
         else { error = nil; webView?.reload() }
     }
+    /// ⌘⇧R: the page and its resources again from the network, skipping the cache.
+    func reloadFromOrigin() {
+        guard let webView, phase != .terminated, webView.backForwardList.currentItem != nil else { reload(); return }
+        error = nil; webView.reloadFromOrigin()
+    }
     func dispose() {
         observations.removeAll()
         if let notifications, let controller = webView?.configuration.userContentController { notifications.detach(from: controller); self.notifications = nil }
@@ -142,10 +155,21 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
         secure = false; error = nil; navigationFailure = nil
         if owner?.privateMode == false { owner?.store.extensions.controller.didChangeTabProperties([.loading, .URL], for: self) }
     }
+    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        if favicon != nil, Favicons.key(webView.url) != faviconKey { favicon = nil; faviconKey = nil }
+    }
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         secure = webView.url?.scheme == "https" && webView.hasOnlySecureContent && webView.serverTrust != nil
         owner?.store.record(self); owner?.store.scheduleSession()
-        if let page = webView.url { owner?.favicons.refresh(from: webView, page: page) }
+        if let page = webView.url, let favicons = owner?.favicons {
+            Task { [weak self, weak webView] in
+                guard let webView else { return }
+                let icon = await favicons.refresh(from: webView, page: page)
+                // A later navigation owns the tab icon by now; its own load reports its icon.
+                guard let self, self.webView === webView, webView.url == page else { return }
+                self.favicon = icon; self.faviconKey = Favicons.key(page)
+            }
+        }
         if owner?.privateMode == false { owner?.store.extensions.controller.didChangeTabProperties([.title, .URL, .loading], for: self) }
     }
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) { failed(error) }

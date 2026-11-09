@@ -87,6 +87,13 @@ final class Store: ObservableObject {
     var look: Look { Look(preferences) }
     /// Opacity of the shell tint over the blur: 0.92 at zero transparency, 0.2 at full.
     var glassTint: Double { 0.92 - preferences.transparency * 0.72 }
+    /// Opacity of the start page fill over the glass: opaque at zero transparency, 0.45 at full. It stays denser than
+    /// the shell tint, so the start page still reads as the card. Web pages are never made transparent.
+    var startTint: Double { 1 - preferences.transparency * 0.55 }
+    /// The shell shows the frosted material: chosen in settings and not overridden by Reduce Transparency or Increase Contrast.
+    func glass(reduceTransparency: Bool, contrast: ColorSchemeContrast) -> Bool {
+        preferences.frosted && !reduceTransparency && contrast != .increased
+    }
     func start() async {
         applyAppearance()
         AppIcons.apply(preferences.appIcon)

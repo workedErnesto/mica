@@ -55,9 +55,12 @@ public static class Commands
             case "reopen": browser.Reopen(); break;
             case "address": browser.FocusAddress(); break;
             case "reload": tab?.Reload(); break;
+            case "reloadHard": tab?.ReloadFromOrigin(); break;
             case "back": tab?.GoBack(); break;
             case "forward": tab?.GoForward(); break;
             case "find": if (tab?.Core is not null) browser.ShowFind = !browser.ShowFind; break;
+            case "findNext": browser.StepFind(back: false); break;
+            case "findPrevious": browser.StepFind(back: true); break;
             case "sidebar": store.Change(p => p.SidebarCollapsed = !p.SidebarCollapsed); break;
             case "bookmark": if (tab is not null) store.Bookmark(tab); break;
             case "history": browser.Panel = browser.Panel == LibraryPanel.History ? null : LibraryPanel.History; break;

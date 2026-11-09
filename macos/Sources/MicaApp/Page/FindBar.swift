@@ -23,6 +23,7 @@ struct FindBar: View {
         .modifier(RaisedSurface(radius: 12))
         .animation(Motion.hover, value: found)
         .onAppear { focused = true }
+        .onChange(of: browser.findStep) { _, step in if let step, !query.isEmpty { find(step.backwards) } }
         .onExitCommand { close() }
     }
     private func close() { browser.showFind = false; tab.webView?.find("", configuration: WKFindConfiguration()) { _ in } }

@@ -10,6 +10,9 @@ struct CustomizeToolbarPanel: View {
     let maxHeight: CGFloat
     @State private var targeted = false
     @State private var shown = false
+    /// Height of the panel content. A ScrollView takes all the height it is offered, so the panel is sized to its
+    /// content and scrolls only when the window is too short for it.
+    @State private var contentHeight: CGFloat = 0
     var body: some View {
         let toolbar = store.preferences.toolbar
         let moves = ToolbarMoves(store: store)
@@ -48,8 +51,10 @@ struct CustomizeToolbarPanel: View {
             }
         }
         .padding(Space.section)
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
         }
-        .frame(maxHeight: maxHeight)
+        .scrollBounceBehavior(.basedOnSize)
+        .frame(height: min(contentHeight, maxHeight))
         .frame(maxWidth: 820)
         .modifier(RaisedSurface(radius: Radius.panel))
         // The whole panel takes a control back; a drop target on the lazy grid alone never received drops.
