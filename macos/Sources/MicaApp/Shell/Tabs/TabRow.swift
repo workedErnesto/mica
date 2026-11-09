@@ -17,7 +17,7 @@ struct TabIcon: View {
             if tab.capturing { Image(systemName: "mic.fill").font(.system(size: size * 0.7)).foregroundStyle(Palette.live) }
             else if tab.phase == .terminated { Image(systemName: "exclamationmark.triangle").font(.system(size: size * 0.7)).foregroundStyle(Palette.text2) }
             else if tab.loading { ProgressRing(progress: tab.progress, size: size) }
-            else if let favicons = tab.owner?.favicons { SiteIcon(host: tab.url?.host, favicons: favicons, size: size, plain: plain, tint: tint).opacity(tab.phase == .restored ? 0.55 : 1) }
+            else if let favicons = tab.owner?.favicons { SiteIcon(url: tab.url, icon: tab.favicon, favicons: favicons, size: size, plain: plain, tint: tint).opacity(tab.phase == .restored ? 0.55 : 1) }
             else { Monogram(host: tab.url?.host, size: size, plain: plain, tint: tint).opacity(tab.phase == .restored ? 0.55 : 1) }
         }
         .frame(width: size, height: size)
@@ -116,8 +116,8 @@ struct TabInteractions: ViewModifier {
                 MenuEntry.item(browser.text("копировать адрес", "Копировать адрес"), symbol: "link", enabled: tab.url != nil) { if let url = tab.url { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(url.absoluteString, forType: .string) } }
                 MenuEntry.item(browser.text("открыть в новом окне", "Открыть в новом окне"), symbol: "macwindow") { let window = browser.store.newWindow(privateMode: browser.privateMode); if let url = tab.url { window.selected?.load(url) } }
                 MenuEntry.divider
-                MenuEntry.item(browser.text("закрыть остальные", "Закрыть остальные"), symbol: "xmark.square") { withMotion(Motion.quick) { for other in browser.tabs where other.id != tab.id && !other.pinned { browser.close(other) } } }
-                MenuEntry.item(browser.text("закрыть все", "Закрыть все"), symbol: "xmark.rectangle") { withMotion(Motion.quick) { browser.closeAll() } }
+                MenuEntry.item(browser.text("закрыть остальные", "Закрыть остальные"), symbol: "square.on.square.dashed") { withMotion(Motion.quick) { for other in browser.tabs where other.id != tab.id && !other.pinned { browser.close(other) } } }
+                MenuEntry.item(browser.text("закрыть все", "Закрыть все"), symbol: "rectangle.on.rectangle.slash") { withMotion(Motion.quick) { browser.closeAll() } }
                 MenuEntry.item(browser.text("закрыть вкладку", "Закрыть вкладку"), symbol: "xmark") { withMotion(Motion.quick) { browser.close(tab) } }
             }
     }

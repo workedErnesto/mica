@@ -28,6 +28,8 @@ enum Palette {
     static let live = Color.dynamic(rgb(0xDC2626), rgb(0xF87171))
     static let shadow = Color.dynamic(rgb(0x111113, 0.07), rgb(0x000000, 0.45))
     static let shadowStrong = Color.dynamic(rgb(0x111113, 0.14), rgb(0x000000, 0.6))
+    /// Shadow of shell menus: soft enough that its blur fades out well inside the menu window, so no edge of it shows.
+    static let menuShadow = Color.dynamic(rgb(0x111113, 0.1), rgb(0x000000, 0.3))
     /// Dims the window under a modal card. Lighter in light mode, so the white card does not sit in a grey haze.
     static let scrim = Color.dynamic(rgb(0x111113, 0.18), rgb(0x000000, 0.45))
     /// Address field in the top bar. In light mode a white fill with a hairline lifts it off the paper shell; in dark mode the faint white fill already reads, so it keeps no border.

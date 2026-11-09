@@ -41,7 +41,8 @@ public sealed partial class StartScreen : Grid
     public StartScreen(BrowserModel browser)
     {
         this.browser = browser;
-        Background = Palette.Canvas.Brush();
+        // ContentCard draws the canvas under the start page, translucent when the shell is frosted.
+        Background = Palette.Clear;
         field = MTextField.Bare(new TextBox { FontSize = 16 });
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(field, browser.Text("адресная строка", "Адресная строка"));
         suggestions = new SuggestionList(item => item.Activate(browser)) { Margin = new Thickness(Radius.PanelPadding) };

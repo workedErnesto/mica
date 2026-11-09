@@ -55,6 +55,7 @@
     "puzzlepiece.extension": "EA86",
     "questionmark.circle": "E897",
     "rectangle.on.rectangle": "E8A1",
+    "rectangle.on.rectangle.slash": "E8BB",
     "rectangle.topthird.inset.filled": "E7C4",
     "return": "E751",
     "shield.lefthalf.filled": "EA18",
@@ -66,6 +67,7 @@
     "square.and.arrow.up": "E72D",
     "square.grid.2x2": "E80A",
     "square.on.square": "E8C8",
+    "square.on.square.dashed": "E8E6",
     "square.stack": "E8F1",
     "star": "E734",
     "star.fill": "E735",
@@ -76,8 +78,6 @@
     "trash.slash": "E74D",
     "wifi.exclamationmark": "E7BA",
     "xmark": "E711",
-    "xmark.circle.fill": "EB90",
-    "xmark.rectangle": "E8BB",
-    "xmark.square": "E711"
+    "xmark.circle.fill": "EB90"
   }
 }

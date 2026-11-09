@@ -17,6 +17,13 @@ final class BrowserModel: NSObject, ObservableObject, WKWebExtensionWindow {
     @Published var focusAddress = 0
     @Published var panel: Panel?
     @Published var showFind = false
+    /// ⌘G and ⌘⇧G: the find bar steps to the next or previous match; a closed bar opens instead.
+    struct FindStep: Equatable { let id = UUID(); let backwards: Bool }
+    @Published var findStep: FindStep?
+    func stepFind(backwards: Bool) {
+        guard selected?.webView != nil else { return }
+        if showFind { findStep = FindStep(backwards: backwards) } else { showFind = true }
+    }
     @Published var showSettings = false
     @Published var showClearData = false
     /// A window-level card (settings, onboarding, clearing data) covers the page; the web view takes no clicks meanwhile.

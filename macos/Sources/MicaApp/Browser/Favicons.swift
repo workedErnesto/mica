@@ -2,17 +2,17 @@ import AppKit
 import SwiftUI
 import WebKit
 
-/// Site icons, keyed by host without `www.`. A normal profile keeps a 64 px PNG per host in Caches and reads it
-/// lazily; an incognito window owns a separate instance that lives in memory only. Each host is fetched at most
-/// once per session, after its page finishes loading: the page's own `<link rel=icon>` candidates are read in an
-/// isolated script world and downloaded without cookies, with `/favicon.ico` as the fallback.
+/// Site icons, keyed by host without `www.` plus a non-default port, so apps on different ports of localhost keep
+/// their own. A normal profile keeps a 64 px PNG per key in Caches and reads it lazily; an incognito window owns a
+/// separate instance that lives in memory only. The stored copy only fills the gap until a page loads: every finished
+/// main-frame load reads the page's own `<link rel=icon>` candidates again in an isolated script world and downloads
+/// them without cookies, with `/favicon.ico` as the fallback, and the result replaces the stored copy.
 @MainActor
 final class Favicons: ObservableObject {
     @Published private(set) var icons: [String: NSImage] = [:]
     let persistent: Bool
     private let directory: URL?
-    /// Hosts fetched or being fetched this session, and hosts whose disk copy was already looked up.
-    private var fetched = Set<String>()
+    /// Keys whose disk copy was already looked up.
     private var probed = Set<String>()
     private var generation = 0
     private lazy var session: URLSession = {
@@ -40,15 +40,25 @@ final class Favicons: ObservableObject {
         } else { directory = nil }
     }
 
-    static func key(_ host: String?) -> String? {
+    /// `example.com` for www.example.com and example.com:443, `localhost:8501` for http://localhost:8501/app.
+    static func key(_ url: URL?) -> String? {
+        guard let url, let host = site(url.host) else { return nil }
+        let defaultPort = ["http": 80, "https": 443][url.scheme?.lowercased() ?? ""]
+        if let port = url.port, port != defaultPort { return host + ":" + String(port) }
+        return host
+    }
+
+    /// Lowercased host without `www.`; also what the monogram letter is taken from.
+    static func site(_ host: String?) -> String? {
         guard var host = host?.lowercased(), !host.isEmpty else { return nil }
         if host.hasPrefix("www.") { host.removeFirst(4) }
         return host.isEmpty ? nil : host
     }
 
-    /// Safe to call from a view body: a missing icon schedules a disk read and publishes on a later turn.
-    func image(for host: String?) -> NSImage? {
-        guard let key = Self.key(host) else { return nil }
+    /// The stored icon of the page's origin. Safe to call from a view body: a missing icon schedules a disk read and
+    /// publishes on a later turn.
+    func image(for url: URL?) -> NSImage? {
+        guard let key = Self.key(url) else { return nil }
         if let image = icons[key] { return image }
         if let file = file(for: key), !probed.contains(key) {
             probed.insert(key)
@@ -64,41 +74,40 @@ final class Favicons: ObservableObject {
         return nil
     }
 
-    /// Called when a main-frame navigation finishes. Repeated visits in one session reuse the first result.
-    func refresh(from webView: WKWebView, page: URL) {
-        guard let scheme = page.scheme?.lowercased(), scheme == "http" || scheme == "https",
-              let key = Self.key(page.host), !fetched.contains(key) else { return }
-        fetched.insert(key)
+    /// Called whenever a main-frame navigation finishes; returns the icon the page declares now, or nil when it has
+    /// none that loads. Nothing is reused from earlier loads, so a changed icon or another app on the same origin shows
+    /// its own.
+    func refresh(from webView: WKWebView, page: URL) async -> NSImage? {
+        guard let scheme = page.scheme?.lowercased(), scheme == "http" || scheme == "https", let key = Self.key(page) else { return nil }
         let generation = generation
-        Task { [weak self, weak webView] in
-            guard let webView else { return }
-            let found = await Self.links(in: webView)
-            guard let self, self.generation == generation else { return }
-            let candidates = Self.candidates(found.links, page: page)
-            guard let image = await self.download(candidates, userAgent: found.userAgent) else { return }
-            guard self.generation == generation, let normalized = Self.normalize(image) else { return }
-            self.icons[key] = normalized.image
-            self.probed.insert(key)
-            if let file = self.file(for: key), let directory = self.directory {
-                let png = normalized.png
-                Task.detached(priority: .utility) {
-                    try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-                    try? png.write(to: file, options: .atomic)
-                }
+        let found = await Self.links(in: webView)
+        guard self.generation == generation else { return nil }
+        let candidates = Self.candidates(found.links, page: page)
+        guard let image = await download(candidates, userAgent: found.userAgent) else { return nil }
+        guard self.generation == generation, let normalized = Self.normalize(image) else { return nil }
+        icons[key] = normalized.image
+        probed.insert(key)
+        if let file = file(for: key), let directory {
+            let png = normalized.png
+            Task.detached(priority: .utility) {
+                try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+                try? png.write(to: file, options: .atomic)
             }
         }
+        return normalized.image
     }
 
     /// Clearing history or cache forgets every icon, in memory and on disk; open pages fetch theirs again on the next load.
     func clear() {
         generation += 1
-        icons = [:]; fetched = []; probed = []
+        icons = [:]; probed = []
         if let directory { try? FileManager.default.removeItem(at: directory) }
     }
 
     private func file(for key: String) -> URL? {
         guard let directory else { return nil }
         let allowed = Set("abcdefghijklmnopqrstuvwxyz0123456789.-")
+        // The port separator becomes "_" like any other character outside the set: localhost_8501.png.
         let name = String(key.map { allowed.contains($0) ? $0 : "_" }.prefix(200))
         return directory.appendingPathComponent(name + ".png")
     }
@@ -227,27 +236,29 @@ final class Favicons: ObservableObject {
     }
 }
 
-/// A site's favicon, slightly rounded, or its monogram until an icon is known.
+/// A site's favicon, slightly rounded, or its monogram until an icon is known. `icon`, when given, is the icon the
+/// page itself declared on its latest load and wins over the stored icon of its origin.
 struct SiteIcon: View {
-    let host: String?
+    let url: URL?
+    var icon: NSImage? = nil
     @ObservedObject var favicons: Favicons
     var size: CGFloat = 16
     /// Plain monogram: the letter alone, for tiles that already draw their own plate.
     var plain = false
     var tint: Color = Palette.text2
     var body: some View {
-        let image = favicons.image(for: host)
+        let image = icon ?? favicons.image(for: url)
         ZStack {
             if let image {
                 Image(nsImage: image).resizable().interpolation(.high).aspectRatio(contentMode: .fit)
                     .clipShape(RoundedRectangle(cornerRadius: size * 0.2, style: .continuous))
                     .transition(.opacity)
             } else {
-                Monogram(host: host, size: size, plain: plain, tint: tint).transition(.opacity)
+                Monogram(host: url?.host, size: size, plain: plain, tint: tint).transition(.opacity)
             }
         }
         .frame(width: size, height: size)
-        .animation(Motion.hover, value: image != nil)
+        .animation(Motion.hover, value: image.map(ObjectIdentifier.init))
         .accessibilityHidden(true)
     }
 }

@@ -623,5 +623,9 @@ mica удалена⟩mica is removed⟩mica is removed
 Локальный файл на этом Mac⟩a local file on this Mac⟩A local file on this Mac
 Файл не найден или mica больше не может его прочитать. Откройте его снова из Проводника.⟩the file was not found or mica can no longer read it. open it again from File Explorer.⟩The file was not found or mica can no longer read it. Open it again from File Explorer.
 mica не может показать файл из этой папки: macOS не даёт передать его странице. Переместите файл, например, в «Документы» и откройте снова.⟩mica cannot show a file from this folder: macOS does not let it pass the file to the page. move the file, for example to Documents, and open it again.⟩mica cannot show a file from this folder: macOS does not let it pass the file to the page. Move the file, for example to Documents, and open it again.
+Перезагрузить без кэша⟩reload ignoring cache⟩Reload Ignoring Cache
+Вставить без форматирования⟩paste and match style⟩Paste and Match Style
+Скрыть остальные⟩hide others⟩Hide Others
+Показать все⟩show all⟩Show All
 """
 }

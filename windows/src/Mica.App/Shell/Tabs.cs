@@ -70,8 +70,8 @@ public static class TabInteractions
             MenuEntry.Item(browser.Text("копировать адрес", "Копировать адрес"), () => { var data = new DataPackage(); data.SetText(tab.Url!); Clipboard.SetContent(data); }, "link", enabled: tab.Url is not null),
             MenuEntry.Item(browser.Text("открыть в новом окне", "Открыть в новом окне"), () => { var window = browser.Store.NewWindow(browser.PrivateMode); if (tab.Url is { } url) window.Selected?.Load(url); }, "macwindow"),
             MenuEntry.Separator,
-            MenuEntry.Item(browser.Text("закрыть остальные", "Закрыть остальные"), () => { foreach (var other in browser.Tabs.Where(o => o.Id != tab.Id && !o.Pinned).ToList()) browser.Close(other); }, "xmark.square"),
-            MenuEntry.Item(browser.Text("закрыть все", "Закрыть все"), browser.CloseAll, "xmark.rectangle"),
+            MenuEntry.Item(browser.Text("закрыть остальные", "Закрыть остальные"), () => { foreach (var other in browser.Tabs.Where(o => o.Id != tab.Id && !o.Pinned).ToList()) browser.Close(other); }, "square.on.square.dashed"),
+            MenuEntry.Item(browser.Text("закрыть все", "Закрыть все"), browser.CloseAll, "rectangle.on.rectangle.slash"),
             MenuEntry.Item(browser.Text("закрыть вкладку", "Закрыть вкладку"), () => browser.Close(tab), "xmark", shortcut: Keymap.Label("close")),
         ]);
         // Middle click closes, as in other Windows browsers.
@@ -126,7 +126,7 @@ public sealed partial class TabRow : Grid
 }
 
 /// <summary>Close badge of an icon-only tab tile (macOS TileCloseBadge). The tiles have no room for an × of their
-/// own, so after the pointer rests on a tile for a second a small raised round button pops in on its top-right
+/// own, so after the pointer rests on a tile for half a second a small raised round button pops in on its top-right
 /// corner: its centre sits on the rounded outline, half over the tile and half outside. Pressing it closes the tab and
 /// marks the press handled, so the tile underneath is not selected.</summary>
 public sealed partial class TileCloseBadge : Grid
@@ -136,7 +136,7 @@ public sealed partial class TileCloseBadge : Grid
     public const double Face = 16, Box = 20, Inset = 3;
     /// <summary>Room the badge and its shadow need outside the tile; scroll viewers holding tiles keep it unclipped.</summary>
     public const double Overhang = Face / 2 - Inset + 3;
-    static readonly TimeSpan Delay = TimeSpan.FromSeconds(1);
+    static readonly TimeSpan Delay = TimeSpan.FromSeconds(MotionTokens.HoverIntent);
     readonly Grid tile;
     readonly Border face, tint;
     readonly Glyph glyph;
@@ -456,9 +456,21 @@ public sealed partial class TabStrip : Grid
         if (titleBand) scroll.HorizontalAlignment = HorizontalAlignment.Left;
         Children.Add(scroll);
         row.Children.Add(plus);
+        // Under the address the free space after the tabs opens the strip menu (macOS TabStrip.menu); a tab handles
+        // its own menu first. In the caption band that space belongs to the window, whose system menu opens there.
+        if (!titleBand) Background = Palette.Clear;
+        this.ContextMenu(() => browser.CustomizingToolbar ? [] : Menu(browser));
         this.Bind(browser, Render);
         SizeChanged += (_, _) => Render();
     }
+
+    /// <summary>Menu of the strip's free space: a new tab, the tab layout and the toolbar editor.</summary>
+    public static List<MenuEntry> Menu(BrowserModel browser) =>
+    [
+        MenuEntry.Item(browser.Text("новая вкладка", "Новая вкладка"), () => { browser.Add(); browser.FocusAddress(); }, "plus", shortcut: Keymap.Label("tab")),
+        MenuEntry.Separator, .. LayoutMenu.Entries(browser.Store), MenuEntry.Separator,
+        MenuEntry.Item(browser.Store.Text("настроить панель инструментов…", "Настроить панель инструментов…"), () => browser.CustomizingToolbar = true, "slider.horizontal.3"),
+    ];
     void Render()
     {
         var regularCount = browser.Tabs.Count;

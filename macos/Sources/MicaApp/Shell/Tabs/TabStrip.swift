@@ -30,6 +30,14 @@ struct TabStrip: View {
         // In the band the strip is as tall as it, so the tabs share the window buttons' centre line.
         .frame(height: titleBand ? Chrome.bar : 32)
     }
+    /// Menu of the strip's free space, in both horizontal layouts: a new tab, the tab layout and the toolbar editor.
+    @MenuBuilder static func menu(browser: BrowserModel, store: Store) -> [MenuEntry] {
+        MenuEntry.item(browser.text("новая вкладка", "Новая вкладка"), symbol: "plus") { _ = browser.add(); browser.focusAddress += 1 }
+        MenuEntry.divider
+        LayoutMenu.entries(store: store)
+        MenuEntry.divider
+        MenuEntry.item(store.text("настроить панель инструментов…", "Настроить панель инструментов…"), symbol: "slider.horizontal.3") { browser.customizingToolbar = true }
+    }
     private func strip(_ width: CGFloat) -> some View {
         ScrollView(.horizontal) {
             HStack(spacing: Space.micro) {

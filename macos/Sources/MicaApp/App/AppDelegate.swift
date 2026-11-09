@@ -80,9 +80,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case "reopen": browser?.reopen()
         case "address": browser?.focusAddress += 1
         case "reload": browser?.selected?.reload()
+        case "reloadHard": browser?.selected?.reloadFromOrigin()
         case "back": browser?.selected?.webView?.goBack()
         case "forward": browser?.selected?.webView?.goForward()
         case "find": browser?.showFind.toggle()
+        case "findNext", "findPrevious": browser?.stepFind(backwards: sender.representedObject as? String == "findPrevious")
         case "sidebar": withMotion(Motion.panel) { store.preferences.sidebarCollapsed.toggle() }
         case "bookmark": if let tab = browser?.selected { store.bookmark(tab) }
         case "history": browser?.panel = browser?.panel == .history ? nil : .history
@@ -106,12 +108,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         func item(_ menu: NSMenu, _ low: String, _ regular: String, _ key: String = "", _ command: String, _ modifiers: NSEvent.ModifierFlags = [.command]) {
             let item = NSMenuItem(title: store.text(low, regular), action: #selector(performCommand(_:)), keyEquivalent: key); item.target = self; item.representedObject = command; item.keyEquivalentModifierMask = modifiers; menu.addItem(item)
         }
+        /// A second shortcut for a command (shared/keymap.json lists several): a hidden item that still answers its key.
+        func alternate(_ menu: NSMenu, _ key: String, _ command: String, _ modifiers: NSEvent.ModifierFlags) {
+            let item = NSMenuItem(title: command, action: #selector(performCommand(_:)), keyEquivalent: key); item.target = self; item.representedObject = command
+            item.keyEquivalentModifierMask = modifiers; item.isHidden = true; item.allowsKeyEquivalentWhenHidden = true; menu.addItem(item)
+        }
         let app = menu("mica")
         app.addItem(withTitle: store.text("о mica", "О mica"), action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
         item(app, "настройки…", "Настройки…", ",", "settings")
         app.addItem(.separator())
         let services = NSMenu(); let serviceItem = NSMenuItem(title: store.text("службы", "Службы"), action: nil, keyEquivalent: ""); serviceItem.submenu = services; app.addItem(serviceItem); NSApp.servicesMenu = services
         app.addItem(withTitle: store.text("скрыть mica", "Скрыть mica"), action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        app.addItem(withTitle: store.text("скрыть остальные", "Скрыть остальные"), action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h").keyEquivalentModifierMask = [.command, .option]
+        app.addItem(withTitle: store.text("показать все", "Показать все"), action: #selector(NSApplication.unhideAllApplications(_:)), keyEquivalent: "")
         app.addItem(.separator()); app.addItem(withTitle: store.text("завершить mica", "Завершить mica"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         let file = menu(store.text("файл", "Файл"))
         item(file, "новая вкладка", "Новая вкладка", "t", "tab"); item(file, "новое окно", "Новое окно", "n", "newWindow"); item(file, "новое окно инкогнито", "Новое окно инкогнито", "n", "private", [.command, .shift]); file.addItem(.separator())
@@ -122,11 +131,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         for (low, regular, key, action) in [("отменить", "Отменить", "z", "undo:"), ("повторить", "Повторить", "Z", "redo:"), ("вырезать", "Вырезать", "x", "cut:"), ("копировать", "Копировать", "c", "copy:"), ("вставить", "Вставить", "v", "paste:"), ("выбрать всё", "Выбрать всё", "a", "selectAll:")] {
             let title = english && action == "undo:" ? (store.preferences.lowercase ? "undo" : "Undo") : english && action == "redo:" ? (store.preferences.lowercase ? "redo" : "Redo") : store.text(low, regular)
             edit.addItem(withTitle: title, action: Selector(action), keyEquivalent: key)
+            if action == "paste:" {
+                edit.addItem(withTitle: store.text("вставить без форматирования", "Вставить без форматирования"), action: Selector(("pasteAsPlainText:")), keyEquivalent: "v").keyEquivalentModifierMask = [.command, .option, .shift]
+            }
         }
-        item(edit, "найти на странице", "Найти на странице", "f", "find")
+        item(edit, "найти на странице", "Найти на странице", "f", "find"); item(edit, "следующее совпадение", "Следующее совпадение", "g", "findNext"); item(edit, "предыдущее совпадение", "Предыдущее совпадение", "g", "findPrevious", [.command, .shift])
         let view = menu(store.text("вид", "Вид")); item(view, "увеличить", "Увеличить", "=", "zoomIn"); item(view, "уменьшить", "Уменьшить", "-", "zoomOut"); item(view, "исходный масштаб", "Исходный масштаб", "0", "zoomReset"); view.addItem(.separator()); item(view, "показать или скрыть боковую панель", "Показать или скрыть боковую панель", "s", "sidebar", [.command, .control]); item(view, "настроить панель инструментов…", "Настроить панель инструментов…", "", "customize")
         view.addItem(withTitle: store.text("полноэкранный режим", "Полноэкранный режим"), action: #selector(NSWindow.toggleFullScreen(_:)), keyEquivalent: "f").keyEquivalentModifierMask = [.command, .control]
-        let go = menu(store.text("переход", "Переход")); item(go, "адресная строка", "Адресная строка", "l", "address"); item(go, "назад", "Назад", "[", "back"); item(go, "вперёд", "Вперёд", "]", "forward"); item(go, "перезагрузить", "Перезагрузить", "r", "reload"); item(go, "следующая вкладка", "Следующая вкладка", "\t", "next", [.control]); item(go, "предыдущая вкладка", "Предыдущая вкладка", "\t", "previous", [.control, .shift])
+        let go = menu(store.text("переход", "Переход")); item(go, "адресная строка", "Адресная строка", "l", "address"); item(go, "назад", "Назад", "[", "back"); item(go, "вперёд", "Вперёд", "]", "forward"); item(go, "перезагрузить", "Перезагрузить", "r", "reload"); item(go, "перезагрузить без кэша", "Перезагрузить без кэша", "r", "reloadHard", [.command, .shift]); item(go, "следующая вкладка", "Следующая вкладка", "\t", "next", [.control]); item(go, "предыдущая вкладка", "Предыдущая вкладка", "\t", "previous", [.control, .shift])
+        // Safari's ⌘⇧] and ⌘⇧[ and Chrome's ⌘⌥→ and ⌘⌥← also switch tabs.
+        alternate(go, "}", "next", [.command]); alternate(go, "{", "previous", [.command])
+        alternate(go, String(Character(UnicodeScalar(NSRightArrowFunctionKey)!)), "next", [.command, .option]); alternate(go, String(Character(UnicodeScalar(NSLeftArrowFunctionKey)!)), "previous", [.command, .option])
         for index in 1...9 { let title = store.text("вкладка ", "Вкладка ") + String(index); item(go, title, title, String(index), String(index == 9 ? 999 : index - 1)) }
         let library = menu(store.text("библиотека", "Библиотека")); item(library, "закладка для страницы", "Закладка для страницы", "d", "bookmark"); item(library, "история", "История", "y", "history"); item(library, "очистить историю…", "Очистить историю…", "\u{8}", "clearData", [.command, .shift]); item(library, "загрузки", "Загрузки", "j", "downloads", [.command, .shift]); item(library, "расширения", "Расширения", "e", "extensions", [.command, .shift])
         let windows = menu(store.text("окно", "Окно")); NSApp.windowsMenu = windows; windows.addItem(withTitle: store.text("свернуть", "Свернуть"), action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")

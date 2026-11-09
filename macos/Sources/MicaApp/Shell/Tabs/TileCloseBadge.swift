@@ -3,7 +3,7 @@ import SwiftUI
 import MicaCore
 
 /// Close badge of an icon-only tab tile (rail, pinned grid, pinned tile in the strip). The tiles have no room for an
-/// × of their own, so after the pointer rests on a tile for a second a small raised round button pops in on its
+/// × of their own, so after the pointer rests on a tile for half a second a small raised round button pops in on its
 /// top-right corner: its centre sits on the rounded outline, half over the tile and half outside.
 struct TileCloseBadge: ViewModifier {
     /// Visible badge diameter; the hit area is a little larger.
@@ -13,8 +13,8 @@ struct TileCloseBadge: ViewModifier {
     static let inset: CGFloat = 3
     /// Room the badge and its shadow need outside the tile; scroll views that hold tiles keep this much unclipped.
     static let overhang: CGFloat = size / 2 - inset + 3
-    /// Hover time before the badge appears, so passing over the rail does not light up crosses.
-    static let delay: Duration = .seconds(1)
+    /// Hover time before the badge appears (MotionTokens.hoverIntent).
+    static let delay: Duration = .milliseconds(Int(MotionTokens.hoverIntent * 1000))
 
     @ObservedObject var tab: Tab
     @ObservedObject var browser: BrowserModel

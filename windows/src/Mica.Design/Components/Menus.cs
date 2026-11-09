@@ -95,9 +95,10 @@ public static partial class MicaMenu
                 enabled[(position + step + enabled.Count) % enabled.Count].Focus(FocusState.Keyboard);
             }
         };
-        var border = Ui.Rounded(12, Palette.Raised.Brush(), Palette.HairlineStrong.Brush(), 1, stack);
-        border.Shadow = Shadows.Strong;
-        border.Translation = new Vector3(0, 0, 24);
+        // A low elevation keeps the system shadow soft and close, as the macOS menu's MenuShadow does.
+        var border = Ui.Rounded(12, Palette.Raised.Brush(), Palette.Hairline.Brush(), 1, stack);
+        border.Shadow = Shadows.Soft;
+        border.Translation = new Vector3(0, 0, 12);
         border.Margin = new Thickness(0);
         AutomationProperties.SetAccessibilityView(border, Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Content);
         return border;

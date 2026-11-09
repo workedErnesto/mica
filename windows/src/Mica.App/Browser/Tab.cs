@@ -29,7 +29,10 @@ public sealed partial class Tab : Observable
     public CoreWebView2WebErrorStatus? Failure { get; private set; }
     public double Zoom { get; private set; } = 1;
     /// <summary>Site icon for the current host from this window's icon store, or null until one is known.</summary>
-    public ImageSource? Favicon => Owner?.Favicons.Image(AddressParser.Host(Url));
+    /// <summary>The icon the current page reported (FaviconChanged), else the stored icon of the page's origin.</summary>
+    public ImageSource? Favicon => pageFavicon is not null && pageFaviconKey == Favicons.Key(Url) ? pageFavicon : Owner?.Favicons.Image(Url);
+    ImageSource? pageFavicon;
+    string? pageFaviconKey;
     public WebView2? WebView { get; private set; }
     public CoreWebView2? Core { get; private set; }
     Task? initializing;
@@ -169,6 +172,14 @@ public sealed partial class Tab : Observable
         Error = null; Core.Reload(); Notify();
     }
 
+    /// <summary>Ctrl+Shift+R: the page and its resources again from the network. WebView2 has no direct call for a
+    /// reload that skips the cache, so it goes through the DevTools protocol method Page.reload.</summary>
+    public void ReloadFromOrigin()
+    {
+        if (Phase == TabPhase.Terminated || Core is null || AddressParser.OpenableFile(Url)) { Reload(); return; }
+        Error = null; _ = Core.CallDevToolsProtocolMethodAsync("Page.reload", "{\"ignoreCache\":true}"); Notify();
+    }
+
     /// <summary>After the page process ended, a fresh WebView2 replaces the dead one; nothing reloads by itself.</summary>
     void Recreate()
     {
@@ -258,7 +269,8 @@ public sealed partial class Tab : Observable
         Notify();
     }
 
-    /// <summary>WebView2 picks the page's icon itself; mica copies it as PNG into the window's icon store, keyed by host.</summary>
+    /// <summary>WebView2 picks the page's icon itself and reports every change; mica keeps it for this tab and copies it as
+    /// PNG into the window's icon store, keyed by host and port.</summary>
     async void OnFaviconChanged(CoreWebView2 sender, object args)
     {
         var page = sender.Source;
@@ -275,7 +287,11 @@ public sealed partial class Tab : Observable
                 await reader.LoadAsync((uint)stream.Size);
                 reader.ReadBytes(bytes);
             }
-            await store.SetAsync(AddressParser.Host(page), bytes);
+            if (await store.SetAsync(page, bytes) is { } image && sender.Source == page)
+            {
+                pageFavicon = image; pageFaviconKey = Favicons.Key(page);
+                Notify();
+            }
         }
         catch (Exception e) { Diagnostics.Log.Error(e); }
     }
@@ -397,7 +413,8 @@ public sealed partial class Tab : Observable
     public static string Json(string value) => JsonSerializer.Serialize(value, MicaJson.Info<string>());
 }
 
-/// <summary>Site icons keyed by host without "www." (macOS Favicons). The normal profile keeps a PNG per host in
+/// <summary>Site icons keyed by host without "www." plus a non-default port, so apps on different ports of localhost keep
+/// their own (macOS Favicons). The normal profile keeps a PNG per key in
 /// %LOCALAPPDATA%\mica\Favicons and reads it lazily for restored tabs; incognito windows own a separate instance
 /// that stays in memory.</summary>
 public sealed class Favicons
@@ -412,18 +429,21 @@ public sealed class Favicons
 
     public Favicons(string? directory) { this.directory = directory; }
 
-    public static string? Key(string? host)
+    /// <summary>"example.com" for https://www.example.com/, "localhost:8501" for http://localhost:8501/app.</summary>
+    public static string? Key(string? url)
     {
-        if (string.IsNullOrEmpty(host)) return null;
-        var key = host.ToLowerInvariant();
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Host.Length == 0) return null;
+        var key = uri.Host.ToLowerInvariant();
         if (key.StartsWith("www.", StringComparison.Ordinal)) key = key[4..];
-        return key.Length == 0 ? null : key;
+        if (key.Length == 0) return null;
+        return uri.IsDefaultPort ? key : key + ":" + uri.Port;
     }
 
-    /// <summary>Safe to call while rendering: a missing icon schedules a disk read and raises Changed later.</summary>
-    public ImageSource? Image(string? host)
+    /// <summary>The stored icon of the page's origin. Safe to call while rendering: a missing icon schedules a disk read
+    /// and raises Changed later.</summary>
+    public ImageSource? Image(string? url)
     {
-        if (Key(host) is not { } key) return null;
+        if (Key(url) is not { } key) return null;
         if (icons.TryGetValue(key, out var image)) return image;
         if (File(key) is { } file && probed.Add(key)) _ = LoadAsync(key, file, generation);
         return null;
@@ -441,16 +461,17 @@ public sealed class Favicons
         catch { }
     }
 
-    public async Task SetAsync(string? host, byte[] png)
+    public async Task<ImageSource?> SetAsync(string? url, byte[] png)
     {
-        if (Key(host) is not { } key) return;
+        if (Key(url) is not { } key) return null;
         var expected = generation;
         var image = await Decode(png);
-        if (expected != generation) return;
+        if (expected != generation) return null;
         icons[key] = image; probed.Add(key);
         Changed?.Invoke();
         if (File(key) is { } file && directory is { } folder)
             await Task.Run(() => { try { Directory.CreateDirectory(folder); System.IO.File.WriteAllBytes(file, png); } catch { } });
+        return image;
     }
 
     /// <summary>Clearing history or cache forgets every icon, in memory and on disk.</summary>
