@@ -51,7 +51,7 @@ struct StartSectionView: View {
                 } else {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: StartLayout.column, maximum: StartLayout.column), spacing: Space.micro)], alignment: .leading, spacing: Space.normal) {
                         ForEach(sites) { site in
-                            SiteTile(title: site.title, host: site.host) { browser.selected?.load(site.url) }
+                            SiteTile(title: site.title, host: site.host, url: site.url, favicons: browser.favicons) { browser.selected?.load(site.url) }
                                 .micaContextMenu { menu(site) }
                                 .modifier(ShortcutDrag(site: site, store: store))
                                 .popover(isPresented: Binding(get: { editingSite == site }, set: { if !$0 { editingSite = nil } }), arrowEdge: .bottom) {

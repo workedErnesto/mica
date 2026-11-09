@@ -78,6 +78,10 @@ enum MotionTokens {{
     static let popScale = {num(m['popScale'])}
     /// {m['hoverIntent']['doc']}
     static let hoverIntent = {num(m['hoverIntent']['delay'])}
+    /// {m['doneHold']['doc']}
+    static let doneHold = {num(m['doneHold']['delay'])}
+    /// {m['checkDraw']['doc']}
+    static let checkDraw = {num(m['checkDraw']['duration'])}
 }}
 '''
     # C#
@@ -109,6 +113,10 @@ public static class MotionTokens
     public const double PopScale = {num(m['popScale'])};
     /// <summary>{m['hoverIntent']['doc']}</summary>
     public const double HoverIntent = {num(m['hoverIntent']['delay'])};
+    /// <summary>{m['doneHold']['doc']}</summary>
+    public const double DoneHold = {num(m['doneHold']['delay'])};
+    /// <summary>{m['checkDraw']['doc']}</summary>
+    public const double CheckDraw = {num(m['checkDraw']['duration'])};
 }}
 '''
     sizes = tokens['typography']['sizes']

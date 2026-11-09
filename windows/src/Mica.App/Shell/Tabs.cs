@@ -488,3 +488,34 @@ public sealed partial class TabStrip : Grid
         if (index != row.Children.Count - 1) row.Children.Move((uint)index, (uint)(row.Children.Count - 1));
     }
 }
+
+/// <summary>A site's stored favicon, or its monogram until an icon is known (macOS SiteIcon). Tiled, for list rows, the
+/// icon sits at 60 % on the same plate as the monogram; untiled it fills the size, as on start page tiles. The icon
+/// fades in over the monogram it replaces; opacity only, so Reduce Motion keeps it.</summary>
+public sealed partial class SiteIcon : Grid
+{
+    readonly string url; readonly Favicons favicons; readonly double size; readonly bool tiled;
+    ImageSource? shown;
+    bool rendered;
+    public SiteIcon(string url, Favicons favicons, double size, bool tiled = false)
+    {
+        this.url = url; this.favicons = favicons; this.size = size; this.tiled = tiled;
+        Width = size; Height = size; IsHitTestVisible = false;
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAccessibilityView(this, Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw);
+        this.Bind(h => favicons.Changed += h, h => favicons.Changed -= h, Render);
+    }
+    void Render()
+    {
+        var image = favicons.Image(url);
+        if (rendered && ReferenceEquals(image, shown)) return;
+        var arrived = rendered && shown is null && image is not null;
+        rendered = true; shown = image;
+        Children.Clear();
+        if (image is null) { Children.Add(new Monogram(AddressParser.Host(url), size)); return; }
+        var side = tiled ? Math.Round(size * 0.6) : size;
+        if (tiled) Children.Add(Ui.Rounded(size * 0.3, Palette.Track.Brush()));
+        var icon = new Border { Width = side, Height = side, CornerRadius = new CornerRadius(side * 0.2), Background = new ImageBrush { ImageSource = image, Stretch = Stretch.Uniform }, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+        Children.Add(icon);
+        if (arrived) { Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(icon).Opacity = 0; Motion.Fade(icon, 1); }
+    }
+}

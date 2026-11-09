@@ -12,4 +12,8 @@ public static class MotionTokens
     public const double PopScale = 0.96;
     /// <summary>Pointer rest before a tab tile shows its close badge, so passing over the rail does not light up crosses.</summary>
     public const double HoverIntent = 0.5;
+    /// <summary>How long a finished download keeps its drawn checkmark before the badge returns to the file kind icon.</summary>
+    public const double DoneHold = 2;
+    /// <summary>Stroke of the checkmark of a finished download, drawn from its short arm to the long one.</summary>
+    public const double CheckDraw = 0.34;
 }

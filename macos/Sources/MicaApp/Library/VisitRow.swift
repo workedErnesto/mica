@@ -11,7 +11,7 @@ struct VisitRow: View {
     var body: some View {
         Button { browser.selected?.load(visit.url) } label: {
             HStack(spacing: 10) {
-                Monogram(host: visit.url.host, size: 22)
+                SiteIcon(url: visit.url, favicons: browser.favicons, size: Chrome.rowIcon, tiled: true)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(visit.title.isEmpty ? visit.url.absoluteString : visit.title).font(.system(size: 12.5)).foregroundStyle(Palette.ink).lineLimit(1)
                     HStack(spacing: 6) {

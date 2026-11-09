@@ -56,9 +56,10 @@ final class Favicons: ObservableObject {
     }
 
     /// The stored icon of the page's origin. Safe to call from a view body: a missing icon schedules a disk read and
-    /// publishes on a later turn.
-    func image(for url: URL?) -> NSImage? {
-        guard let key = Self.key(url) else { return nil }
+    /// publishes on a later turn. `dark` asks for the variant a site declares for a dark color scheme, if it has one.
+    func image(for url: URL?, dark: Bool = false) -> NSImage? {
+        guard let base = Self.key(url) else { return nil }
+        let key = dark ? base + Self.darkSuffix : base
         if let image = icons[key] { return image }
         if let file = file(for: key), !probed.contains(key) {
             probed.insert(key)
@@ -82,9 +83,23 @@ final class Favicons: ObservableObject {
         let generation = generation
         let found = await Self.links(in: webView)
         guard self.generation == generation else { return nil }
-        let candidates = Self.candidates(found.links, page: page)
+        // Sites such as GitHub declare a white icon for dark schemes and a black one for light ones. The plain list
+        // leaves the dark variants out; they are kept apart and shown only while mica itself is dark.
+        let candidates = Self.candidates(found.links.filter { !$0.dark }, page: page)
         guard let image = await download(candidates, userAgent: found.userAgent) else { return nil }
         guard self.generation == generation, let normalized = Self.normalize(image) else { return nil }
+        store(normalized, as: key)
+        let darkLinks = found.links.filter(\.dark)
+        if !darkLinks.isEmpty, let dark = await download(Self.candidates(darkLinks, page: page, fallback: false), userAgent: found.userAgent),
+           self.generation == generation, let normalizedDark = Self.normalize(dark) {
+            store(normalizedDark, as: key + Self.darkSuffix)
+        } else if self.generation == generation { forget(key + Self.darkSuffix) }
+        return normalized.image
+    }
+
+    static let darkSuffix = "~dark"
+
+    private func store(_ normalized: (image: NSImage, png: Data), as key: String) {
         icons[key] = normalized.image
         probed.insert(key)
         if let file = file(for: key), let directory {
@@ -94,7 +109,13 @@ final class Favicons: ObservableObject {
                 try? png.write(to: file, options: .atomic)
             }
         }
-        return normalized.image
+    }
+
+    /// The page no longer declares this variant: drop the stored copy so an older one is not shown.
+    private func forget(_ key: String) {
+        icons[key] = nil
+        probed.insert(key)
+        if let file = file(for: key) { Task.detached(priority: .utility) { try? FileManager.default.removeItem(at: file) } }
     }
 
     /// Clearing history or cache forgets every icon, in memory and on disk; open pages fetch theirs again on the next load.
@@ -114,7 +135,12 @@ final class Favicons: ObservableObject {
 
     // MARK: Candidates
 
-    struct Link: Equatable { let href: String; let sizes: String; let type: String; let touch: Bool }
+    struct Link: Equatable {
+        let href: String; let sizes: String; let type: String; let touch: Bool
+        var media = ""
+        /// Declared for `prefers-color-scheme: dark` only.
+        var dark: Bool { media.contains("prefers-color-scheme") && media.contains("dark") }
+    }
 
     /// Reads icon links in the `.defaultClient` world, so page scripts cannot see or alter the query.
     private static func links(in webView: WKWebView) async -> (links: [Link], userAgent: String?) {
@@ -125,7 +151,7 @@ final class Favicons: ObservableObject {
           const icon = rel.includes('icon');
           const touch = rel.includes('apple-touch-icon') || rel.includes('apple-touch-icon-precomposed');
           if (!icon && !touch) continue;
-          out.push({ href: link.href, sizes: link.getAttribute('sizes') || '', type: (link.getAttribute('type') || '').toLowerCase(), touch: !icon });
+          out.push({ href: link.href, sizes: link.getAttribute('sizes') || '', type: (link.getAttribute('type') || '').toLowerCase(), touch: !icon, media: (link.getAttribute('media') || '').toLowerCase() });
           if (out.length >= 24) break;
         }
         return JSON.stringify({ links: out, ua: navigator.userAgent });
@@ -134,14 +160,14 @@ final class Favicons: ObservableObject {
               let object = try? JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any] else { return ([], nil) }
         let links = (object["links"] as? [[String: Any]] ?? []).compactMap { item -> Link? in
             guard let href = item["href"] as? String else { return nil }
-            return Link(href: href, sizes: item["sizes"] as? String ?? "", type: item["type"] as? String ?? "", touch: item["touch"] as? Bool ?? false)
+            return Link(href: href, sizes: item["sizes"] as? String ?? "", type: item["type"] as? String ?? "", touch: item["touch"] as? Bool ?? false, media: item["media"] as? String ?? "")
         }
         return (links, object["ua"] as? String)
     }
 
     /// Best first: the smallest declared size of at least 32 px, PNG and ICO before SVG, then smaller sizes;
-    /// `<origin>/favicon.ico` closes the list. Only http, https and data URLs are kept.
-    static func candidates(_ links: [Link], page: URL) -> [URL] {
+    /// `<origin>/favicon.ico` closes the list unless `fallback` is false. Only http, https and data URLs are kept.
+    static func candidates(_ links: [Link], page: URL, fallback: Bool = true) -> [URL] {
         func edge(_ link: Link) -> Int {
             let sizes = link.sizes.lowercased()
             if sizes.contains("any") { return 256 }
@@ -163,7 +189,7 @@ final class Favicons: ObservableObject {
             result.append(url)
             if result.count == 4 { break }
         }
-        if var parts = URLComponents(url: page, resolvingAgainstBaseURL: false) {
+        if fallback, var parts = URLComponents(url: page, resolvingAgainstBaseURL: false) {
             parts.path = "/favicon.ico"; parts.query = nil; parts.fragment = nil; parts.user = nil; parts.password = nil
             if let fallback = parts.url, !result.contains(fallback) { result.append(fallback) }
         }
@@ -246,13 +272,22 @@ struct SiteIcon: View {
     /// Plain monogram: the letter alone, for tiles that already draw their own plate.
     var plain = false
     var tint: Color = Palette.text2
+    /// List rows: the icon sits on the same plate as the monogram and the download kinds, at 60 % of the tile.
+    var tiled = false
+    @Environment(\.colorScheme) private var scheme
     var body: some View {
-        let image = icon ?? favicons.image(for: url)
+        // A dark variant comes from the same load as `icon`, so it wins while mica is dark.
+        let image = (scheme == .dark ? favicons.image(for: url, dark: true) : nil) ?? icon ?? favicons.image(for: url)
+        let side = tiled ? (size * 0.6).rounded() : size
         ZStack {
             if let image {
-                Image(nsImage: image).resizable().interpolation(.high).aspectRatio(contentMode: .fit)
-                    .clipShape(RoundedRectangle(cornerRadius: size * 0.2, style: .continuous))
-                    .transition(.opacity)
+                ZStack {
+                    if tiled { RoundedRectangle(cornerRadius: size * 0.3, style: .continuous).fill(Palette.track) }
+                    Image(nsImage: image).resizable().interpolation(.high).aspectRatio(contentMode: .fit)
+                        .clipShape(RoundedRectangle(cornerRadius: side * 0.2, style: .continuous))
+                        .frame(width: side, height: side)
+                }
+                .transition(.opacity)
             } else {
                 Monogram(host: url?.host, size: size, plain: plain, tint: tint).transition(.opacity)
             }

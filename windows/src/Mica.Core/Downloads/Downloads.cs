@@ -12,6 +12,35 @@ public sealed class DownloadRecord
     public string? Source { get; set; }
     public long Bytes { get; set; }
     public long Total { get; set; }
+    /// <summary>When the download started. Older records have none; the app fills it once from the file on disk.</summary>
+    public DateTimeOffset? Date { get; set; }
+}
+
+public enum DownloadKind { Image, Video, Archive, Document, Other }
+
+/// <summary>What a downloaded file is, by its extension: picks the icon of a finished download. Lists match macOS
+/// exactly (shared vectors), so the same file shows the same kind on both platforms.</summary>
+public static class DownloadKinds
+{
+    static readonly (DownloadKind Kind, HashSet<string> Extensions)[] Table =
+    [
+        (DownloadKind.Image, ["jpg", "jpeg", "png", "gif", "webp", "heic", "heif", "avif", "bmp", "tif", "tiff", "svg", "ico", "raw", "dng", "cr2", "nef", "arw"]),
+        (DownloadKind.Video, ["mp4", "m4v", "mov", "webm", "mkv", "avi", "wmv", "flv", "mpg", "mpeg", "3gp", "ts", "m2ts"]),
+        (DownloadKind.Archive, ["zip", "rar", "7z", "tar", "gz", "tgz", "bz2", "tbz", "xz", "txz", "zst", "lz", "lzma", "cab", "dmg", "iso", "pkg"]),
+        (DownloadKind.Document, ["pdf", "doc", "docx", "odt", "rtf", "txt", "md", "pages", "xls", "xlsx", "ods", "csv", "numbers", "ppt", "pptx", "odp", "key", "epub", "djvu", "fb2"]),
+    ];
+
+    public static DownloadKind Of(string name)
+    {
+        var dot = name.LastIndexOf('.');
+        if (dot <= 0) return DownloadKind.Other;
+        var ext = name[(dot + 1)..].ToLowerInvariant();
+        foreach (var (kind, extensions) in Table) if (extensions.Contains(ext)) return kind;
+        return DownloadKind.Other;
+    }
+
+    /// <summary>Lowercase name shared with macOS (`DownloadKind.rawValue`).</summary>
+    public static string Name(DownloadKind kind) => kind.ToString().ToLowerInvariant();
 }
 
 public static class DownloadSafety

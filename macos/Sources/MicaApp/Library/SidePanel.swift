@@ -65,9 +65,10 @@ struct SidePanel: View {
     }
 }
 
-/// Day title above a group of history rows: today, yesterday, then weekday and date in the interface language.
+/// Day title above a group of history or download rows: today, yesterday, then weekday and date in the interface
+/// language. No day means an old download whose date is unknown.
 struct DayHeader: View {
-    let day: Date
+    let day: Date?
     @ObservedObject var store: Store
     var body: some View {
         Text(title).font(.system(size: 11.5, weight: .medium)).foregroundStyle(Palette.text3)
@@ -77,6 +78,7 @@ struct DayHeader: View {
             .accessibilityAddTraits(.isHeader)
     }
     private var title: String {
+        guard let day else { return store.text("раньше", "Раньше") }
         let calendar = Calendar.current
         if calendar.isDateInToday(day) { return store.text("сегодня", "Сегодня") }
         if calendar.isDateInYesterday(day) { return store.text("вчера", "Вчера") }

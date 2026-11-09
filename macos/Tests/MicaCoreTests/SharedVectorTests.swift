@@ -22,6 +22,7 @@ final class SharedVectorTests: XCTestCase {
             return a < b ? -1 : a > b ? 1 : 0
         case "checksum": return UpdatePolicy.parseChecksum(c["text"] as! String) ?? NSNull()
         case "filename": return DownloadSafety.filename(c["name"] as! String)
+        case "downloadKind": return DownloadKind.of(c["name"] as! String).rawValue
         case "copy": return Copy.text(c["low"] as! String, c["regular"] as! String, lowercase: c["lowercase"] as! Bool, language: Language(rawValue: c["language"] as! String)!)
         case "greeting":
             var p = Preferences(); p.userName = c["name"] as! String; p.greetByName = c["greet"] as! Bool; p.language = Language(rawValue: c["language"] as! String)!; p.lowercase = c["lowercase"] as! Bool

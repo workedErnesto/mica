@@ -49,8 +49,8 @@ struct InstalledExtension: View {
                 Button { manager.popupAnchor = anchor.view; manager.action(record, tab: browser.selected) } label: {
                     HStack(spacing: 10) {
                         SwiftUI.Group {
-                            if let image = context?.webExtension.icon(for: CGSize(width: 28, height: 28)) { Image(nsImage: image).resizable().interpolation(.high).frame(width: 28, height: 28) }
-                            else { Monogram(host: record.name, size: 28) }
+                            if let image = context?.webExtension.icon(for: CGSize(width: Chrome.rowIcon, height: Chrome.rowIcon)) { Image(nsImage: image).resizable().interpolation(.high).frame(width: Chrome.rowIcon, height: Chrome.rowIcon) }
+                            else { Monogram(host: record.name, size: Chrome.rowIcon) }
                         }
                         .opacity(enabled ? 1 : 0.5)
                         VStack(alignment: .leading, spacing: 1) {
@@ -99,7 +99,7 @@ struct CatalogCard: View {
         let existing = manager.installed(entry)
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 10) {
-                Monogram(host: entry.name, size: 28)
+                Monogram(host: entry.name, size: Chrome.rowIcon)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(entry.name).font(.system(size: 12.5, weight: .medium)).foregroundStyle(Palette.ink).lineLimit(1)
                     Text("Firefox Add-ons, " + entry.version).font(.system(size: 11)).foregroundStyle(Palette.text3)

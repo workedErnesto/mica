@@ -27,6 +27,7 @@ public class SharedVectorTests
                 return a is null || b is null ? "invalid" : Math.Sign(a.CompareTo(b));
             case "checksum": return UpdatePolicy.ParseChecksum(S("text"));
             case "filename": return DownloadSafety.Filename(S("name"), windows: false);
+            case "downloadKind": return DownloadKinds.Name(DownloadKinds.Of(S("name")));
             case "copy": return Copy.Text(S("low"), S("regular"), B("lowercase"), Lang());
             case "greeting":
                 var p = new Preferences { UserName = S("name"), GreetByName = B("greet"), Language = Lang(), Lowercase = B("lowercase") };

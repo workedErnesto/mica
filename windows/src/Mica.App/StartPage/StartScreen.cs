@@ -325,14 +325,14 @@ public sealed partial class StartSectionView : Grid
     }
 }
 
-/// <summary>60 px tile with a monogram that lifts on hover; custom sites reorder by dragging onto each other.</summary>
+/// <summary>60 px tile with the site favicon (or monogram) that lifts on hover; custom sites reorder by dragging onto each other.</summary>
 public sealed partial class SiteTile : Grid
 {
     public SiteTile(StartSite site, StartSection section, BrowserModel browser)
     {
         var store = browser.Store;
         Background = Palette.Clear; IsTabStop = true;
-        var box = Ui.Rounded(Radius.Panel, Palette.Surface.Brush(), Palette.Hairline.Brush(), 1, new Monogram(site.Host, 30) { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center });
+        var box = Ui.Rounded(Radius.Panel, Palette.Surface.Brush(), Palette.Hairline.Brush(), 1, new SiteIcon(site.Url, browser.Favicons, 30) { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center });
         box.Width = 60; box.Height = 60; box.Shadow = Shadows.Soft; box.Translation = new System.Numerics.Vector3(0, 0, 3); box.HorizontalAlignment = HorizontalAlignment.Center;
         var label = site.Title.Length > 0 ? site.Title : site.Host.StartsWith("www.", StringComparison.Ordinal) ? site.Host[4..] : site.Host;
         var text = Ui.Text(label, 11.5, Palette.Text2.Brush()); text.HorizontalAlignment = HorizontalAlignment.Center; text.MaxWidth = StartLayout.Column - 4;
