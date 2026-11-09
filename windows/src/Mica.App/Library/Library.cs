@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Mica.Core;
 using Mica.Design;
 using Windows.ApplicationModel.DataTransfer;
@@ -70,11 +71,13 @@ public sealed partial class SidePanel : Grid
         else foreach (var visit in visits) list.Children.Add(new VisitRow(visit, panel, browser));
     }
 
-    /// <summary>Today, yesterday, then weekday and date in the interface language; authored words follow the case style.</summary>
-    static TextBlock DayHeader(DateTime day, Store store)
+    /// <summary>Today, yesterday, then weekday and date in the interface language; authored words follow the case style.
+    /// No day means an old download whose date is unknown.</summary>
+    internal static TextBlock DayHeader(DateTime? date, Store store)
     {
         string title;
-        if (day == DateTime.Today) title = store.Text("сегодня", "Сегодня");
+        if (date is not { } day) title = store.Text("раньше", "Раньше");
+        else if (day == DateTime.Today) title = store.Text("сегодня", "Сегодня");
         else if (day == DateTime.Today.AddDays(-1)) title = store.Text("вчера", "Вчера");
         else
         {
@@ -99,7 +102,7 @@ public sealed partial class VisitRow : Grid
         var detail = Ui.Text((visit.Host ?? visit.Url) + (panel == LibraryPanel.History ? "  " + visit.Date.LocalDateTime.ToString("t", store.Culture) : ""), 11, Palette.Text3.Brush());
         var row = new Grid { Padding = new Thickness(8, 6, 32, 6), ColumnSpacing = 10 };
         row.ColumnDefinitions.Add(Ui.Auto()); row.ColumnDefinitions.Add(Ui.Star());
-        row.Column(new Monogram(visit.Host, 22), 0); row.Column(Ui.V(1, title, detail), 1);
+        row.Column(new SiteIcon(visit.Url, browser.Favicons, Chrome.RowIcon, tiled: true), 0); row.Column(Ui.V(1, title, detail), 1);
         var more = new MenuButton(browser.Text("действия", "Действия"), () => Menu(visit, panel, browser)) { HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0), Opacity = 0 };
         Children.Add(plate); Children.Add(row); Children.Add(more);
         Interaction? interaction = null;

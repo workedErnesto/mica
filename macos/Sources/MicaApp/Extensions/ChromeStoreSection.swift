@@ -15,7 +15,7 @@ struct ChromeStoreSection: View {
             if let current, let tab = browser.selected {
                 let installed = manager.records.contains { $0.source == "cws:" + current }
                 HStack(spacing: 10) {
-                    Monogram(host: storeTitle(tab.title), size: 28)
+                    Monogram(host: storeTitle(tab.title), size: Chrome.rowIcon)
                     VStack(alignment: .leading, spacing: 1) {
                         Text(storeTitle(tab.title)).font(.system(size: 12.5, weight: .medium)).foregroundStyle(Palette.ink).lineLimit(1)
                         Text(browser.text("открыто в текущей вкладке", "Открыто в текущей вкладке")).font(.system(size: 11)).foregroundStyle(Palette.text3)

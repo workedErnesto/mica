@@ -180,6 +180,68 @@
       "regular" : "Нет такой строки"
     }
   ],
+  "downloadKind" : [
+    {
+      "expect" : "image",
+      "name" : "ki.jpeg"
+    },
+    {
+      "expect" : "image",
+      "name" : "Photo.HEIC"
+    },
+    {
+      "expect" : "video",
+      "name" : "clip.mp4"
+    },
+    {
+      "expect" : "video",
+      "name" : "movie.MOV"
+    },
+    {
+      "expect" : "archive",
+      "name" : "source.tar.gz"
+    },
+    {
+      "expect" : "archive",
+      "name" : "mica-3.0.2.dmg"
+    },
+    {
+      "expect" : "document",
+      "name" : "report.pdf"
+    },
+    {
+      "expect" : "document",
+      "name" : "notes.txt"
+    },
+    {
+      "expect" : "document",
+      "name" : "table.xlsx"
+    },
+    {
+      "expect" : "other",
+      "name" : "setup.exe"
+    },
+    {
+      "expect" : "other",
+      "name" : "README"
+    },
+    {
+      "expect" : "other",
+      "name" : ".zip"
+    },
+    {
+      "expect" : "other",
+      "name" : "archive."
+    },
+    {
+      "expect" : "other",
+      "name" : "song.mp3"
+    },
+    {
+      "expect" : "other",
+      "name" : "image.jpeg.part"
+    }
+  ],
   "filename" : [
     {
       "expect" : "report.pdf",

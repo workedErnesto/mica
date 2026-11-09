@@ -13,7 +13,9 @@ final class DownloadManager: ObservableObject {
         if !browser.privateMode {
             history = browser.store.$downloadRecords.sink { [weak self] records in
                 guard let self else { return }
-                let known = Set(self.items.map(\.id))
+                let known = Set(self.items.map(\.id)), kept = Set(records.map(\.id))
+                // Another window removed a finished row: drop it here too. Active downloads stay until they end.
+                self.items.removeAll { !kept.contains($0.id) && !$0.active }
                 self.items.append(contentsOf: records.filter { !known.contains($0.id) }.map { DownloadItem(record: $0, manager: self) })
             }
         }
@@ -29,6 +31,13 @@ final class DownloadManager: ObservableObject {
         items.insert(DownloadItem(download: download, manager: self, tab: tab), at: 0)
         if let item = items.first { persist(item) }
         browser?.panel = .downloads
+    }
+    /// Takes a finished, failed or cancelled download off the list. The file itself stays where it was saved.
+    func remove(_ item: DownloadItem) {
+        guard !item.active else { return }
+        items.removeAll { $0.id == item.id }
+        guard let browser, !browser.privateMode else { return }
+        browser.store.downloadRecords.removeAll { $0.id == item.id }
     }
     func cancelAll() { for item in items where item.state == .running || item.state == .choosing { item.cleanup() } }
 }

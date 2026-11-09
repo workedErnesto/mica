@@ -16,6 +16,8 @@ public static class Chrome
     public const double LightsStep = 20;
     /// <summary>Width reserved for the macOS window buttons, measured from the window edge.</summary>
     public const double LightsInset = 84;
+    /// <summary>Leading icon tile of a two-line list row (history, bookmarks, downloads, extensions): as tall as the 12.5 pt title and 11 pt detail together.</summary>
+    public const double RowIcon = 30;
     /// <summary>Width reserved for the Windows caption buttons (minimize, maximize, close), measured from the right edge.</summary>
     public const double CaptionInset = 138;
 }

@@ -611,3 +611,7 @@ mica не может показать файл из этой папки: macOS �
 Вставить без форматирования⟩paste and match style⟩Paste and Match Style
 Скрыть остальные⟩hide others⟩Hide Others
 Показать все⟩show all⟩Show All
+Копировать адрес загрузки⟩copy download address⟩Copy download address
+Раньше⟩earlier⟩Earlier
+Убрать из списка⟩remove from list⟩Remove from list
+из⟩of⟩of

@@ -17,6 +17,8 @@ enum Chrome {
     static let lightsStep: CGFloat = 20
     /// Width reserved for the macOS window buttons, measured from the window edge.
     static let lightsInset: CGFloat = 84
+    /// Leading icon tile of a two-line list row (history, bookmarks, downloads, extensions): as tall as the 12.5 pt title and 11 pt detail together.
+    static let rowIcon: CGFloat = 30
     /// Width reserved for the Windows caption buttons (minimize, maximize, close), measured from the right edge.
     static let captionInset: CGFloat = 138
 }

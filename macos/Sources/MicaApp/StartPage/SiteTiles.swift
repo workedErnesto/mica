@@ -27,13 +27,15 @@ struct ShortcutDrag: ViewModifier {
 struct SiteTile: View {
     let title: String
     let host: String
+    let url: URL
+    @ObservedObject var favicons: Favicons
     let action: () -> Void
     @State private var hover = false
     @Environment(\.accessibilityReduceMotion) private var reduced
     var body: some View {
         Button(action: action) {
             VStack(spacing: Space.small) {
-                Monogram(host: host, size: 30)
+                SiteIcon(url: url, favicons: favicons, size: 30)
                     .modifier(TileBox(hover: hover))
                 Text(label).font(.system(size: 11.5)).foregroundStyle(hover ? Palette.ink : Palette.text2).lineLimit(1)
             }

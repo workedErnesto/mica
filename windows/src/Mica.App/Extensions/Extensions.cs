@@ -223,7 +223,7 @@ public sealed partial class ExtensionsPanel : Grid
             var card = new StackPanel { Spacing = 6, Padding = new Thickness(12) };
             var row = new Grid { ColumnSpacing = 10 };
             row.ColumnDefinitions.Add(Ui.Auto()); row.ColumnDefinitions.Add(Ui.Star()); row.ColumnDefinitions.Add(Ui.Auto()); row.ColumnDefinitions.Add(Ui.Auto());
-            row.Column(new Monogram(record.Name, 28) { Opacity = record.Enabled ? 1 : 0.5 }, 0);
+            row.Column(new Monogram(record.Name, Chrome.RowIcon) { Opacity = record.Enabled ? 1 : 0.5 }, 0);
             var source = record.Source.StartsWith("cws:", StringComparison.Ordinal) ? ", Chrome Web Store" : "";
             row.Column(Ui.V(1, Ui.Text(record.Name, 12.5, null, Ui.Medium), Ui.Text(record.Version + source, 11, Palette.Text3.Brush())), 1);
             var r = record;
