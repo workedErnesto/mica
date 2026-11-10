@@ -14,7 +14,9 @@ public struct SavedTab: Codable, Equatable, Identifiable, Sendable {
 public struct SavedWindow: Codable, Equatable, Sendable {
     public var tabs: [SavedTab]
     public var selected: UUID?
-    public init(tabs: [SavedTab], selected: UUID?) { self.tabs = tabs; self.selected = selected }
+    /// Profile of the window; nil in sessions saved before profiles means the standard one.
+    public var profile: UUID?
+    public init(tabs: [SavedTab], selected: UUID?, profile: UUID? = nil) { self.tabs = tabs; self.selected = selected; self.profile = profile }
 }
 
 public struct Session: Codable, Sendable {
@@ -28,7 +30,7 @@ public struct Session: Codable, Sendable {
             let tabs = window.tabs.prefix(300).filter { tab in
                 (tab.url == nil || (["http", "https"].contains(tab.url!.scheme?.lowercased() ?? "") && AddressParser.navigable(tab.url!)) || AddressParser.openableFile(tab.url!)) && ids.insert(tab.id).inserted
             }.sorted { $0.pinned && !$1.pinned }
-            return SavedWindow(tabs: tabs, selected: tabs.contains(where: { $0.id == window.selected }) ? window.selected : tabs.first?.id)
+            return SavedWindow(tabs: tabs, selected: tabs.contains(where: { $0.id == window.selected }) ? window.selected : tabs.first?.id, profile: window.profile)
         })
     }
 }

@@ -143,8 +143,8 @@ public sealed partial class StartScreen : Grid
         field.PlaceholderText = browser.Text("поиск в ", "Поиск в ") + Store.Preferences.Search.Title(Store.Preferences.Language) + browser.Text(" или адрес", " или адрес");
         fieldSurface.Opacity = editing ? 0.5 : 1; fieldSurface.IsHitTestVisible = !editing;
         column.Padding = new Thickness(Space.Large, 96, Space.Large, editing ? 128 : 64);
-        var start = Store.Preferences.Start;
-        var key = $"{editing}|{start.Wordmark}|{string.Join(",", start.Sections)}|{start.FrequentCount}|{start.Shortcuts.Count}|{string.Join(",", start.Shortcuts.Select(s => s.Id + s.Title + s.Url))}|{start.HiddenHosts.Count}|{Store.Bookmarks.Count}|{Store.Preferences.UserName}|{Store.Preferences.GreetByName}|{Store.Preferences.Lowercase}|{Store.Preferences.Language}";
+        var start = browser.Prefs.Start;
+        var key = $"{editing}|{start.Wordmark}|{string.Join(",", start.Sections)}|{start.FrequentCount}|{start.Shortcuts.Count}|{string.Join(",", start.Shortcuts.Select(s => s.Id + s.Title + s.Url))}|{start.HiddenHosts.Count}|{Store.Bookmarks.Count}|{browser.Prefs.UserName}|{browser.Prefs.GreetByName}|{Store.Preferences.Lowercase}|{Store.Preferences.Language}";
         if (key == signature) { TryPlay(); return; }
         signature = key;
         RenderHeader(editing);
@@ -171,8 +171,8 @@ public sealed partial class StartScreen : Grid
     {
         header.Children.Clear();
         letters.Clear(); wordmark = null; badge = null;
-        var options = Store.Preferences.Start;
-        var greeting = Greeting.Text(Store.Preferences, DateTime.Now.Hour, seed);
+        var options = browser.Prefs.Start;
+        var greeting = Greeting.Text(browser.Prefs, DateTime.Now.Hour, seed);
         var line = Ui.H(10); line.HorizontalAlignment = HorizontalAlignment.Center;
         if (options.Wordmark || editing)
         {
@@ -242,7 +242,7 @@ public sealed partial class StartScreen : Grid
     /// sections are skipped except custom sites; while customizing every section is listed, hidden ones last.</summary>
     List<(StartSection, List<StartSite>)> Sections(bool editing)
     {
-        var options = Store.Preferences.Start;
+        var options = browser.Prefs.Start;
         var order = editing ? options.Sections.Concat(Enum.GetValues<StartSection>().Where(s => !options.Sections.Contains(s))).ToList() : options.Sections;
         var result = new List<(StartSection, List<StartSite>)>();
         foreach (var section in order)
@@ -323,7 +323,7 @@ public sealed partial class StartCustomizeBar : Grid
     public StartCustomizeBar(BrowserModel browser)
     {
         var store = browser.Store;
-        var start = store.Preferences.Start;
+        var start = browser.Prefs.Start;
         var defaults = new Mica.Core.StartPage();
         MaxWidth = 520;
         var count = new Segmented<int>(start.FrequentCount, Mica.Core.StartPage.FrequentChoices.Select(c => (c, c.ToString())), compact: true, label: store.Text("сайтов в разделе", "Сайтов в разделе"));
@@ -350,7 +350,7 @@ public sealed partial class StartSectionView : Grid
     public StartSectionView(StartSection section, List<StartSite> sites, BrowserModel browser, bool editing)
     {
         var store = browser.Store;
-        var start = store.Preferences.Start;
+        var start = browser.Prefs.Start;
         var visible = start.Sections.Contains(section);
         var stack = new StackPanel { Spacing = Space.Normal };
         var up = new IconButton("chevron.up", store.Text("выше", "Выше") + ": " + section.Title(store), 24) { IsEnabled = visible && start.Sections.FirstOrDefault() != section };
@@ -427,8 +427,8 @@ public sealed partial class SiteTile : Grid
         if (site.Shortcut is { } id)
         {
             yield return MenuEntry.Item(browser.Text("изменить…", "Изменить…"), () => ShortcutEditor.Show(this, store, id), "pencil");
-            yield return MenuEntry.Item(browser.Text("переместить левее", "Переместить левее"), () => store.Change(p => p.Start.ShiftShortcut(id, -1)), "arrow.left", enabled: store.Preferences.Start.Shortcuts.FirstOrDefault()?.Id != id);
-            yield return MenuEntry.Item(browser.Text("переместить правее", "Переместить правее"), () => store.Change(p => p.Start.ShiftShortcut(id, 1)), "arrow.right", enabled: store.Preferences.Start.Shortcuts.LastOrDefault()?.Id != id);
+            yield return MenuEntry.Item(browser.Text("переместить левее", "Переместить левее"), () => store.Change(p => p.Start.ShiftShortcut(id, -1)), "arrow.left", enabled: browser.Prefs.Start.Shortcuts.FirstOrDefault()?.Id != id);
+            yield return MenuEntry.Item(browser.Text("переместить правее", "Переместить правее"), () => store.Change(p => p.Start.ShiftShortcut(id, 1)), "arrow.right", enabled: browser.Prefs.Start.Shortcuts.LastOrDefault()?.Id != id);
             yield return MenuEntry.Separator;
             yield return MenuEntry.Item(browser.Text("удалить с начальной страницы", "Удалить с начальной страницы"), () => store.Change(p => p.Start.Shortcuts.RemoveAll(s => s.Id == id)), "trash", destructive: true);
         }
@@ -468,7 +468,7 @@ public static class ShortcutEditor
 {
     public static void Show(FrameworkElement anchor, Store store, Guid? editing)
     {
-        var existing = editing is { } id ? store.Preferences.Start.Shortcuts.FirstOrDefault(s => s.Id == id) : null;
+        var existing = editing is { } id ? store.ActivePrefs.Start.Shortcuts.FirstOrDefault(s => s.Id == id) : null;
         var address = new SurfaceField(store.Text("адрес, например github.com", "Адрес, например github.com"), existing?.Url ?? "", "globe");
         var title = new SurfaceField(store.Text("название, необязательно", "Название, необязательно"), existing?.Title ?? "", "textformat");
         address.ClearLabel(store.Text("очистить", "Очистить")); title.ClearLabel(store.Text("очистить", "Очистить"));

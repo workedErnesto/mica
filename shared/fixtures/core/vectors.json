@@ -533,6 +533,109 @@
       "period" : "all"
     }
   ],
+  "profileGlyph" : [
+    {
+      "expect" : "light",
+      "hex" : "#8D7B6A"
+    },
+    {
+      "expect" : "dark",
+      "hex" : "#C9B79C"
+    },
+    {
+      "expect" : "dark",
+      "hex" : "#E8A33D"
+    },
+    {
+      "expect" : "light",
+      "hex" : "#3A3A3F"
+    },
+    {
+      "expect" : "dark",
+      "hex" : "#0EA5E9"
+    },
+    {
+      "expect" : "light",
+      "hex" : "#E5484D"
+    },
+    {
+      "expect" : "light",
+      "glyph" : "light",
+      "hex" : "#C9B79C"
+    },
+    {
+      "expect" : "dark",
+      "glyph" : "dark",
+      "hex" : "#3A3A3F"
+    },
+    {
+      "expect" : "light",
+      "glyph" : "auto",
+      "hex" : "#E5484D"
+    }
+  ],
+  "profileName" : [
+    {
+      "expect" : "Работа",
+      "input" : "  Работа  "
+    },
+    {
+      "expect" : "Line break",
+      "input" : "Line\nbreak"
+    },
+    {
+      "expect" : "",
+      "input" : "\t"
+    },
+    {
+      "expect" : "GitHub ООО",
+      "input" : "GitHub ООО"
+    },
+    {
+      "expect" : "абвгдеёжзийклмнопрстуфхцчшщъыьэю",
+      "input" : "абвгдеёжзийклмнопрстуфхцчшщъыьэюя0123456789"
+    }
+  ],
+  "profileNext" : [
+    {
+      "backgrounds" : [
+        "#8D7B6A"
+      ],
+      "expect" : {
+        "background" : "#E5484D",
+        "icon" : "house"
+      },
+      "icons" : [
+        "person"
+      ]
+    },
+    {
+      "backgrounds" : [
+        "#8D7B6A",
+        "#E5484D"
+      ],
+      "expect" : {
+        "background" : "#F76B15",
+        "icon" : "briefcase"
+      },
+      "icons" : [
+        "person",
+        "house"
+      ]
+    },
+    {
+      "backgrounds" : [
+
+      ],
+      "expect" : {
+        "background" : "#E5484D",
+        "icon" : "person"
+      },
+      "icons" : [
+
+      ]
+    }
+  ],
   "shortcut" : [
     {
       "engine" : "DuckDuckGo",

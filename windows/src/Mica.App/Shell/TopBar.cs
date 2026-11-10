@@ -50,7 +50,7 @@ public sealed partial class TopBar : Grid
     public void Render(TabLayout layout, double windowWidth)
     {
         if (windowWidth <= 0) return;
-        var toolbar = Store.Preferences.Toolbar;
+        var toolbar = browser.Prefs.Toolbar;
         var items = toolbar.Resolve(sidebarAvailable: !layout.IsHorizontal());
         var edge = layout.SidebarEdge();
         var editing = browser.CustomizingToolbar;
@@ -155,7 +155,7 @@ public static class LayoutMenu
 {
     public static IEnumerable<MenuEntry> Entries(Store store)
     {
-        var current = store.Preferences.Layout;
+        var current = store.ActivePrefs.Layout;
         void Choose(TabLayout layout) => store.Change(p => p.Layout = layout);
         return
         [
@@ -195,6 +195,9 @@ public static class AppMenu
             MenuEntry.Item(s.Text("уменьшить", "Уменьшить"), () => Commands.Run(b, "zoomOut"), "minus", enabled: tab?.Core is not null, shortcut: K("zoomOut")),
             MenuEntry.Item(s.Text("исходный масштаб", "Исходный масштаб") + (tab is { Zoom: not 1 } ? $" ({Math.Round(tab.Zoom * 100)}%)" : ""), () => Commands.Run(b, "zoomReset"), null, enabled: tab is { Zoom: not 1 }, shortcut: K("zoomReset")),
             MenuEntry.Item(s.Text("полноэкранный режим", "Полноэкранный режим"), () => Commands.Run(b, "fullscreen"), "arrow.up.left.and.arrow.down.right", shortcut: K("fullscreen")),
+            MenuEntry.Separator,
+            .. ProfileMenu.OpenEntries(s),
+            MenuEntry.Item(s.Text("настроить профили…", "Настроить профили…"), () => ProfileMenu.Edit(b, b.ProfileId), "person.crop.circle"),
             MenuEntry.Separator,
             MenuEntry.Item(s.Text("настроить панель инструментов…", "Настроить панель инструментов…"), () => b.CustomizingToolbar = true, "slider.horizontal.3"),
             .. LayoutMenu.Entries(s),

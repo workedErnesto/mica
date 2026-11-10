@@ -30,14 +30,14 @@ struct StartSectionView: View {
     var editing = false
     @State private var editingSite: StartSite?
     var body: some View {
-        let start = store.preferences.start
+        let start = browser.prefs.start
         let visible = start.sections.contains(section)
         VStack(alignment: .leading, spacing: Space.normal) {
-            StartBlockHeader(title: section.title(store), editing: editing, shown: Binding(get: { visible }, set: { store.preferences.start.setVisible(section, $0) }), store: store) {
+            StartBlockHeader(title: section.title(store), editing: editing, shown: Binding(get: { visible }, set: { browser.prefs.start.setVisible(section, $0) }), store: store) {
                 HStack(spacing: 0) {
-                    IconButton(symbol: "chevron.up", label: store.text("выше", "Выше") + ": " + section.title(store), size: 24) { withMotion(Motion.quick) { store.preferences.start.shift(section, by: -1) } }
+                    IconButton(symbol: "chevron.up", label: store.text("выше", "Выше") + ": " + section.title(store), size: 24) { withMotion(Motion.quick) { browser.prefs.start.shift(section, by: -1) } }
                         .disabled(!visible || start.sections.first == section)
-                    IconButton(symbol: "chevron.down", label: store.text("ниже", "Ниже") + ": " + section.title(store), size: 24) { withMotion(Motion.quick) { store.preferences.start.shift(section, by: 1) } }
+                    IconButton(symbol: "chevron.down", label: store.text("ниже", "Ниже") + ": " + section.title(store), size: 24) { withMotion(Motion.quick) { browser.prefs.start.shift(section, by: 1) } }
                         .disabled(!visible || start.sections.last == section)
                 }
             }
@@ -53,13 +53,13 @@ struct StartSectionView: View {
                         ForEach(sites) { site in
                             SiteTile(title: site.title, host: site.host, url: site.url, favicons: browser.favicons) { browser.selected?.load(site.url) }
                                 .micaContextMenu { menu(site) }
-                                .modifier(ShortcutDrag(site: site, store: store))
+                                .modifier(ShortcutDrag(site: site, store: store, browser: browser))
                                 .popover(isPresented: Binding(get: { editingSite == site }, set: { if !$0 { editingSite = nil } }), arrowEdge: .bottom) {
-                                    ShortcutEditor(store: store, editing: site.shortcut) { editingSite = nil }
+                                    ShortcutEditor(store: store, browser: browser, editing: site.shortcut) { editingSite = nil }
                                 }
                                 .transition(Motion.pop)
                         }
-                        if section == .custom { AddShortcutTile(store: store).transition(Motion.pop) }
+                        if section == .custom { AddShortcutTile(store: store, browser: browser).transition(Motion.pop) }
                     }
                     .animation(Motion.quick, value: sites.map(\.id))
                 }
@@ -81,19 +81,19 @@ struct StartSectionView: View {
         MenuEntry.divider
         if let id = site.shortcut {
             MenuEntry.item(browser.text("изменить…", "Изменить…"), symbol: "pencil") { editingSite = site }
-            MenuEntry.item(browser.text("переместить левее", "Переместить левее"), symbol: "arrow.left", enabled: store.preferences.start.shortcuts.first?.id != id) { withMotion(Motion.quick) { store.preferences.start.shiftShortcut(id, by: -1) } }
-            MenuEntry.item(browser.text("переместить правее", "Переместить правее"), symbol: "arrow.right", enabled: store.preferences.start.shortcuts.last?.id != id) { withMotion(Motion.quick) { store.preferences.start.shiftShortcut(id, by: 1) } }
+            MenuEntry.item(browser.text("переместить левее", "Переместить левее"), symbol: "arrow.left", enabled: browser.prefs.start.shortcuts.first?.id != id) { withMotion(Motion.quick) { browser.prefs.start.shiftShortcut(id, by: -1) } }
+            MenuEntry.item(browser.text("переместить правее", "Переместить правее"), symbol: "arrow.right", enabled: browser.prefs.start.shortcuts.last?.id != id) { withMotion(Motion.quick) { browser.prefs.start.shiftShortcut(id, by: 1) } }
             MenuEntry.divider
-            MenuEntry.item(browser.text("удалить с начальной страницы", "Удалить с начальной страницы"), symbol: "trash", destructive: true) { withMotion(Motion.quick) { store.preferences.start.shortcuts.removeAll { $0.id == id } } }
+            MenuEntry.item(browser.text("удалить с начальной страницы", "Удалить с начальной страницы"), symbol: "trash", destructive: true) { withMotion(Motion.quick) { browser.prefs.start.shortcuts.removeAll { $0.id == id } } }
         } else {
             MenuEntry.item(browser.text("закрепить в своих сайтах", "Закрепить в своих сайтах"), symbol: "pin") {
                 withMotion(Motion.quick) {
-                    store.preferences.start.shortcuts.append(StartShortcut(title: site.title, url: site.url))
-                    store.preferences.start.setVisible(.custom, true)
+                    browser.prefs.start.shortcuts.append(StartShortcut(title: site.title, url: site.url))
+                    browser.prefs.start.setVisible(.custom, true)
                 }
             }
             if section == .frequent, let host = site.url.host?.lowercased() {
-                MenuEntry.item(browser.text("скрыть из частых", "Скрыть из частых"), symbol: "eye.slash") { withMotion(Motion.quick) { store.preferences.start.hiddenHosts.append(host) } }
+                MenuEntry.item(browser.text("скрыть из частых", "Скрыть из частых"), symbol: "eye.slash") { withMotion(Motion.quick) { browser.prefs.start.hiddenHosts.append(host) } }
             }
         }
         MenuEntry.divider

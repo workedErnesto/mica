@@ -54,6 +54,8 @@ public sealed partial class MicaApplication : Application, IXamlMetadataProvider
         var links = LaunchUrls(Program.Arguments).Concat(pending).ToList();
         pending.Clear();
         if (links.Count > 0) OpenLinks(links);
+        if (JumpList.ProfileArgument(Program.Arguments) is { } profile) Store.OpenProfile(profile);
+        JumpList.Update(Store);
         if (Program.QA) await Diagnostics.QA.RunAsync(Store);
     }
 
@@ -73,7 +75,12 @@ public sealed partial class MicaApplication : Application, IXamlMetadataProvider
     public void Activate(AppActivationArguments e)
     {
         var urls = new List<string>();
-        if (e.Kind == ExtendedActivationKind.Launch && e.Data is ILaunchActivatedEventArgs launch) urls.AddRange(LaunchUrls(SplitArguments(launch.Arguments)));
+        if (e.Kind == ExtendedActivationKind.Launch && e.Data is ILaunchActivatedEventArgs launch)
+        {
+            // A taskbar list entry: bring that profile's window forward or open one.
+            if (JumpList.ProfileArgument(SplitArguments(launch.Arguments)) is { } profile && started) { Store.OpenProfile(profile); return; }
+            urls.AddRange(LaunchUrls(SplitArguments(launch.Arguments)));
+        }
         else if (e.Kind == ExtendedActivationKind.Protocol && e.Data is IProtocolActivatedEventArgs protocol) urls.Add(protocol.Uri.AbsoluteUri);
         else if (e.Kind == ExtendedActivationKind.File && e.Data is IFileActivatedEventArgs file) urls.AddRange(file.Files.Select(f => f.Path));
         else if (e.Kind == ExtendedActivationKind.AppNotification) { Notifications.Notifier.Shared.Activated(e); return; }

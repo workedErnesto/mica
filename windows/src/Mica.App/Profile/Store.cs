@@ -12,7 +12,12 @@ public sealed partial class Store
 {
     public static readonly Store Shared = new();
     public string Root { get; }
+    /// <summary>Application-wide preferences. The part a profile owns (ProfileLook) is read through Prefs(profile); its
+    /// copy here only seeds the standard profile when preferences from a build before profiles are first loaded.</summary>
     public Preferences Preferences { get; private set; }
+    /// <summary>The standard profile first. Each window shows one of them.</summary>
+    public List<Profile> Profiles { get; private set; }
+    public event Action? ProfilesChanged;
     public List<Visit> Bookmarks { get; private set; }
     public List<Visit> History { get; private set; }
     public List<SitePermission> Permissions { get; private set; }
@@ -37,7 +42,7 @@ public sealed partial class Store
 
     readonly HashSet<string> unreadable = [];
     readonly DispatcherQueue queue = DispatcherQueue.GetForCurrentThread();
-    DispatcherQueueTimer? sessionTimer, preferencesTimer;
+    DispatcherQueueTimer? sessionTimer, preferencesTimer, profilesTimer;
 
     Store()
     {
@@ -63,6 +68,9 @@ public sealed partial class Store
         }
         DownloadRecords = Read<List<DownloadRecord>>("downloads.json") ?? [];
         Preferences = (Read<Preferences>("preferences.json") ?? new Preferences()).Sanitized();
+        Profiles = Core.Profiles.Normalized(Read<List<Profile>>("profiles.json") ?? [], ProfileLook.From(Preferences));
+        // The first launch with profiles writes the standard profile made from the old preferences.
+        if (!File.Exists(Path.Combine(Root, "profiles.json"))) Save(Profiles, "profiles.json");
         Bookmarks = Read<List<Visit>>("bookmarks.json") ?? [];
         History = Read<List<Visit>>("history.json") ?? [];
         Permissions = Read<List<SitePermission>>("permissions.json") ?? [];
@@ -92,18 +100,93 @@ public sealed partial class Store
 
     public BrowserModel? Active => Windows.FirstOrDefault(w => w.IsKey)?.Model ?? Windows.LastOrDefault()?.Model;
 
-    /// <summary>Edits preferences; dependants (appearance, blocking, icon) react to what actually changed.</summary>
-    public void Change(Action<Preferences> edit)
+    public Profile Profile(Guid? id) => Core.Profiles.Resolve(id, Profiles);
+    public string ProfileName(Profile profile) => Core.Profiles.DisplayName(profile, Preferences.Lowercase, Preferences.Language);
+    /// <summary>A name inside authored text: «…» in Russian, “…” in English.</summary>
+    public string Quoted(string text) => Preferences.Language == Language.En ? "“" + text + "”" : "«" + text + "»";
+    /// <summary>Preferences in effect for a window of this profile: the application-wide ones with the profile's look over them.</summary>
+    public Preferences Prefs(Guid? profile) => Profile(profile).Look.AppliedTo(Preferences);
+    /// <summary>Preferences of the window in front. Settings and onboarding live in that window and edit its profile.</summary>
+    public Preferences ActivePrefs => Prefs(Active?.ProfileId);
+
+    /// <summary>Edits preferences of the window in front; its profile takes the look part, the application the rest.
+    /// Dependants (appearance, blocking, icon) react to what actually changed.</summary>
+    public void Change(Action<Preferences> edit) => Change(Active?.ProfileId, edit);
+
+    public void Change(Guid? profile, Action<Preferences> edit)
     {
         var old = Preferences.Clone();
-        edit(Preferences);
-        Preferences.Sanitized();
+        var target = Profile(profile);
+        var effective = target.Look.AppliedTo(Preferences);
+        edit(effective);
+        effective.Sanitized();
+        var look = ProfileLook.From(effective);
+        // The application-wide copy keeps its own look fields; only the rest of the edit reaches it.
+        var legacy = ProfileLook.From(Preferences);
+        Preferences = legacy.AppliedTo(effective);
         SchedulePreferences();
-        if (old.Theme != Preferences.Theme || old.CustomBase != Preferences.CustomBase || old.Accent != Preferences.Accent || old.CustomTint != Preferences.CustomTint) ApplyAppearance();
+        if (!look.SameAs(target.Look)) { target.Look = look; ScheduleProfiles(); }
+        ApplyAppearance();
         if (old.AppIcon != Preferences.AppIcon) { Appearance.AppIcons.Apply(this); FlushPreferences(); }
         if (old.Blocking != Preferences.Blocking || !old.BlockingExceptions.SequenceEqual(Preferences.BlockingExceptions)) _ = Blocker.RebuildAsync();
         PreferencesChanged?.Invoke(old);
         PreferencesUpdated?.Invoke();
+    }
+
+    /// <summary>Name, icon, background or pinned tabs of one profile. An empty name is kept only by the standard profile.</summary>
+    public void ChangeProfile(Guid id, Action<Profile> edit)
+    {
+        var index = Profiles.FindIndex(p => p.Id == id);
+        if (index < 0) return;
+        var copy = Profiles[index].Copy();
+        edit(copy);
+        copy.Name = Core.Profiles.Name(copy.Name);
+        if (copy.Name.Length == 0 && !copy.IsStandard) return;
+        Profiles[index] = copy.Sanitized();
+        ScheduleProfiles();
+        foreach (var window in Windows) window.UpdateTitle();
+        ProfilesChanged?.Invoke();
+        PreferencesUpdated?.Invoke();
+    }
+
+    /// <summary>A new profile starts from the look of the profile it was created from.</summary>
+    public Profile AddProfile(Guid? source)
+    {
+        var profile = Core.Profiles.Next(Profiles, Text("профиль ", "Профиль ") + (Profiles.Count + 1), Profile(source).Look);
+        Profiles.Add(profile);
+        ScheduleProfiles();
+        foreach (var window in Windows) window.UpdateTitle();
+        ProfilesChanged?.Invoke();
+        return profile;
+    }
+
+    /// <summary>Windows of a removed profile move to the standard one; history keeps the mark of the removed profile.</summary>
+    public void RemoveProfile(Guid id)
+    {
+        if (id == Core.Profile.StandardId) return;
+        foreach (var window in Windows.Where(w => w.Model.ProfileId == id).ToList()) window.Model.SwitchProfile(Core.Profile.StandardId);
+        Profiles = Core.Profiles.Removing(id, Profiles);
+        ScheduleProfiles();
+        foreach (var window in Windows) window.UpdateTitle();
+        ProfilesChanged?.Invoke();
+        PreferencesUpdated?.Invoke();
+    }
+
+    /// <summary>A window of this profile comes forward, or a new one opens.</summary>
+    public void OpenProfile(Guid id, bool newWindow = false)
+    {
+        if (!newWindow && Windows.LastOrDefault(w => w.Model.ProfileId == id && !w.Model.PrivateMode) is { } window) { window.Bring(); return; }
+        NewWindow(profile: id);
+    }
+
+    /// <summary>A window changed profile: views of profile-owned settings redraw.</summary>
+    public void NotifyProfileSwitch() { ProfilesChanged?.Invoke(); PreferencesUpdated?.Invoke(); }
+
+    void ScheduleProfiles()
+    {
+        profilesTimer ??= Debounce(TimeSpan.FromMilliseconds(150), () => Save(Profiles, "profiles.json"));
+        profilesTimer.Stop(); profilesTimer.Start();
+        JumpList.Update(this);
     }
 
     public void Save<T>(T value, string name)
@@ -118,7 +201,7 @@ public sealed partial class Store
         preferencesTimer ??= Debounce(TimeSpan.FromMilliseconds(150), () => Save(Preferences, "preferences.json"));
         preferencesTimer.Stop(); preferencesTimer.Start();
     }
-    public void FlushPreferences() { preferencesTimer?.Stop(); Save(Preferences, "preferences.json"); }
+    public void FlushPreferences() { preferencesTimer?.Stop(); Save(Preferences, "preferences.json"); profilesTimer?.Stop(); Save(Profiles, "profiles.json"); }
 
     DispatcherQueueTimer Debounce(TimeSpan delay, Action action)
     {
@@ -133,7 +216,8 @@ public sealed partial class Store
     {
         get
         {
-            var mode = Preferences.Theme == Theme.Custom ? Preferences.CustomBase : Preferences.Theme;
+            var p = ActivePrefs;
+            var mode = p.Theme == Theme.Custom ? p.CustomBase : p.Theme;
             if (mode == Theme.System)
             {
                 var background = new global::Windows.UI.ViewManagement.UISettings().GetColorValue(global::Windows.UI.ViewManagement.UIColorType.Background);
@@ -147,15 +231,17 @@ public sealed partial class Store
     {
         var contrast = new global::Windows.UI.ViewManagement.AccessibilitySettings().HighContrast;
         Palette.Apply(DarkMode, contrast);
-        Look.Apply(Preferences.Theme == Theme.Custom, Preferences.Accent, Preferences.CustomTint);
+        // The palette is shared by every window, so theme and colours follow the profile of the window in front.
+        var p = ActivePrefs;
+        Look.Apply(p.Theme == Theme.Custom, p.Accent, p.CustomTint);
         foreach (var window in Windows) window.ApplyAppearance();
     }
 
     /// <summary>Opacity of the shell tint over the backdrop: 0.92 at zero transparency, 0.2 at full.</summary>
-    public double GlassTint => 0.92 - Preferences.Transparency * 0.72;
+    public static double GlassTint(Preferences p) => 0.92 - p.Transparency * 0.72;
     /// <summary>Opacity of the start page fill over the glass: opaque at zero transparency, 0.45 at full, denser than the
     /// shell tint so the start page still reads as the card. Web pages are never made transparent.</summary>
-    public double StartTint => 1 - Preferences.Transparency * 0.55;
+    public static double StartTint(Preferences p) => 1 - p.Transparency * 0.55;
 
     public async Task StartAsync()
     {
@@ -188,9 +274,11 @@ public sealed partial class Store
         Updater.Start();
     }
 
-    public BrowserModel NewWindow(bool privateMode = false, SavedWindow? saved = null)
+    /// <summary>Without a profile the window takes the one of the window in front, so Ctrl+N stays in the current profile.</summary>
+    public BrowserModel NewWindow(bool privateMode = false, SavedWindow? saved = null, Guid? profile = null)
     {
-        var model = new BrowserModel(this, privateMode);
+        var profileId = Profile(saved?.Profile ?? profile ?? Active?.ProfileId).Id;
+        var model = new BrowserModel(this, privateMode, profileId);
         var window = new BrowserWindow(model);
         Windows.Add(window);
         if (saved is { Tabs.Count: > 0 })
@@ -199,7 +287,12 @@ public sealed partial class Store
             if (model.Tabs.FirstOrDefault(t => t.Id == saved.Selected) is { } selected) model.Select(selected);
             foreach (var t in model.Tabs.Where(t => TabPolicy.ShouldLoadOnRestore(t.Saved, saved.Selected, Preferences)).ToList()) t.EnsureLoaded();
         }
-        else model.Add();
+        else
+        {
+            // A new window of a profile opens with that profile's pinned tabs, loaded when first selected.
+            if (!privateMode) foreach (var pin in Profile(profileId).Pinned) model.Add(new SavedTab { Url = pin.Url, Title = pin.Title, Pinned = true }, activate: false, restored: true);
+            model.Add();
+        }
         window.Activate();
         window.Enter();
         ScheduleSession();
@@ -216,14 +309,17 @@ public sealed partial class Store
     public void FlushSession()
     {
         sessionTimer?.Stop();
-        Save(new Session { Windows = Windows.Where(w => !w.Model.PrivateMode).Select(w => w.Model.Snapshot).ToList() }, "session.json");
+        var normal = Windows.Where(w => !w.Model.PrivateMode).ToList();
+        Save(new Session { Windows = normal.Select(w => w.Model.Snapshot).ToList() }, "session.json");
+        // Each profile remembers the pinned tabs of its windows; with several windows the one in front wins.
+        foreach (var window in normal.Where(w => !w.IsKey).Concat(normal.Where(w => w.IsKey))) window.Model.RememberPinned();
     }
 
     public void Record(Tab tab)
     {
         if (tab.Owner?.PrivateMode != false || tab.Url is not { } url || !(url.StartsWith("https://", StringComparison.Ordinal) || url.StartsWith("http://", StringComparison.Ordinal))) return;
         if (History.FirstOrDefault() is { } last && last.Url == url && DateTimeOffset.Now - last.Date < TimeSpan.FromSeconds(60)) return;
-        History.Insert(0, new Visit(url, tab.Title));
+        History.Insert(0, new Visit(url, tab.Title, tab.Owner?.ProfileId));
         if (History.Count > 3000) History.RemoveRange(3000, History.Count - 3000);
         SetHistory(History);
     }

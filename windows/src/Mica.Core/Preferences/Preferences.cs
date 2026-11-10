@@ -38,6 +38,8 @@ public sealed class Preferences
     public bool FillPasswords { get; set; } = true;
     /// <summary>Sites may ask for permission to show notifications. Off answers every new request with a refusal.</summary>
     public bool NotificationRequests { get; set; } = true;
+    /// <summary>What choosing another profile in the profile menu does. Ask asks once and offers to remember the answer.</summary>
+    public ProfileOpening ProfileOpening { get; set; } = ProfileOpening.Ask;
 
     /// <summary>Values read from disk are clamped and repaired the same way macOS decodes them.</summary>
     public Preferences Sanitized()
@@ -52,6 +54,7 @@ public sealed class Preferences
         Start = (Start ?? new()).Sanitized();
         Clearing ??= new();
         EagerHosts ??= []; BlockingExceptions ??= [];
+        if (!Enum.IsDefined(ProfileOpening)) ProfileOpening = ProfileOpening.Ask;
         return this;
     }
 

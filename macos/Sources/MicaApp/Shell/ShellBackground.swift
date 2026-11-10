@@ -44,10 +44,11 @@ struct WindowDragArea: NSViewRepresentable {
 /// Shell fill: the tint over the blurred desktop, or the plain tint when glass is off or the system asks for opacity.
 struct ShellBackground: View {
     @ObservedObject var store: Store
+    @ObservedObject var browser: BrowserModel
     let glass: Bool
     @Environment(\.look) private var look
     var body: some View {
-        if glass { Frost().overlay(look.shell.opacity(store.glassTint)) }
+        if glass { Frost().overlay(look.shell.opacity(Store.glassTint(browser.prefs))) }
         else { look.shell }
     }
 }

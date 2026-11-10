@@ -43,10 +43,10 @@ final class FeatureTests: XCTestCase {
         t.insert(.settings, in: .trailing); XCTAssertEqual(t.trailing, [.settings]); XCTAssertFalse(t.leading.contains(.settings))
         t.insert(.settings, in: .hidden); XCTAssertEqual(t.zone(of: .settings), .hidden)
         t.insert(.back, in: .leading, before: .back); XCTAssertEqual(t.zone(of: .back), .leading)
-        // A layout saved before the incognito control existed gets it in its default place, next to settings.
+        // A layout saved before the incognito and profile controls existed gets them in their default places.
         let old = #"{"leading":["back"],"trailing":[],"sidebar":["history","settings"],"addressWidth":500}"#
         let migrated = try JSONDecoder().decode(ToolbarLayout.self, from: Data(old.utf8))
-        XCTAssertEqual(migrated.sidebar, [.history, .incognito, .settings])
+        XCTAssertEqual(migrated.sidebar, [.profile, .history, .incognito, .settings])
         XCTAssertEqual(migrated.known, ToolbarControl.allCases)
         // Once known, removing it sticks.
         var removed = migrated; removed.insert(.incognito, in: .hidden)

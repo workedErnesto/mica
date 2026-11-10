@@ -13,7 +13,7 @@ struct Sidebar: View {
     var body: some View {
         let pinned = browser.tabs.filter(\.pinned)
         let regular = browser.tabs.filter { !$0.pinned }
-        let footer = store.preferences.toolbar.resolved(sidebarAvailable: true).sidebar
+        let footer = browser.prefs.toolbar.resolved(sidebarAvailable: true).sidebar
         SwiftUI.Group {
             if compact { rail(pinned: pinned, regular: regular, footer: footer).transition(.opacity) }
             else { full(pinned: pinned, regular: regular, footer: footer).transition(.opacity) }
@@ -23,11 +23,11 @@ struct Sidebar: View {
         .animation(Motion.quick, value: browser.customizingToolbar)
         .micaContextMenu {
             MenuEntry.item(browser.text("новая вкладка", "Новая вкладка"), symbol: "plus") { _ = browser.add(); browser.focusAddress += 1 }
-            MenuEntry.item(store.preferences.sidebarCollapsed ? browser.text("развернуть боковую панель", "Развернуть боковую панель") : browser.text("свернуть боковую панель", "Свернуть боковую панель"), symbol: edge == .right ? "sidebar.right" : "sidebar.left") {
-                withMotion(Motion.panel) { store.preferences.sidebarCollapsed.toggle() }
+            MenuEntry.item(browser.prefs.sidebarCollapsed ? browser.text("развернуть боковую панель", "Развернуть боковую панель") : browser.text("свернуть боковую панель", "Свернуть боковую панель"), symbol: edge == .right ? "sidebar.right" : "sidebar.left") {
+                withMotion(Motion.panel) { browser.prefs.sidebarCollapsed.toggle() }
             }
             MenuEntry.divider
-            LayoutMenu.entries(store: store)
+            LayoutMenu.entries(store: store, browser: browser)
             MenuEntry.divider
             MenuEntry.item(store.text("настроить панель инструментов…", "Настроить панель инструментов…"), symbol: "slider.horizontal.3") { browser.customizingToolbar = true }
         }
@@ -51,7 +51,7 @@ struct Sidebar: View {
             Spacer(minLength: 0)
             if footer.contains(.extensions) && !browser.customizingToolbar { ExtensionStrip(manager: store.extensions, browser: browser) }
             if browser.customizingToolbar {
-                ToolbarDropZone(zone: .sidebar, items: footer, store: store, layout: edge).transition(.opacity)
+                ToolbarDropZone(zone: .sidebar, items: footer, store: store, browser: browser, layout: edge).transition(.opacity)
             } else if !footer.isEmpty {
                 // The incognito badge lives in the top bar only, so it is not mistaken for the incognito button here.
                 HStack(spacing: 2) {
@@ -83,7 +83,7 @@ struct Sidebar: View {
             Spacer(minLength: 0)
             if footer.contains(.extensions) && !browser.customizingToolbar { ExtensionStrip(manager: store.extensions, browser: browser, vertical: true) }
             if browser.customizingToolbar {
-                ToolbarDropZone(zone: .sidebar, items: footer, store: store, layout: edge, vertical: true, alignment: .top)
+                ToolbarDropZone(zone: .sidebar, items: footer, store: store, browser: browser, layout: edge, vertical: true, alignment: .top)
             } else {
                 ForEach(footer, id: \.self) { item in ToolbarButton(item: item, browser: browser, store: store, edge: edge, inSidebar: true) }
             }

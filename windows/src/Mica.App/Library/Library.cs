@@ -14,6 +14,9 @@ public sealed partial class SidePanel : Grid
     readonly MTextField? query;
     readonly StackPanel list = new() { Spacing = 2 };
     readonly Grid content = new();
+    readonly StackPanel filters = new() { Orientation = Orientation.Horizontal, Spacing = Space.Micro };
+    /// <summary>History of one profile only; null shows every profile.</summary>
+    Guid? profileFilter;
 
     public SidePanel(LibraryPanel panel, BrowserModel browser)
     {
@@ -36,6 +39,13 @@ public sealed partial class SidePanel : Grid
         stack.RowDefinitions.Add(Ui.RowAuto()); stack.RowDefinitions.Add(Ui.RowAuto()); stack.RowDefinitions.Add(Ui.RowStar()); stack.RowDefinitions.Add(Ui.RowAuto());
         stack.Row(query, 0);
         if (panel == LibraryPanel.History && browser.PrivateMode) stack.Row(Ui.Text(browser.Text("история окна инкогнито не записывается", "История окна инкогнито не записывается"), 11.5, Palette.Text3.Brush(), wrap: true), 1);
+        else if (panel == LibraryPanel.History)
+        {
+            var strip = Ui.Scroll(filters, horizontal: true);
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(strip, browser.Text("профиль", "Профиль"));
+            stack.Row(strip, 1);
+            this.Bind(h => store.ProfilesChanged += h, h => store.ProfilesChanged -= h, Render);
+        }
         var scroll = Ui.Scroll(list); scroll.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
         stack.Row(scroll, 2);
         if (panel == LibraryPanel.History && !browser.PrivateMode)
@@ -53,7 +63,10 @@ public sealed partial class SidePanel : Grid
     {
         var store = browser.Store;
         var q = query?.Text ?? "";
-        var visits = (panel == LibraryPanel.History ? store.History : store.Bookmarks).Where(v => q.Length == 0 || v.Title.Contains(q, StringComparison.CurrentCultureIgnoreCase) || v.Url.Contains(q, StringComparison.CurrentCultureIgnoreCase)).ToList();
+        if (store.Profiles.All(p => p.Id != profileFilter)) profileFilter = null;
+        RenderFilters();
+        var filter = panel == LibraryPanel.History ? profileFilter : null;
+        var visits = (panel == LibraryPanel.History ? store.History : store.Bookmarks).Where(v => (q.Length == 0 || v.Title.Contains(q, StringComparison.CurrentCultureIgnoreCase) || v.Url.Contains(q, StringComparison.CurrentCultureIgnoreCase)) && (filter is null || Core.Profiles.Owner(v) == filter)).ToList();
         list.Children.Clear();
         if (visits.Count == 0)
         {
@@ -69,6 +82,34 @@ public sealed partial class SidePanel : Grid
                 foreach (var visit in group) list.Children.Add(new VisitRow(visit, panel, browser));
             }
         else foreach (var visit in visits) list.Children.Add(new VisitRow(visit, panel, browser));
+    }
+
+    /// <summary>Chips above the history list: every profile, or one of them. Hidden while there is one profile.</summary>
+    void RenderFilters()
+    {
+        var store = browser.Store;
+        filters.Children.Clear();
+        if (panel != LibraryPanel.History || browser.PrivateMode || store.Profiles.Count < 2) return;
+        filters.Children.Add(Chip(browser.Text("все", "Все"), null));
+        foreach (var profile in store.Profiles.ToList()) filters.Children.Add(Chip(store.ProfileName(profile), profile));
+    }
+
+    Grid Chip(string title, Profile? profile)
+    {
+        var selected = profileFilter == profile?.Id;
+        var chip = new Grid { Height = 24, Background = Palette.Clear, IsTabStop = true };
+        var plate = Ui.Rounded(Radius.Row, selected ? Palette.Pressed.Brush() : Palette.Clear);
+        var label = Ui.Text(title, 11.5, selected ? Palette.Ink.Brush() : Palette.Text2.Brush(), selected ? Ui.Medium : Ui.Regular);
+        label.VerticalAlignment = VerticalAlignment.Center;
+        var line = profile is null ? Ui.H(0, label) : Ui.H(5, new ProfileMark(profile, 14) { VerticalAlignment = VerticalAlignment.Center }, label);
+        line.Margin = new Thickness(profile is null ? 9 : 5, 0, 9, 0);
+        chip.Children.Add(plate); chip.Children.Add(line);
+        Interaction? interaction = null;
+        interaction = new Interaction(chip, () => plate.Background = selected ? Palette.Pressed.Brush() : interaction!.Hover ? Palette.Hover.Brush() : Palette.Clear, 0.95);
+        var id = profile?.Id;
+        interaction.Invoked += () => { profileFilter = id; Render(); };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(chip, title);
+        return chip;
     }
 
     /// <summary>Today, yesterday, then weekday and date in the interface language; authored words follow the case style.
@@ -102,7 +143,18 @@ public sealed partial class VisitRow : Grid
         var detail = Ui.Text((visit.Host ?? visit.Url) + (panel == LibraryPanel.History ? "  " + visit.Date.LocalDateTime.ToString("t", store.Culture) : ""), 11, Palette.Text3.Brush());
         var row = new Grid { Padding = new Thickness(8, 6, 32, 6), ColumnSpacing = 10 };
         row.ColumnDefinitions.Add(Ui.Auto()); row.ColumnDefinitions.Add(Ui.Star());
-        row.Column(new SiteIcon(visit.Url, browser.Favicons, Chrome.RowIcon, tiled: true), 0); row.Column(Ui.V(1, title, detail), 1);
+        var icon = new Grid();
+        icon.Children.Add(new SiteIcon(visit.Url, browser.Favicons, Chrome.RowIcon, tiled: true));
+        // Where the page was opened, once there is more than one profile. A removed profile leaves no mark.
+        if (panel == LibraryPanel.History && store.Profiles.Count > 1 && store.Profiles.FirstOrDefault(p => p.Id == Core.Profiles.Owner(visit)) is { } owner)
+        {
+            var badge = Ui.Rounded(5, Palette.Surface.Brush(), null, 0, new ProfileMark(owner, 13));
+            badge.Padding = new Thickness(1.5); badge.HorizontalAlignment = HorizontalAlignment.Right; badge.VerticalAlignment = VerticalAlignment.Bottom;
+            badge.RenderTransform = new TranslateTransform { X = 4, Y = 4 };
+            badge.Tip(store.ProfileName(owner));
+            icon.Children.Add(badge);
+        }
+        row.Column(icon, 0); row.Column(Ui.V(1, title, detail), 1);
         var more = new MenuButton(browser.Text("действия", "Действия"), () => Menu(visit, panel, browser)) { HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0), Opacity = 0 };
         Children.Add(plate); Children.Add(row); Children.Add(more);
         Interaction? interaction = null;

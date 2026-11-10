@@ -29,6 +29,7 @@ final class BrowserWindow: NSWindowController, NSWindowDelegate {
             NotificationCenter.default.addObserver(self, selector: #selector(buttonFrameChanged(_:)), name: NSView.frameDidChangeNotification, object: button)
         }
         placeWindowButtons()
+        applyProfile()
         if ProcessInfo.processInfo.arguments.contains("--qa") && ProcessInfo.processInfo.arguments.contains("--narrow") { window.setContentSize(NSSize(width: 640, height: 620)); window.center() }
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) unavailable") }
@@ -44,6 +45,14 @@ final class BrowserWindow: NSWindowController, NSWindowDelegate {
             window.animator().alphaValue = 1
         }
         model.entered = true
+    }
+    /// Theme and title follow the window's profile; another window may show a different theme at the same time.
+    func applyProfile() {
+        guard let window else { return }
+        let mode = Store.appearanceMode(model.prefs)
+        let appearance = mode == .system ? nil : NSAppearance(named: mode == .dark ? .darkAqua : .aqua)
+        if window.appearance?.name != appearance?.name { window.appearance = appearance }
+        window.title = model.windowTitle
     }
     static let buttons: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
     private var placingWindowButtons = false

@@ -37,6 +37,12 @@ final class SharedVectorTests: XCTestCase {
         case "chromeId": return ChromeStore.extensionID(from: c["input"] as! String) ?? NSNull()
         case "luminance": return HexColor.luminance(c["hex"] as! String).map { (($0 * 10000).rounded() / 10000) } ?? NSNull()
         case "shortcut": return StartPage.shortcutURL(c["input"] as! String, engine: engine())?.absoluteString ?? NSNull()
+        case "profileName": return Profiles.name(c["input"] as! String)
+        case "profileNext":
+            let list = zip(c["icons"] as! [String], c["backgrounds"] as! [String]).map { Profile(name: "x", icon: $0, background: $1) }
+            let next = Profiles.next(after: list, name: "", look: ProfileLook())
+            return ["icon": next.icon, "background": next.background]
+        case "profileGlyph": return Profiles.lightGlyph(on: c["hex"] as! String, glyph: ProfileGlyph(rawValue: c["glyph"] as? String ?? "auto") ?? .auto) ? "light" : "dark"
         default: XCTFail("unknown section \(section)"); return NSNull()
         }
     }

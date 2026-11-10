@@ -145,8 +145,34 @@ public static class MotionTokens
     sizes = tokens['typography']['sizes']
     out['windows/src/Mica.Design/Tokens/TypeScale.g.cs'] = cs + '/// <summary>Font sizes in DIPs, equal to points on macOS.</summary>\npublic static class TypeScale\n{\n' + ''.join(
         f'    public const double {k[0].upper() + k[1:]} = {num(v)};\n' for k, v in sizes.items()) + '}\n'
+    # Profile icon pack and background presets
+    profiles = json.loads((shared / 'profiles.json').read_text())
+    phead = '// ' + HEADER.format(src='profiles.json') + '\n'
+    def swift_list(items): return '[' + ', '.join(f'"{i}"' for i in items) + ']'
+    def cs_list(items): return '[' + ', '.join(f'"{i}"' for i in items) + ']'
+    out['macos/Sources/MicaCore/Preferences/ProfileCatalog.swift'] = phead + f'''import Foundation
+
+/// Icons (SF Symbol names, Segoe Fluent pairs in shared/glyphs.json) and background presets for profiles.
+public enum ProfileCatalog {{
+    public static let icons = {swift_list(profiles['icons'])}
+    public static let backgrounds = {swift_list(profiles['backgrounds'])}
+    public static let standardIcon = "{profiles['standard']['icon']}"
+    public static let standardBackground = "{profiles['standard']['background']}"
+}}
+'''
+    out['windows/src/Mica.Core/Preferences/ProfileCatalog.g.cs'] = phead + f'''namespace Mica.Core;
+
+/// <summary>Icons (SF Symbol names mapped to Segoe Fluent in shared/glyphs.json) and background presets for profiles.</summary>
+public static class ProfileCatalog
+{{
+    public static readonly IReadOnlyList<string> Icons = {cs_list(profiles['icons'])};
+    public static readonly IReadOnlyList<string> Backgrounds = {cs_list(profiles['backgrounds'])};
+    public const string StandardIcon = "{profiles['standard']['icon']}";
+    public const string StandardBackground = "{profiles['standard']['background']}";
+}}
+'''
     # English text
-    rows = (shared / 'strings' / 'en.txt').read_text().split('\n')
+    rows =(shared / 'strings' / 'en.txt').read_text().split('\n')
     seen = set()
     for number, row in enumerate(rows, 1):
         if not row: continue

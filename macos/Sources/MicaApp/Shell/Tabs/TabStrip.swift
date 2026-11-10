@@ -34,7 +34,7 @@ struct TabStrip: View {
     @MenuBuilder static func menu(browser: BrowserModel, store: Store) -> [MenuEntry] {
         MenuEntry.item(browser.text("новая вкладка", "Новая вкладка"), symbol: "plus") { _ = browser.add(); browser.focusAddress += 1 }
         MenuEntry.divider
-        LayoutMenu.entries(store: store)
+        LayoutMenu.entries(store: store, browser: browser)
         MenuEntry.divider
         MenuEntry.item(store.text("настроить панель инструментов…", "Настроить панель инструментов…"), symbol: "slider.horizontal.3") { browser.customizingToolbar = true }
     }

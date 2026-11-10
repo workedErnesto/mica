@@ -68,7 +68,7 @@ public sealed partial class IconPicker : StackPanel
     }
 }
 
-/// <summary>Preset accents plus the system colour picker for anything else; every change applies immediately.</summary>
+/// <summary>Preset accents plus mica's colour panel for anything else; every change applies immediately.</summary>
 public sealed partial class AccentPicker : StackPanel
 {
     public static readonly string[] Presets = ["#6E56CF", "#3E7BFA", "#1F9D8B", "#3FA34D", "#E8A33D", "#E5484D", "#D6409F", "#8D7B6A"];
@@ -76,8 +76,8 @@ public sealed partial class AccentPicker : StackPanel
     {
         Orientation = Orientation.Horizontal; Spacing = 6; VerticalAlignment = VerticalAlignment.Center;
         var rings = new List<(string Hex, Border Ring)>();
-        var label = Ui.Text(store.Preferences.Accent, 11, Palette.Text3.Brush()); label.FontFamily = new FontFamily("Cascadia Mono, Consolas"); label.IsTextSelectionEnabled = true;
-        void Render() { foreach (var (hex, ring) in rings) ring.BorderBrush = store.Preferences.Accent.Equals(hex, StringComparison.OrdinalIgnoreCase) ? Palette.Ink.Brush() : Palette.Clear; label.Text = store.Preferences.Accent; }
+        var label = Ui.Text(store.ActivePrefs.Accent, 11, Palette.Text3.Brush()); label.FontFamily = new FontFamily("Cascadia Mono, Consolas"); label.IsTextSelectionEnabled = true;
+        void Render() { foreach (var (hex, ring) in rings) ring.BorderBrush = store.ActivePrefs.Accent.Equals(hex, StringComparison.OrdinalIgnoreCase) ? Palette.Ink.Brush() : Palette.Clear; label.Text = store.ActivePrefs.Accent; }
         foreach (var hex in Presets)
         {
             var c = HexColor.Parse(hex)!.Value;
@@ -90,14 +90,8 @@ public sealed partial class AccentPicker : StackPanel
             rings.Add((hex, ring));
             Children.Add(ring);
         }
-        var more = new IconButton("paintbrush", store.Text("другой цвет", "Другой цвет"), 26);
-        more.Click += () =>
-        {
-            var current = HexColor.Parse(store.Preferences.Accent) ?? (0.43, 0.34, 0.81);
-            var picker = new ColorPicker { IsAlphaEnabled = false, Color = Windows.UI.Color.FromArgb(255, (byte)(current.Red * 255), (byte)(current.Green * 255), (byte)(current.Blue * 255)) };
-            picker.ColorChanged += (_, e) => { store.Change(p => p.Accent = HexColor.ToHex(e.NewColor.R / 255.0, e.NewColor.G / 255.0, e.NewColor.B / 255.0)); Render(); };
-            new Flyout { Content = picker }.ShowAt(more);
-        };
+        // mica's colour panel instead of the system ColorPicker, the same one profile backgrounds use.
+        var more = new ColorWell(() => store.ActivePrefs.Accent, Presets, store.Text("другой цвет", "Другой цвет"), 26, hex => { store.Change(p => p.Accent = hex); Render(); });
         Children.Add(more); Children.Add(label);
         Render();
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(this, store.Text("акцентный цвет", "Акцентный цвет"));
@@ -122,8 +116,8 @@ public sealed partial class LayoutPreview : Grid
     {
         Children.Clear();
         Background = Look.Shell;
-        var layout = store.Preferences.Layout;
-        var collapsed = store.Preferences.SidebarCollapsed && !layout.IsHorizontal();
+        var layout = store.ActivePrefs.Layout;
+        var collapsed = store.ActivePrefs.SidebarCollapsed && !layout.IsHorizontal();
         var root = new Grid { Padding = new Thickness(8), RowSpacing = 6 };
         root.RowDefinitions.Add(Ui.RowFixed(14)); root.RowDefinitions.Add(Ui.RowAuto()); root.RowDefinitions.Add(Ui.RowStar());
         var bar = new Grid();
@@ -194,7 +188,7 @@ public sealed partial class GreetingPreview : Grid
         Children.Add(card);
         void Render()
         {
-            var greeting = Greeting.Text(store.Preferences, DateTime.Now.Hour, 1);
+            var greeting = Greeting.Text(store.ActivePrefs, DateTime.Now.Hour, 1);
             text.Text = greeting ?? "mica"; text.FontSize = greeting is null ? 30 : 24; text.CharacterSpacing = greeting is null ? -36 : -28;
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(this, store.Text("начальная страница: ", "Начальная страница: ") + text.Text);
         }

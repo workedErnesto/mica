@@ -28,7 +28,7 @@ struct SettingsView: View {
             }
             .padding(Space.normal)
             .frame(width: compact ? 60 : 228)
-            .background(store.look.shell)
+            .background(browser.look.shell)
             .onTapGesture { endEditing() }
             Rectangle().fill(Palette.hairline).frame(width: 1)
             ScrollView {
@@ -68,8 +68,9 @@ struct SettingsView: View {
     @ViewBuilder private func content(height: CGFloat) -> some View {
         switch section {
         case .space: SpaceSettings(store: store, browser: browser, dismiss: dismiss)
-        case .appearance: AppearanceSettings(store: store)
-        case .start: StartSettings(store: store)
+        case .appearance: AppearanceSettings(store: store, browser: browser)
+        case .start: StartSettings(store: store, browser: browser)
+        case .profiles: ProfileSettings(store: store, browser: browser)
         case .search: SearchSettings(store: store, browser: browser)
         case .session: SessionSettings(store: store)
         case .transfer: ImportView(store: store, manager: store.importer)

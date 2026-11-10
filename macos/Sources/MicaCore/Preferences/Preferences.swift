@@ -41,6 +41,8 @@ public struct Preferences: Codable, Equatable, Sendable {
     public var fillPasswords = true
     /// Sites may ask for permission to show notifications. Off answers every new request with a refusal.
     public var notificationRequests = true
+    /// What choosing another profile in the profile menu does. `ask` asks once and offers to remember the answer.
+    public var profileOpening: ProfileOpening = .ask
     public init() {}
     // Missing keys fall back to defaults, so preferences saved by an older build still load.
     public init(from decoder: Decoder) throws {
@@ -77,6 +79,7 @@ public struct Preferences: Codable, Equatable, Sendable {
         offerPasswords = (try? c.decodeIfPresent(Bool.self, forKey: .offerPasswords)) ?? d.offerPasswords
         fillPasswords = (try? c.decodeIfPresent(Bool.self, forKey: .fillPasswords)) ?? d.fillPasswords
         notificationRequests = (try? c.decodeIfPresent(Bool.self, forKey: .notificationRequests)) ?? d.notificationRequests
+        profileOpening = (try? c.decodeIfPresent(ProfileOpening.self, forKey: .profileOpening)) ?? d.profileOpening
         sidebarWidth = min(Preferences.sidebarRange.upperBound, max(Preferences.sidebarRange.lowerBound, try c.decodeIfPresent(Double.self, forKey: .sidebarWidth) ?? d.sidebarWidth))
     }
     public static let sidebarRange = 200.0...380.0

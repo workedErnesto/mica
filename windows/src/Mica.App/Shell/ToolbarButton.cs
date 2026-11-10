@@ -11,7 +11,7 @@ public static class ToolbarControls
         ToolbarControl.Sidebar => "sidebar.left", ToolbarControl.Back => "chevron.left", ToolbarControl.Forward => "chevron.right",
         ToolbarControl.Reload => "arrow.clockwise", ToolbarControl.NewTab => "plus", ToolbarControl.Bookmarks => "bookmark",
         ToolbarControl.History => "clock", ToolbarControl.Downloads => "arrow.down.circle", ToolbarControl.Extensions => "puzzlepiece.extension",
-        ToolbarControl.Incognito => Glyph.Incognito, _ => "gearshape",
+        ToolbarControl.Incognito => Glyph.Incognito, ToolbarControl.Profile => "person.crop.circle", _ => "gearshape",
     };
 
     public static string Title(this ToolbarControl item, Store s) => item switch
@@ -21,6 +21,7 @@ public static class ToolbarControls
         ToolbarControl.NewTab => s.Text("новая вкладка", "Новая вкладка"), ToolbarControl.Bookmarks => s.Text("закладки", "Закладки"),
         ToolbarControl.History => s.Text("история", "История"), ToolbarControl.Downloads => s.Text("загрузки", "Загрузки"),
         ToolbarControl.Extensions => s.Text("расширения", "Расширения"), ToolbarControl.Incognito => s.Text("окно инкогнито", "Окно инкогнито"),
+        ToolbarControl.Profile => s.Text("профиль", "Профиль"),
         _ => s.Text("настройки", "Настройки"),
     };
 
@@ -50,9 +51,9 @@ public static class ToolbarButton
             case ToolbarControl.Sidebar:
             {
                 var button = new IconButton(edge == TabLayout.Right ? "sidebar.right" : "sidebar.left", "");
-                void Label() => button.SetLabel((store.Preferences.SidebarCollapsed ? browser.Text("развернуть боковую панель", "Развернуть боковую панель") : browser.Text("свернуть боковую панель", "Свернуть боковую панель")) + Shortcut("sidebar"));
+                void Label() => button.SetLabel((browser.Prefs.SidebarCollapsed ? browser.Text("развернуть боковую панель", "Развернуть боковую панель") : browser.Text("свернуть боковую панель", "Свернуть боковую панель")) + Shortcut("sidebar"));
                 Label();
-                button.Click += () => store.Change(p => p.SidebarCollapsed = !p.SidebarCollapsed);
+                button.Click += () => browser.Change(p => p.SidebarCollapsed = !p.SidebarCollapsed);
                 button.Bind(h => store.PreferencesUpdated += h, h => store.PreferencesUpdated -= h, Label);
                 yield return button; yield break;
             }
@@ -97,6 +98,10 @@ public static class ToolbarButton
                 var button = new IconButton(item.Symbol(), browser.Text("новое окно инкогнито", "Новое окно инкогнито") + Shortcut("private"));
                 button.Click += () => store.NewWindow(privateMode: true);
                 yield return button; yield break;
+            }
+            case ToolbarControl.Profile:
+            {
+                yield return new ProfileButton(browser); yield break;
             }
             case ToolbarControl.Settings:
             {

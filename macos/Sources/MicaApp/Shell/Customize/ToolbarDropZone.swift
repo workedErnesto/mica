@@ -7,14 +7,15 @@ struct ToolbarDropZone: View {
     let zone: ToolbarZone
     let items: [ToolbarControl]
     @ObservedObject var store: Store
+    @ObservedObject var browser: BrowserModel
     let layout: TabLayout
     var vertical = false
     var alignment: Alignment = .leading
     var minWidth: CGFloat = 64
     @State private var targeted = false
     var body: some View {
-        let moves = ToolbarMoves(store: store)
-        let tiles = ForEach(items, id: \.self) { ToolbarEditTile(item: $0, store: store, layout: layout).transition(Motion.pop) }
+        let moves = ToolbarMoves(store: store, browser: browser)
+        let tiles = ForEach(items, id: \.self) { ToolbarEditTile(item: $0, store: store, browser: browser, layout: layout).transition(Motion.pop) }
         SwiftUI.Group {
             if vertical { VStack(spacing: 2) { tiles } } else { HStack(spacing: 2) { tiles } }
         }

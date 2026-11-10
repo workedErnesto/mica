@@ -32,18 +32,19 @@ extension ToolbarZone {
 @MainActor
 struct ToolbarMoves {
     let store: Store
+    let browser: BrowserModel
     func move(_ item: ToolbarControl, to zone: ToolbarZone, before target: ToolbarControl? = nil) {
-        withMotion(Motion.quick) { store.preferences.toolbar.insert(item, in: zone, before: target) }
+        withMotion(Motion.quick) { browser.prefs.toolbar.insert(item, in: zone, before: target) }
     }
     /// Appending in the top layout: sidebar items are shown after the right-hand ones, so an item dropped
     /// at the end of the right zone joins them to appear last.
     func append(_ item: ToolbarControl, to zone: ToolbarZone, layout: TabLayout) {
-        if zone == .trailing, layout.horizontal, !store.preferences.toolbar.sidebar.filter({ $0 != item }).isEmpty { move(item, to: .sidebar) }
+        if zone == .trailing, layout.horizontal, !browser.prefs.toolbar.sidebar.filter({ $0 != item }).isEmpty { move(item, to: .sidebar) }
         else { move(item, to: zone) }
     }
     static let placements: [ToolbarZone] = [.leading, .leadingInner, .trailingInner, .trailing, .sidebar]
     func menu(_ item: ToolbarControl, layout: TabLayout) -> [MenuEntry] {
-        let current = store.preferences.toolbar.zone(of: item)
+        let current = browser.prefs.toolbar.zone(of: item)
         return Self.placements.map { zone in
             MenuEntry.item(zone.title(store), checked: current == zone) { move(item, to: zone) }
                 .with(enabled: current != zone && !(zone == .sidebar && layout.horizontal))

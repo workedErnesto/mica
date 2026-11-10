@@ -5,17 +5,19 @@ import MicaCore
 
 struct LayoutPicker: View {
     @ObservedObject var store: Store
+    @ObservedObject var browser: BrowserModel
     var width: CGFloat = 0
     var body: some View {
-        Segmented(selection: $store.preferences.layout, options: [(.left, store.text("слева", "Слева")), (.top, store.text("под адресом", "Под адресом")), (.tabsAbove, store.text("над адресом", "Над адресом")), (.right, store.text("справа", "Справа"))], symbols: ["sidebar.left", "rectangle.topthird.inset.filled", "macwindow", "sidebar.right"], width: width, label: store.text("вкладки", "Вкладки"))
+        Segmented(selection: $browser.prefs.layout, options: [(.left, store.text("слева", "Слева")), (.top, store.text("под адресом", "Под адресом")), (.tabsAbove, store.text("над адресом", "Над адресом")), (.right, store.text("справа", "Справа"))], symbols: ["sidebar.left", "rectangle.topthird.inset.filled", "macwindow", "sidebar.right"], width: width, label: store.text("вкладки", "Вкладки"))
     }
 }
 
 struct ThemePicker: View {
     @ObservedObject var store: Store
+    @ObservedObject var browser: BrowserModel
     var width: CGFloat = 0
     var body: some View {
-        Segmented(selection: $store.preferences.theme, options: [(.system, store.text("системная", "Системная")), (.light, store.text("светлая", "Светлая")), (.dark, store.text("тёмная", "Тёмная")), (.custom, store.text("кастом", "Кастом"))], width: width, label: store.text("тема", "Тема"))
+        Segmented(selection: $browser.prefs.theme, options: [(.system, store.text("системная", "Системная")), (.light, store.text("светлая", "Светлая")), (.dark, store.text("тёмная", "Тёмная")), (.custom, store.text("кастом", "Кастом"))], width: width, label: store.text("тема", "Тема"))
     }
 }
 
@@ -41,13 +43,14 @@ struct LanguagePicker: View {
 /// Name for the start page greeting, with the option not to be addressed by name.
 struct NameSettingRows: View {
     @ObservedObject var store: Store
+    @ObservedObject var browser: BrowserModel
     var body: some View {
         SettingRow(title: store.text("имя", "Имя"), detail: store.text("для приветствия на начальной странице", "Для приветствия на начальной странице")) {
-            MTextField(placeholder: store.text("как к вам обращаться", "Как к вам обращаться"), text: Binding(get: { store.preferences.userName }, set: { store.preferences.userName = String($0.prefix(Preferences.nameLimit)) }), symbol: "person")
+            MTextField(placeholder: store.text("как к вам обращаться", "Как к вам обращаться"), text: Binding(get: { browser.prefs.userName }, set: { browser.prefs.userName = String($0.prefix(Preferences.nameLimit)) }), symbol: "person")
                 .frame(width: 220)
-                .disabled(!store.preferences.greetByName)
+                .disabled(!browser.prefs.greetByName)
         }
-        Toggle(store.text("не обращаться по имени", "Не обращаться по имени"), isOn: Binding(get: { !store.preferences.greetByName }, set: { value in withMotion(Motion.quick) { store.preferences.greetByName = !value } })).toggleStyle(MToggleStyle()).modifier(RowInset(divider: false))
+        Toggle(store.text("не обращаться по имени", "Не обращаться по имени"), isOn: Binding(get: { !browser.prefs.greetByName }, set: { value in withMotion(Motion.quick) { browser.prefs.greetByName = !value } })).toggleStyle(MToggleStyle()).modifier(RowInset(divider: false))
     }
 }
 

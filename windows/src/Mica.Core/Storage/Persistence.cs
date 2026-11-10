@@ -10,9 +10,11 @@ namespace Mica.Core;
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, ReadCommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true,
     Converters = [typeof(SearchEngineConverter), typeof(TabLayoutConverter), typeof(LowerEnum<Theme>), typeof(LowerEnum<Language>),
         typeof(LowerEnum<ClearPeriod>), typeof(LowerEnum<StartSection>), typeof(LowerEnum<ToolbarControl>), typeof(LowerEnum<ToolbarZone>),
-        typeof(LowerEnum<SiteCapability>), typeof(LowerEnum<Decision>)])]
+        typeof(LowerEnum<SiteCapability>), typeof(LowerEnum<ProfileGlyph>), typeof(LowerEnum<ProfileOpening>), typeof(LowerEnum<Decision>)])]
 [JsonSerializable(typeof(Preferences))]
 [JsonSerializable(typeof(Session))]
+[JsonSerializable(typeof(List<Profile>))]
+[JsonSerializable(typeof(ProfileLook))]
 [JsonSerializable(typeof(List<Visit>))]
 [JsonSerializable(typeof(List<SitePermission>))]
 [JsonSerializable(typeof(List<DownloadRecord>))]

@@ -9,7 +9,8 @@ using Microsoft.UI.Xaml.Media;
 namespace Mica.Design;
 
 /// <summary>One row of a mica menu, or a divider.</summary>
-public sealed record MenuEntry(string Title, Action Action, string? Symbol = null, bool Enabled = true, bool Checked = false, bool Destructive = false, bool Divider = false, string? Shortcut = null)
+/// <param name="Leading">Drawn in place of the symbol, for a profile mark.</param>
+public sealed record MenuEntry(string Title, Action Action, string? Symbol = null, bool Enabled = true, bool Checked = false, bool Destructive = false, bool Divider = false, string? Shortcut = null, Func<FrameworkElement>? Leading = null)
 {
     public static readonly MenuEntry Separator = new("", () => { }, Divider: true);
     public static MenuEntry Item(string title, Action action, string? symbol = null, bool enabled = true, bool @checked = false, bool destructive = false, string? shortcut = null) =>
@@ -70,7 +71,7 @@ public static partial class MicaMenu
     static Border Build(List<MenuEntry> entries, out List<Control> rows)
     {
         var checks = entries.Any(e => e.Checked);
-        var symbols = entries.Any(e => e.Symbol is not null);
+        var symbols = entries.Any(e => e.Symbol is not null || e.Leading is not null);
         var stack = new StackPanel { Padding = new Thickness(5), MinWidth = 196 };
         rows = [];
         foreach (var entry in entries)
@@ -129,7 +130,7 @@ public static partial class MicaMenu
             var line = new Grid { Height = 26, Padding = new Thickness(8, 0, 8, 0), ColumnSpacing = 8 };
             line.ColumnDefinitions.Add(Ui.Auto()); line.ColumnDefinitions.Add(Ui.Auto()); line.ColumnDefinitions.Add(Ui.Star()); line.ColumnDefinitions.Add(Ui.Auto());
             if (checks) line.Column(new Glyph("checkmark", 10, brush) { Width = 12, Opacity = entry.Checked ? 1 : 0, VerticalAlignment = VerticalAlignment.Center }, 0);
-            if (symbols) line.Column(entry.Symbol is null ? new Grid { Width = 16 } : new Glyph(entry.Symbol, 12, brush) { Width = 16, VerticalAlignment = VerticalAlignment.Center }, 1);
+            if (symbols) line.Column(entry.Leading is { } leading ? leading().Align(HorizontalAlignment.Center, VerticalAlignment.Center) : entry.Symbol is null ? new Grid { Width = 16 } : new Glyph(entry.Symbol, 12, brush) { Width = 16, VerticalAlignment = VerticalAlignment.Center }, 1);
             line.Column(Ui.Text(entry.Title, 13, brush), 2);
             if (entry.Shortcut is not null) line.Column(Ui.Text(entry.Shortcut, 12, Palette.Text3.Brush()).Margin(16, 0, 0, 0), 3);
             var root = new Grid { Background = Palette.Clear };

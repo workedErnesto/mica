@@ -2,7 +2,7 @@ import Foundation
 
 /// Controls the user can place in the top bar or at the bottom of the sidebar.
 public enum ToolbarControl: String, Codable, CaseIterable, Sendable {
-    case sidebar, back, forward, reload, newTab, bookmarks, history, downloads, extensions, incognito, settings
+    case sidebar, back, forward, reload, newTab, bookmarks, history, downloads, extensions, incognito, settings, profile
     /// Controls that existed before layouts recorded which items the user has already seen.
     static let legacy: Set<ToolbarControl> = [.sidebar, .back, .forward, .reload, .newTab, .bookmarks, .history, .downloads, .extensions, .settings]
 }
@@ -17,7 +17,7 @@ public struct ToolbarLayout: Codable, Equatable, Sendable {
     public var leadingInner: [ToolbarControl] = []
     public var trailingInner: [ToolbarControl] = []
     public var trailing: [ToolbarControl] = []
-    public var sidebar: [ToolbarControl] = [.bookmarks, .history, .downloads, .extensions, .incognito, .settings]
+    public var sidebar: [ToolbarControl] = [.profile, .bookmarks, .history, .downloads, .extensions, .incognito, .settings]
     public var addressWidth = 560.0
     /// Controls this layout already accounts for. A control added in a later version is not in the list,
     /// so it appears in its default place once instead of silently counting as hidden.

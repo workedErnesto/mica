@@ -7,6 +7,7 @@ import UniformTypeIdentifiers
 /// Adds or edits a custom start page site. Plain words are refused instead of becoming a search shortcut.
 struct ShortcutEditor: View {
     @ObservedObject var store: Store
+    @ObservedObject var browser: BrowserModel
     let editing: UUID?
     let done: () -> Void
     @State private var address = ""
@@ -33,17 +34,17 @@ struct ShortcutEditor: View {
         .background(Palette.canvas.padding(-40))
         .animation(Motion.hover, value: invalid)
         .onAppear {
-            if let editing, let item = store.preferences.start.shortcuts.first(where: { $0.id == editing }) { address = item.url.absoluteString; title = item.title }
+            if let editing, let item = browser.prefs.start.shortcuts.first(where: { $0.id == editing }) { address = item.url.absoluteString; title = item.title }
         }
     }
     private func save() {
         guard let url = StartPage.shortcutURL(address, engine: store.preferences.search) else { invalid = true; return }
         let name = title.trimmingCharacters(in: .whitespacesAndNewlines)
         withMotion(Motion.quick) {
-            if let editing, let index = store.preferences.start.shortcuts.firstIndex(where: { $0.id == editing }) {
-                store.preferences.start.shortcuts[index].url = url; store.preferences.start.shortcuts[index].title = name
+            if let editing, let index = browser.prefs.start.shortcuts.firstIndex(where: { $0.id == editing }) {
+                browser.prefs.start.shortcuts[index].url = url; browser.prefs.start.shortcuts[index].title = name
             } else {
-                store.preferences.start.shortcuts.append(StartShortcut(title: name, url: url))
+                browser.prefs.start.shortcuts.append(StartShortcut(title: name, url: url))
             }
         }
         done()

@@ -8,7 +8,7 @@ struct MenuView: View {
     @Environment(\.accessibilityReduceMotion) private var reduced
     var body: some View {
         let checks = model.entries.contains { $0.checked }
-        let symbols = model.entries.contains { $0.symbol != nil }
+        let symbols = model.entries.contains { $0.symbol != nil || $0.profile != nil }
         VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(model.entries.enumerated()), id: \.element.id) { index, entry in
                 if entry.kind == .divider {
@@ -51,7 +51,8 @@ private struct MenuRow: View {
                     Image(systemName: "checkmark").font(.system(size: 10, weight: .semibold)).frame(width: 12).opacity(entry.checked ? 1 : 0)
                 }
                 if symbols {
-                    if let symbol = entry.symbol { Glyph(name: symbol, size: 12).frame(width: 16) }
+                    if let profile = entry.profile { ProfileMark(profile: profile, size: 16) }
+                    else if let symbol = entry.symbol { Glyph(name: symbol, size: 12).frame(width: 16) }
                     else { Color.clear.frame(width: 16, height: 1) }
                 }
                 Text(entry.title).font(.system(size: 13)).lineLimit(1).fixedSize()

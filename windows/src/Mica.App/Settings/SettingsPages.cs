@@ -21,7 +21,7 @@ public static class SettingsPages
         customize.Click += () => { dismiss(); b.CustomizingToolbar = true; };
         var toolbar = new SettingsGroup(s.Text("панель инструментов", "Панель инструментов"), s.Text("кнопки расставляются перетаскиванием прямо в окне: в шапку, вниз боковой панели или обратно в набор. то же меню есть в меню «…» и по правому клику на боковой панели.", "Кнопки расставляются перетаскиванием прямо в окне: в шапку, вниз боковой панели или обратно в набор. То же меню есть в меню «…» и по правому клику на боковой панели."))
             .Add(new SettingRow(s.Text("кнопки и адресная строка", "Кнопки и адресная строка"), customize, s.Text("порядок, сторона и длина строки", "Порядок, сторона и длина строки"), divider: false));
-        return Page(new DefaultBrowserSetting(s), new Appearance.LayoutPreview(s) { Height = 168 }, layout, toolbar);
+        return Page(new DefaultBrowserSetting(s), ProfileScope.Make(b), new Appearance.LayoutPreview(s) { Height = 168 }, layout, toolbar);
     }
 
     public static UIElement ThemeGroup(Store s)
@@ -30,19 +30,19 @@ public static class SettingsPages
         void Render()
         {
             host.Children.Clear();
-            var custom = s.Preferences.Theme == Theme.Custom;
+            var custom = s.ActivePrefs.Theme == Theme.Custom;
             var group = new SettingsGroup(s.Text("тема", "Тема"), custom ? s.Text("акцент окрашивает оболочку, переключатели, основные кнопки и индикатор загрузки. страницы сайтов не меняются.", "Акцент окрашивает оболочку, переключатели, основные кнопки и индикатор загрузки. Страницы сайтов не меняются.") : null);
             var theme = Pickers.ThemePicker(s, 380);
             theme.Changed += _ => host.DispatcherQueue.TryEnqueue(Render);
             group.Add(new SettingRow(s.Text("тема", "Тема"), theme, divider: custom));
             if (custom)
             {
-                var basis = new Segmented<Theme>(s.Preferences.CustomBase, [(Theme.System, s.Text("как в системе", "Как в системе")), (Theme.Light, s.Text("светлая", "Светлая")), (Theme.Dark, s.Text("тёмная", "Тёмная"))], minWidth: 380, label: s.Text("основа темы", "Основа темы"));
+                var basis = new Segmented<Theme>(s.ActivePrefs.CustomBase, [(Theme.System, s.Text("как в системе", "Как в системе")), (Theme.Light, s.Text("светлая", "Светлая")), (Theme.Dark, s.Text("тёмная", "Тёмная"))], minWidth: 380, label: s.Text("основа темы", "Основа темы"));
                 basis.Changed += v => s.Change(p => p.CustomBase = v);
                 group.Add(new SettingRow(s.Text("основа", "Основа"), basis));
                 group.Add(new SettingRow(s.Text("акцент", "Акцент"), new Appearance.AccentPicker(s)));
-                var tint = new MSlider(s.Preferences.CustomTint, 0, 0.6, s.Text("цвет оболочки", "Цвет оболочки")) { Width = 180 };
-                var value = Ui.Text(Math.Round(s.Preferences.CustomTint / 0.6 * 100) + "%", 11.5, Palette.Text3.Brush()); value.Width = 34; value.TextAlignment = TextAlignment.Right;
+                var tint = new MSlider(s.ActivePrefs.CustomTint, 0, 0.6, s.Text("цвет оболочки", "Цвет оболочки")) { Width = 180 };
+                var value = Ui.Text(Math.Round(s.ActivePrefs.CustomTint / 0.6 * 100) + "%", 11.5, Palette.Text3.Brush()); value.Width = 34; value.TextAlignment = TextAlignment.Right;
                 tint.Changed += v => { value.Text = Math.Round(v / 0.6 * 100) + "%"; s.Change(p => p.CustomTint = v); };
                 group.Add(new SettingRow(s.Text("цвет оболочки", "Цвет оболочки"), Ui.H(Mica.Design.Space.Small, tint, value), s.Text("насколько акцент окрашивает фон окна", "Насколько акцент окрашивает фон окна"), divider: false));
             }
@@ -55,18 +55,18 @@ public static class SettingsPages
     public static UIElement Appearance(BrowserModel b)
     {
         var s = b.Store;
-        var transparency = new MSlider(s.Preferences.Transparency, 0, 1, s.Text("прозрачность", "Прозрачность")) { Width = 180, IsEnabled = s.Preferences.Frosted };
-        var percent = Ui.Text(Math.Round(s.Preferences.Transparency * 100) + "%", 11.5, Palette.Text3.Brush()); percent.Width = 34; percent.TextAlignment = TextAlignment.Right;
+        var transparency = new MSlider(s.ActivePrefs.Transparency, 0, 1, s.Text("прозрачность", "Прозрачность")) { Width = 180, IsEnabled = s.ActivePrefs.Frosted };
+        var percent = Ui.Text(Math.Round(s.ActivePrefs.Transparency * 100) + "%", 11.5, Palette.Text3.Brush()); percent.Width = 34; percent.TextAlignment = TextAlignment.Right;
         transparency.Changed += v => { percent.Text = Math.Round(v * 100) + "%"; s.Change(p => p.Transparency = v); };
         var material = new SettingsGroup(s.Text("материал оболочки", "Материал оболочки"), s.Text("размытие и прозрачность относятся только к оболочке, страницы остаются непрозрачными. выключенные «эффекты прозрачности» windows и контрастные темы имеют приоритет.", "Размытие и прозрачность относятся только к оболочке, страницы остаются непрозрачными. Выключенные «Эффекты прозрачности» Windows и контрастные темы имеют приоритет."))
-            .Add(new ToggleRow(s.Text("матовое стекло", "Матовое стекло"), s.Preferences.Frosted, v => { s.Change(p => p.Frosted = v); transparency.IsEnabled = v; }))
+            .Add(new ToggleRow(s.Text("матовое стекло", "Матовое стекло"), s.ActivePrefs.Frosted, v => { s.Change(p => p.Frosted = v); transparency.IsEnabled = v; }))
             .Add(new SettingRow(s.Text("прозрачность", "Прозрачность"), Ui.H(Mica.Design.Space.Small, transparency, percent), divider: false));
         var icon = new SettingsGroup(s.Text("иконка приложения", "Иконка приложения"), s.Text("иконка меняется на панели задач и в переключателе окон, пока mica открыта. ярлыки в меню «пуск» и закреплённый значок остаются стандартными.", "Иконка меняется на панели задач и в переключателе окон, пока mica открыта. Ярлыки в меню «Пуск» и закреплённый значок остаются стандартными."))
             .Add(new Appearance.IconPicker(s) { Margin = new Thickness(14) });
         var language = new SettingsGroup(s.Text("язык и текст", "Язык и текст"), s.Text("язык меняет только интерфейс mica. страницы сайтов, адреса и ваши данные не переводятся.", "Язык меняет только интерфейс mica. Страницы сайтов, адреса и ваши данные не переводятся."))
             .Add(new SettingRow(s.Text("язык", "Язык"), Pickers.LanguagePicker(s, 260)))
             .Add(new SettingRow(s.Text("текст интерфейса", "Текст интерфейса"), Pickers.CasePicker(s, 260), divider: false));
-        return Page(new Appearance.LayoutPreview(s) { Height = 168 }, ThemeGroup(s), material, icon, language);
+        return Page(ProfileScope.Make(b), new Appearance.LayoutPreview(s) { Height = 168 }, ThemeGroup(s), material, icon, language);
     }
 
     public static UIElement Start(BrowserModel b)
@@ -76,7 +76,8 @@ public static class SettingsPages
         void Render()
         {
             host.Children.Clear();
-            var start = s.Preferences.Start;
+            host.Children.Add(ProfileScope.Make(b));
+            var start = s.ActivePrefs.Start;
             var greeting = new SettingsGroup(s.Text("приветствие", "Приветствие"), s.Text("с именем над поиском появляется приветствие, без имени остаётся знак mica. имя хранится только на этом компьютере.", "С именем над поиском появляется приветствие, без имени остаётся знак mica. Имя хранится только на этом компьютере."));
             foreach (var row in Pickers.NameRows(s)) greeting.Add(row);
             host.Children.Add(greeting);
