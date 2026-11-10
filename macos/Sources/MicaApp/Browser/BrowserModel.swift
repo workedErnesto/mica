@@ -38,6 +38,8 @@ final class BrowserModel: NSObject, ObservableObject, WKWebExtensionWindow {
     /// The start page shows every section with its controls in place, and a bar of shared options at the bottom.
     @Published var customizingStart = false
     @Published var fullScreen = false
+    /// Set once the window is first ordered in; the content card and the start page play their entrance from it.
+    @Published var entered = false
     weak var controller: BrowserWindow?
     var closed: [SavedTab] = []
     var transientPermissions: [SitePermission] = []

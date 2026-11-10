@@ -12,6 +12,15 @@ struct StartScreen: View {
     /// Picks the greeting phrase; a new tab gets a new one, the open start page keeps its own.
     @State private var seed = Int.random(in: 0..<1000)
     @FocusState private var focused: Bool
+    /// Entrance of the parts of the page (Entrance.swift): false until the window is ordered in, true from the start
+    /// for a tab whose page already played it.
+    @State private var shown: Bool
+
+    init(browser: BrowserModel, store: Store) {
+        _browser = ObservedObject(wrappedValue: browser)
+        _store = ObservedObject(wrappedValue: store)
+        _shown = State(initialValue: browser.selected?.introduced ?? true)
+    }
     var body: some View {
         let editing = browser.customizingStart
         let items = editing ? [] : Suggestion.make(text, browser: browser, store: store)
@@ -33,10 +42,12 @@ struct StartScreen: View {
                                     }
                                     SwiftUI.Group {
                                         if let greeting {
-                                            Text(greeting).font(.system(size: 34, weight: .light)).tracking(-1.1).foregroundStyle(Palette.ink)
+                                            AssemblingText(text: Text(greeting).font(.system(size: 34, weight: .light)).tracking(-1.1).foregroundStyle(Palette.ink),
+                                                           length: greeting.count, shown: shown || editing, delay: Entrance.step(2))
                                                 .multilineTextAlignment(.center).lineLimit(2)
                                         } else {
-                                            Text("mica").font(.system(size: 40, weight: .light)).tracking(-1.6).foregroundStyle(Palette.ink)
+                                            AssemblingText(text: Text("mica").font(.system(size: 40, weight: .light)).tracking(-1.6).foregroundStyle(Palette.ink),
+                                                           length: 4, shown: shown || editing, delay: Entrance.step(2))
                                         }
                                     }
                                     .opacity(editing && !options.wordmark ? 0.4 : 1)
@@ -50,22 +61,28 @@ struct StartScreen: View {
                                     .font(.system(size: 11.5, weight: .medium)).foregroundStyle(Palette.text2)
                                     .padding(.horizontal, 10).frame(height: 24)
                                     .background(Capsule().fill(Palette.track))
+                                    // Slides out from behind the last letter once the wordmark has mostly assembled.
+                                    .entrance(shown, delay: options.wordmark ? Entrance.step(2) + AssembleRenderer.total(glyphs: (greeting ?? "mica").count) * 0.55 : Entrance.step(2), rise: 0, dx: -14)
                             }
                         }
                         .transition(.opacity)
                     }
                     searchField(items)
+                        .entrance(shown, delay: Entrance.step(3))
                         .opacity(editing ? 0.5 : 1)
                         .allowsHitTesting(!editing)
                     if text.isEmpty || editing {
-                        if sections.isEmpty { hints }
-                        ForEach(sections, id: \.section) { entry in
-                            StartSectionView(section: entry.section, sites: entry.sites, browser: browser, store: store, editing: editing).transition(.opacity)
+                        if sections.isEmpty { hints.entrance(shown, delay: Entrance.step(4)) }
+                        ForEach(Array(sections.enumerated()), id: \.element.section) { index, entry in
+                            StartSectionView(section: entry.section, sites: entry.sites, browser: browser, store: store, editing: editing)
+                                .entrance(shown, delay: Entrance.step(4 + index))
+                                .transition(.opacity)
                         }
                     }
                     if browser.privateMode && !editing {
                         Text(browser.text("история и сессия этого окна не сохраняются. загруженные файлы остаются на диске.", "История и сессия этого окна не сохраняются. Загруженные файлы остаются на диске."))
                             .font(.system(size: 12)).foregroundStyle(Palette.text3).multilineTextAlignment(.center)
+                            .entrance(shown, delay: Entrance.step(4 + sections.count))
                     }
                 }
                 .frame(maxWidth: 600)
@@ -83,6 +100,7 @@ struct StartScreen: View {
             } else {
                 StartCustomizeButton(store: store) { withMotion(Motion.panel) { browser.customizingStart = true } }
                     .padding(Space.normal)
+                    .entrance(shown, delay: Entrance.step(5 + sections.count), rise: 0)
                     .transition(.opacity)
             }
         }
@@ -91,13 +109,21 @@ struct StartScreen: View {
         .animation(Motion.quick, value: options)
         .animation(Motion.panel, value: editing)
         .animation(Motion.hover, value: greeting)
-        .onAppear { DispatchQueue.main.async { focused = true } }
+        .onAppear { DispatchQueue.main.async { focused = true }; begin() }
+        .onChange(of: browser.entered) { _, _ in begin() }
         .onDisappear { browser.customizingStart = false }
         .onChange(of: browser.focusAddress) { _, _ in focused = true }
         .onChange(of: browser.customizingToolbar) { _, on in if on { browser.customizingStart = false } }
         .onChange(of: editing) { _, on in if on { text = ""; focused = false } }
         .onChange(of: text) { _, _ in highlighted = 0 }
         .onExitCommand { if editing { withMotion(Motion.panel) { browser.customizingStart = false } } }
+    }
+
+    /// Plays the entrance once per tab, after the window is on screen so the first frames are not spent hidden.
+    private func begin() {
+        guard browser.entered, !shown else { return }
+        browser.selected?.introduced = true
+        shown = true
     }
 
     /// Sections in the user's order. Frequent sites never come from history in a private window;

@@ -20,6 +20,7 @@ public sealed partial class ContentCard : Grid
     readonly Border shade;
     Tab? shownTab;
     StartPage.StartScreen? startScreen;
+    Tab? startTab;
     bool glass, startShown;
     double startTint = 1;
 
@@ -79,8 +80,17 @@ public sealed partial class ContentCard : Grid
         tab?.SetVisible(tab.Error is null);
         var showStart = tab is not null && tab.WebView is null && tab.Url is null;
         if (showStart != startShown) { startShown = showStart; ApplyFill(); }
-        if (showStart && startScreen is null) { startScreen = new StartPage.StartScreen(browser); start.Children.Add(startScreen); Motion.Appear(startScreen); }
-        else if (!showStart && startScreen is not null) { start.Children.Clear(); startScreen = null; }
+        // Each tab gets its own start page (macOS keys StartScreen by tab), so a new tab plays the entrance and keeps
+        // its own greeting and typed text. A tab that already played it comes back with the usual fade.
+        if (showStart && (startScreen is null || startTab != tab))
+        {
+            var returning = tab!.Introduced && startScreen is null;
+            start.Children.Clear();
+            startScreen = new StartPage.StartScreen(browser); startTab = tab;
+            start.Children.Add(startScreen);
+            if (returning) Motion.Appear(startScreen);
+        }
+        else if (!showStart && startScreen is not null) { start.Children.Clear(); startScreen = null; startTab = null; }
         errors.Children.Clear();
         if (tab?.Error is { } error) { var page = new ErrorPage(tab, browser, error); errors.Children.Add(page); Motion.Fade(page, 1); }
     }

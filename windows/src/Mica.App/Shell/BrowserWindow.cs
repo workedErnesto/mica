@@ -69,6 +69,15 @@ public sealed partial class BrowserWindow : Window
 
     public void UpdateTitle() => Title = "mica" + (Model.PrivateMode ? " — " + Model.Text("инкогнито", "Инкогнито") : "");
 
+    /// <summary>First appearance (macOS BrowserWindow.showWindow): WinUI has no window alpha, so the window content fades
+    /// in over the backdrop, and the content card and start page start their entrance.</summary>
+    public void Enter()
+    {
+        if (Model.Entered) return;
+        root.Enter(Model.Selected is { WebView: null, Url: null });
+        Model.Entered = true;
+    }
+
     public void Bring() { Activate(); if (AppWindow.Presenter is OverlappedPresenter p && p.State == OverlappedPresenterState.Minimized) p.Restore(); }
 
     /// <summary>Glass for the shell only: desktop acrylic behind mica's own tint, kept active when the window loses

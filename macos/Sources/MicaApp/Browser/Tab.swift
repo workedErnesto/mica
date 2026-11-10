@@ -25,6 +25,8 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
     @Published var favicon: NSImage?
     private var faviconKey: String?
     var webView: WKWebView?
+    /// The start page of this tab already played its entrance; going back to the tab shows it at rest.
+    var introduced = false
     var navigationFailure: NSError?
     private var observations: [NSKeyValueObservation] = []
     private var passwordBridge: PasswordBridge?

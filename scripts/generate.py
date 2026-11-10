@@ -82,6 +82,10 @@ enum MotionTokens {{
     static let doneHold = {num(m['doneHold']['delay'])}
     /// {m['checkDraw']['doc']}
     static let checkDraw = {num(m['checkDraw']['duration'])}
+    /// {m['entrance']['doc']}
+    static let entrance = (stagger: {float(m['entrance']['stagger'])}, rise: {float(m['entrance']['rise'])}, cardScale: {float(m['entrance']['cardScale'])}, windowFade: {float(m['entrance']['windowFade'])}, reducedFade: {float(m['entrance']['reducedFade'])})
+    /// {m['wordmark']['doc']}
+    static let wordmark = (letterStagger: {float(m['wordmark']['letterStagger'])}, letterDuration: {float(m['wordmark']['letterDuration'])}, staggerCap: {float(m['wordmark']['staggerCap'])}, rise: {float(m['wordmark']['rise'])}, spread: {float(m['wordmark']['spread'])}, blur: {float(m['wordmark']['blur'])})
 }}
 '''
     # C#
@@ -117,6 +121,25 @@ public static class MotionTokens
     public const double DoneHold = {num(m['doneHold']['delay'])};
     /// <summary>{m['checkDraw']['doc']}</summary>
     public const double CheckDraw = {num(m['checkDraw']['duration'])};
+    /// <summary>{m['entrance']['doc']}</summary>
+    public static class Entrance
+    {{
+        public const double Stagger = {num(m['entrance']['stagger'])};
+        public const double Rise = {num(m['entrance']['rise'])};
+        public const double CardScale = {num(m['entrance']['cardScale'])};
+        public const double WindowFade = {num(m['entrance']['windowFade'])};
+        public const double ReducedFade = {num(m['entrance']['reducedFade'])};
+    }}
+    /// <summary>{m['wordmark']['doc']}</summary>
+    public static class Wordmark
+    {{
+        public const double LetterStagger = {num(m['wordmark']['letterStagger'])};
+        public const double LetterDuration = {num(m['wordmark']['letterDuration'])};
+        public const double StaggerCap = {num(m['wordmark']['staggerCap'])};
+        public const double Rise = {num(m['wordmark']['rise'])};
+        public const double Spread = {num(m['wordmark']['spread'])};
+        public const double Blur = {num(m['wordmark']['blur'])};
+    }}
 }}
 '''
     sizes = tokens['typography']['sizes']

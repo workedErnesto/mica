@@ -201,6 +201,7 @@ public sealed partial class Store
         }
         else model.Add();
         window.Activate();
+        window.Enter();
         ScheduleSession();
         return model;
     }
