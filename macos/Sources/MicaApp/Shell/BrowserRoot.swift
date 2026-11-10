@@ -113,8 +113,12 @@ struct BrowserRoot: View {
     }
 
     private func workspace(_ geo: GeometryProxy) -> some View {
-        HStack(spacing: Radius.gutter) {
+        // On the first appearance the start page card rises a little out of the shell. A site's card is not moved or
+        // scaled, its pixels stay as they are; it appears with the window fade.
+        let startPage = browser.selected.map { $0.webView == nil && $0.url == nil } ?? true
+        return HStack(spacing: Radius.gutter) {
             ContentCard(browser: browser, store: store)
+                .entrance(browser.entered || !startPage, delay: Entrance.step(1), scale: MotionTokens.entrance.cardScale)
             if let panel = browser.panel {
                 SidePanel(panel: panel, browser: browser, store: store)
                     .frame(width: min(340, geo.size.width * 0.4))

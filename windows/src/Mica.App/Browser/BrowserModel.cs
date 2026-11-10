@@ -29,6 +29,9 @@ public sealed partial class BrowserModel : Observable
     public bool CustomizingToolbar { get => customizingToolbar; set { customizingToolbar = value; Notify(); } }
     public bool CustomizingStart { get => customizingStart; set { customizingStart = value; Notify(); } }
     public bool FullScreen { get => fullScreen; set { fullScreen = value; Notify(); } }
+    /// <summary>Set once the window is first shown; the content card and the start page play their entrance from it.</summary>
+    public bool Entered { get => entered; set { entered = value; Notify(); } }
+    bool entered;
     public Settings.SettingsSection SettingsSection { get; set; } = Mica.App.Settings.SettingsSection.Space;
     public int OnboardingStep { get; set; }
     /// <summary>A window-level card covers the page; the web view takes no input meanwhile.</summary>

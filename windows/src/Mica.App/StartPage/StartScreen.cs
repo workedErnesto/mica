@@ -37,6 +37,12 @@ public sealed partial class StartScreen : Grid
     readonly StackPanel body = new() { Spacing = 28 };
     readonly Grid header = new();
     bool focused;
+    /// <summary>Entrance (macOS Entrance.swift): false until the window is shown, true from the start for a tab whose
+    /// start page already played it. Parts stay hidden at the composition level until Play.</summary>
+    bool played;
+    readonly Grid fieldHost = new();
+    readonly List<TextBlock> letters = [];
+    FrameworkElement? wordmark, badge;
 
     public StartScreen(BrowserModel browser)
     {
@@ -71,17 +77,53 @@ public sealed partial class StartScreen : Grid
             else if (e.Key == Windows.System.VirtualKey.Escape && browser.CustomizingStart) { browser.CustomizingStart = false; e.Handled = true; }
         };
         column.Children.Add(header);
-        column.Children.Add(fieldSurface);
+        // The field sets its XAML Translation for shadow depth, so its entrance moves this host instead.
+        fieldHost.Children.Add(fieldSurface);
+        column.Children.Add(fieldHost);
         column.Children.Add(body);
         var scroll = Ui.Scroll(column); scroll.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
         Children.Add(scroll);
         Children.Add(corner);
         browser.FocusAddressRequested += FocusField;
         Unloaded += (_, _) => { browser.FocusAddressRequested -= FocusField; browser.CustomizingStart = false; };
-        Loaded += (_, _) => FocusField();
+        played = browser.Selected?.Introduced ?? true;
+        if (!played) { Visual(column).Opacity = 0; Visual(corner).Opacity = 0; }
+        Loaded += (_, _) => { FocusField(); TryPlay(); };
         this.Bind(browser, Render);
         this.Bind(h => Store.PreferencesUpdated += h, h => Store.PreferencesUpdated -= h, Render);
         this.Bind(h => Store.BookmarksChanged += h, h => Store.BookmarksChanged -= h, Render);
+    }
+
+    static Microsoft.UI.Composition.Visual Visual(UIElement element) => Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(element);
+
+    void TryPlay() { if (!played && browser.Entered && IsLoaded) Play(); }
+
+    /// <summary>The wordmark assembles letter by letter (MotionTokens.Wordmark), the incognito badge slides out from
+    /// behind it, then the field, the sections and the note follow one stagger apart. The field takes typing at once.
+    /// Unlike macOS the letters do not blur: WinUI has no per-glyph filter without an effect graph per letter.</summary>
+    void Play()
+    {
+        played = true;
+        if (browser.Selected is { } tab) tab.Introduced = true;
+        Visual(column).Opacity = 1; Visual(corner).Opacity = 1;
+        var step = MotionTokens.Entrance.Stagger;
+        var badgeDelay = 2 * step;
+        if (letters.Count > 0)
+        {
+            var count = letters.Count;
+            var each = count > 1 ? Math.Min(MotionTokens.Wordmark.LetterStagger, MotionTokens.Wordmark.StaggerCap / (count - 1)) : 0;
+            var middle = (count - 1) / 2.0;
+            var spring = new Spring(MotionTokens.Wordmark.LetterDuration, 0.78);
+            for (var i = 0; i < count; i++)
+                Motion.Enter(letters[i], 2 * step + i * each, MotionTokens.Wordmark.Rise, (i - middle) * MotionTokens.Wordmark.Spread, spring: spring, fade: MotionTokens.Wordmark.LetterDuration * 0.6);
+            badgeDelay += ((count - 1) * each + MotionTokens.Wordmark.LetterDuration * 1.5) * 0.55;
+        }
+        else if (wordmark is not null) Motion.Enter(wordmark, 2 * step);
+        if (badge is not null) Motion.Enter(badge, badgeDelay, rise: 0, dx: -14);
+        Motion.Enter(fieldHost, 3 * step);
+        var index = 0;
+        foreach (var child in body.Children) Motion.Enter(child, (4 + index++) * step);
+        Motion.Enter(corner, (5 + body.Children.Count) * step, rise: 0);
     }
 
     void FocusField() => DispatcherQueue.TryEnqueue(() => field.Focus(FocusState.Programmatic));
@@ -103,7 +145,7 @@ public sealed partial class StartScreen : Grid
         column.Padding = new Thickness(Space.Large, 96, Space.Large, editing ? 128 : 64);
         var start = Store.Preferences.Start;
         var key = $"{editing}|{start.Wordmark}|{string.Join(",", start.Sections)}|{start.FrequentCount}|{start.Shortcuts.Count}|{string.Join(",", start.Shortcuts.Select(s => s.Id + s.Title + s.Url))}|{start.HiddenHosts.Count}|{Store.Bookmarks.Count}|{Store.Preferences.UserName}|{Store.Preferences.GreetByName}|{Store.Preferences.Lowercase}|{Store.Preferences.Language}";
-        if (key == signature) return;
+        if (key == signature) { TryPlay(); return; }
         signature = key;
         RenderHeader(editing);
         RenderBody();
@@ -122,11 +164,13 @@ public sealed partial class StartScreen : Grid
             customize.Click += () => browser.CustomizingStart = true;
             corner.Children.Add(customize);
         }
+        TryPlay();
     }
 
     void RenderHeader(bool editing)
     {
         header.Children.Clear();
+        letters.Clear(); wordmark = null; badge = null;
         var options = Store.Preferences.Start;
         var greeting = Greeting.Text(Store.Preferences, DateTime.Now.Hour, seed);
         var line = Ui.H(10); line.HorizontalAlignment = HorizontalAlignment.Center;
@@ -143,13 +187,27 @@ public sealed partial class StartScreen : Grid
                 header.Children.Add(new StartEditFrame(Ui.V(Space.Normal, title, text), true));
                 return;
             }
-            line.Children.Add(text);
+            if (greeting is null)
+            {
+                // At rest the same as the single text block; separate letters let each one enter on its own.
+                var row = Ui.H(0);
+                foreach (var ch in "mica")
+                {
+                    var letter = Ui.Text(ch.ToString(), 40, null, Ui.Weight(300));
+                    if (letters.Count > 0) letter.Margin = new Thickness(-1.6, 0, 0, 0);
+                    letters.Add(letter); row.Children.Add(letter);
+                }
+                Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(row, "mica");
+                line.Children.Add(row); wordmark = row;
+            }
+            else { line.Children.Add(text); wordmark = text; }
         }
         if (browser.PrivateMode && !editing)
         {
             var badge = Ui.Rounded(12, Palette.Track.Brush(), child: Ui.H(6, new Glyph(Glyph.Incognito, 11.5, Palette.Text2.Brush()), Ui.Text(browser.Text("инкогнито", "Инкогнито"), 11.5, Palette.Text2.Brush(), Ui.Medium)));
             badge.Padding = new Thickness(10, 0, 10, 0); badge.Height = 24; badge.VerticalAlignment = VerticalAlignment.Center;
             line.Children.Add(badge);
+            this.badge = badge;
         }
         if (line.Children.Count > 0) header.Children.Add(line);
     }

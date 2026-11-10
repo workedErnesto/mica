@@ -15,4 +15,8 @@ enum MotionTokens {
     static let doneHold = 2
     /// Stroke of the checkmark of a finished download, drawn from its short arm to the long one.
     static let checkDraw = 0.34
+    /// Window and start page entrance: parts appear one after another with the panel spring, each step later by stagger and rising by rise points. With Reduce Motion only a fade of reducedFade.
+    static let entrance = (stagger: 0.04, rise: 10.0, cardScale: 0.985, windowFade: 0.18, reducedFade: 0.15)
+    /// The mica wordmark or greeting assembles glyph by glyph: each glyph rises, sharpens and moves together from spread points apart. A long greeting keeps the whole wave under staggerCap.
+    static let wordmark = (letterStagger: 0.045, letterDuration: 0.34, staggerCap: 0.3, rise: 10.0, spread: 5.0, blur: 4.0)
 }

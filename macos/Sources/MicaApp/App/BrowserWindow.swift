@@ -32,6 +32,19 @@ final class BrowserWindow: NSWindowController, NSWindowDelegate {
         if ProcessInfo.processInfo.arguments.contains("--qa") && ProcessInfo.processInfo.arguments.contains("--narrow") { window.setContentSize(NSSize(width: 640, height: 620)); window.center() }
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) unavailable") }
+    /// The first time the window is ordered in it fades in (MotionTokens.entrance.windowFade, shadow included), and the
+    /// content card and start page start their entrance. Later calls only bring the window forward.
+    override func showWindow(_ sender: Any?) {
+        guard let window, !model.entered else { super.showWindow(sender); return }
+        window.alphaValue = 0
+        super.showWindow(sender)
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = Motion.reduced ? MotionTokens.entrance.reducedFade : MotionTokens.entrance.windowFade
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            window.animator().alphaValue = 1
+        }
+        model.entered = true
+    }
     static let buttons: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
     private var placingWindowButtons = false
     private var windowButtonPlacementPending = false

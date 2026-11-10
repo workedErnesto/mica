@@ -35,7 +35,7 @@ struct PageSurface: View {
     var body: some View {
         ZStack {
             if let web = tab.webView { WebSurface(webView: web, covered: browser.modal || browser.commandBar || browser.customizingToolbar).id(tab.id) }
-            else if tab.url == nil { StartScreen(browser: browser, store: store).transition(.opacity) }
+            else if tab.url == nil { StartScreen(browser: browser, store: store).id(tab.id).transition(.opacity) }
             if let error = tab.error { ErrorPage(tab: tab, browser: browser, error: error).transition(.opacity) }
         }
         .animation(Motion.hover, value: tab.error)

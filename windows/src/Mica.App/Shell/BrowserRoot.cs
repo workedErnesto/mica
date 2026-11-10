@@ -19,6 +19,7 @@ public sealed partial class BrowserRoot : Grid
     readonly Grid body = new();
     readonly Grid overlays = new();
     readonly ContentCard card;
+    readonly Grid cardHost = new();
     readonly Grid workspace = new() { ColumnSpacing = Radius.Gutter };
     Sidebar? sidebar;
     TabStrip? strip;
@@ -44,7 +45,9 @@ public sealed partial class BrowserRoot : Grid
         card = new ContentCard(browser);
         workspace.ColumnDefinitions.Add(Ui.Star());
         workspace.ColumnDefinitions.Add(Ui.Auto());
-        workspace.Column(card, 0);
+        // The card sets its XAML Translation for shadow depth, so its entrance moves this host instead.
+        workspace.Column(cardHost, 0);
+        cardHost.Children.Add(card);
         browser.Changed += Render;
         browser.Message += text => _ = Dialogs.Show(browser.Window, text);
         Store.PreferencesUpdated += Render;
@@ -66,6 +69,15 @@ public sealed partial class BrowserRoot : Grid
     /// <summary>Elements in the caption band that take clicks: the top bar's, or with the tabs above the address the
     /// strip's tabs (the top bar is then the second row, outside the band).</summary>
     public IEnumerable<FrameworkElement> CaptionInteractive() => strip is { } s && Grid.GetRow(tabStripHost) == 0 ? topBar.Interactive().Append(s.Tabs) : topBar.Interactive();
+
+    /// <summary>First appearance of the window: the content fades in (MotionTokens.Entrance.WindowFade) and a start page
+    /// card rises a little out of the shell. A site's card is not moved or scaled; it comes with the fade.</summary>
+    public void Enter(bool startPage)
+    {
+        Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(this).Opacity = 0;
+        Motion.Fade(this, 1, TimeSpan.FromSeconds(Motion.Reduced ? MotionTokens.Entrance.ReducedFade : MotionTokens.Entrance.WindowFade));
+        if (startPage) Motion.Enter(cardHost, MotionTokens.Entrance.Stagger, scale: MotionTokens.Entrance.CardScale);
+    }
 
     public void SetActive(bool active) => topBar.Opacity = active ? 1 : 0.86;
 

@@ -16,4 +16,23 @@ public static class MotionTokens
     public const double DoneHold = 2;
     /// <summary>Stroke of the checkmark of a finished download, drawn from its short arm to the long one.</summary>
     public const double CheckDraw = 0.34;
+    /// <summary>Window and start page entrance: parts appear one after another with the panel spring, each step later by stagger and rising by rise points. With Reduce Motion only a fade of reducedFade.</summary>
+    public static class Entrance
+    {
+        public const double Stagger = 0.04;
+        public const double Rise = 10;
+        public const double CardScale = 0.985;
+        public const double WindowFade = 0.18;
+        public const double ReducedFade = 0.15;
+    }
+    /// <summary>The mica wordmark or greeting assembles glyph by glyph: each glyph rises, sharpens and moves together from spread points apart. A long greeting keeps the whole wave under staggerCap.</summary>
+    public static class Wordmark
+    {
+        public const double LetterStagger = 0.045;
+        public const double LetterDuration = 0.34;
+        public const double StaggerCap = 0.3;
+        public const double Rise = 10;
+        public const double Spread = 5;
+        public const double Blur = 4;
+    }
 }

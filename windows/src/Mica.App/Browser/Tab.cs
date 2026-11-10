@@ -34,6 +34,8 @@ public sealed partial class Tab : Observable
     ImageSource? pageFavicon;
     string? pageFaviconKey;
     public WebView2? WebView { get; private set; }
+    /// <summary>The start page of this tab already played its entrance; going back to the tab shows it at rest.</summary>
+    public bool Introduced { get; set; }
     public CoreWebView2? Core { get; private set; }
     Task? initializing;
     string? pendingUrl;

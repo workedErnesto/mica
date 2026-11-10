@@ -120,6 +120,47 @@ public static class Motion
         static void Center(object sender, SizeChangedEventArgs e) { var fe = (FrameworkElement)sender; Visual(fe).CenterPoint = new Vector3((float)fe.ActualWidth / 2, (float)fe.ActualHeight / 2, 0); }
     }
 
+    /// <summary>Window and start page entrance (macOS EntranceModifier, MotionTokens.Entrance): the element appears
+    /// <paramref name="delay"/> seconds after the entrance begins, fading in and settling from the offset and scale with
+    /// the spring. It takes input at once. With animation effects off it is only a short fade without delay. Do not use
+    /// it on an element that sets the XAML Translation property (shadow depth): wrap that element instead.</summary>
+    public static void Enter(UIElement element, double delay, double rise = MotionTokens.Entrance.Rise, double dx = 0, double scale = 1, Spring? spring = null, double fade = 0.24)
+    {
+        var visual = Visual(element);
+        var c = visual.Compositor;
+        var wait = TimeSpan.FromSeconds(Reduced ? 0 : delay);
+        visual.Opacity = 0;
+        var opacity = c.CreateScalarKeyFrameAnimation();
+        opacity.InsertKeyFrame(0, 0);
+        opacity.InsertKeyFrame(1, 1, c.CreateCubicBezierEasingFunction(new Vector2(0.2f, 0), new Vector2(0.2f, 1)));
+        opacity.Duration = TimeSpan.FromSeconds(Reduced ? MotionTokens.Entrance.ReducedFade : fade);
+        opacity.DelayTime = wait;
+        opacity.DelayBehavior = AnimationDelayBehavior.SetInitialValueBeforeDelay;
+        visual.StartAnimation("Opacity", opacity);
+        if (Reduced) return;
+        var s = spring ?? Panel;
+        if (rise != 0 || dx != 0)
+        {
+            ElementCompositionPreview.SetIsTranslationEnabled(element, true);
+            visual.Properties.InsertVector3("Translation", new Vector3((float)dx, (float)rise, 0));
+            var move = VectorSpring(c, s, Vector3.Zero);
+            move.DelayTime = wait;
+            visual.StartAnimation("Translation", move);
+        }
+        if (scale != 1)
+        {
+            if (element is FrameworkElement fe)
+            {
+                visual.CenterPoint = new Vector3((float)fe.ActualWidth / 2, (float)fe.ActualHeight / 2, 0);
+                fe.SizeChanged += (_, e) => visual.CenterPoint = new Vector3((float)e.NewSize.Width / 2, (float)e.NewSize.Height / 2, 0);
+            }
+            visual.Scale = new Vector3((float)scale, (float)scale, 1);
+            var grow = VectorSpring(c, s, Vector3.One);
+            grow.DelayTime = wait;
+            visual.StartAnimation("Scale", grow);
+        }
+    }
+
     /// <summary>Disappearance, then <paramref name="done"/> removes the element. Input passes through at once.</summary>
     public static void Disappear(UIElement element, Action done, Edge edge = Edge.None)
     {
