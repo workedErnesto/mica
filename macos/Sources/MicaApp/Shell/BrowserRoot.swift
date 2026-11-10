@@ -14,11 +14,11 @@ struct BrowserRoot: View {
     @State private var dragWidth: Double?
     var body: some View {
         GeometryReader { geo in
-            let layout = store.preferences.layout.fitting(width: geo.size.width)
+            let layout = browser.prefs.layout.fitting(width: geo.size.width)
             let edge = layout.sidebarEdge
             let lights = browser.fullScreen ? 0 : Chrome.lightsInset
-            let collapsed = store.preferences.sidebarCollapsed && edge != nil
-            let width = collapsed ? Chrome.rail : CGFloat(dragWidth ?? store.preferences.sidebarWidth)
+            let collapsed = browser.prefs.sidebarCollapsed && edge != nil
+            let width = collapsed ? Chrome.rail : CGFloat(dragWidth ?? browser.prefs.sidebarWidth)
             VStack(spacing: 0) {
                 if layout == .tabsAbove {
                     // Tabs in the title bar band next to the window buttons, the toolbar row with the address under them.
@@ -83,23 +83,29 @@ struct BrowserRoot: View {
             .overlay { if browser.showSettings { SettingsOverlay(store: store, browser: browser).transition(.opacity) } }
             .overlay { if browser.showOnboarding { ModalCard(width: 860, height: 660, dismissible: false) { Onboarding(store: store, browser: browser) }.transition(.opacity) } }
             .overlay { if browser.showClearData { ModalCard(width: 480, onDismiss: { browser.showClearData = false }) { ClearDataPanel(store: store, browser: browser) }.transition(.opacity) } }
+            .overlay {
+                if let id = browser.profilePrompt {
+                    ModalCard(width: 300, onDismiss: { browser.profilePrompt = nil }) { ProfileOpenPrompt(profile: store.profile(id), store: store, browser: browser) }.transition(.opacity)
+                }
+            }
             .overlay { QuitHoldOverlay(browser: browser, store: store) }
             .background { shellBackground.ignoresSafeArea() }
             .ignoresSafeArea()
             .animation(Motion.panel, value: layout)
             .animation(Motion.panel, value: collapsed)
             .animation(Motion.panel, value: browser.panel)
-            .animation(Motion.panel, value: store.preferences.toolbar)
+            .animation(Motion.panel, value: browser.prefs.toolbar)
             .animation(Motion.quick, value: browser.commandBar)
             .animation(Motion.quick, value: browser.showFind)
             .onChange(of: browser.focusAddress) { _, _ in if browser.selected?.url != nil { browser.commandBar = true } }
             .animation(Motion.quick, value: browser.showSettings)
             .animation(Motion.quick, value: browser.showOnboarding)
             .animation(Motion.quick, value: browser.showClearData)
+            .animation(Motion.quick, value: browser.profilePrompt)
             .animation(Motion.panel, value: browser.customizingToolbar)
             .alert("mica", isPresented: Binding(get: { browser.message != nil || store.issue != nil }, set: { if !$0 { browser.message = nil; store.issue = nil } })) { Button("OK") { browser.message = nil; store.issue = nil } } message: { Text(browser.message ?? store.issue ?? "") }
         }
-        .environment(\.look, store.look)
+        .environment(\.look, browser.look)
         .environment(\.locale, store.locale)
         .frame(minWidth: 600, minHeight: 420)
     }
@@ -109,7 +115,7 @@ struct BrowserRoot: View {
     }
 
     @ViewBuilder private var shellBackground: some View {
-        ShellBackground(store: store, glass: store.glass(reduceTransparency: reduceTransparency, contrast: contrast))
+        ShellBackground(store: store, browser: browser, glass: Store.glass(browser.prefs, reduceTransparency: reduceTransparency, contrast: contrast))
     }
 
     private func workspace(_ geo: GeometryProxy) -> some View {
@@ -135,9 +141,9 @@ struct BrowserRoot: View {
         Color.clear.frame(width: 6).contentShape(Rectangle())
             .onHover { inside in if inside { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() } }
             .gesture(DragGesture(minimumDistance: 1, coordinateSpace: .global).onChanged { value in
-                let base = store.preferences.sidebarWidth
+                let base = browser.prefs.sidebarWidth
                 dragWidth = min(Preferences.sidebarRange.upperBound, max(Preferences.sidebarRange.lowerBound, base + Double(value.translation.width * sign)))
-            }.onEnded { _ in if let dragWidth { store.preferences.sidebarWidth = dragWidth }; dragWidth = nil })
+            }.onEnded { _ in if let dragWidth { browser.prefs.sidebarWidth = dragWidth }; dragWidth = nil })
             .accessibilityHidden(true)
     }
 }

@@ -42,6 +42,14 @@ public class SharedVectorTests
             case "chromeId": return ChromeStore.ExtensionId(S("input"));
             case "luminance": return HexColor.Luminance(S("hex")) is { } l ? Math.Round(l * 10000, MidpointRounding.AwayFromZero) / 10000 : null;
             case "shortcut": return StartPage.ShortcutUrl(S("input"), Engine());
+            case "profileName": return Profiles.Name(S("input"));
+            case "profileNext":
+                var icons = c["icons"]!.AsArray().Select(x => x!.GetValue<string>()).ToList();
+                var backgrounds = c["backgrounds"]!.AsArray().Select(x => x!.GetValue<string>()).ToList();
+                var list = icons.Zip(backgrounds, (i, b) => new Profile { Name = "x", Icon = i, Background = b }).ToList();
+                var next = Profiles.Next(list, "", new ProfileLook());
+                return new JsonObject { ["icon"] = next.Icon, ["background"] = next.Background };
+            case "profileGlyph": return Profiles.LightGlyph(S("hex"), c["glyph"]?.GetValue<string>() switch { "light" => ProfileGlyph.Light, "dark" => ProfileGlyph.Dark, _ => ProfileGlyph.Auto }) ? "light" : "dark";
             default: throw new InvalidOperationException(section);
         }
     }

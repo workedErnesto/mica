@@ -88,19 +88,19 @@ struct StartCustomizeBar: View {
     @ObservedObject var store: Store
     @ObservedObject var browser: BrowserModel
     var body: some View {
-        let start = store.preferences.start
+        let start = browser.prefs.start
         let defaults = StartPage()
         let changed = start.sections != defaults.sections || start.wordmark != defaults.wordmark || start.frequentCount != defaults.frequentCount
         HStack(spacing: Space.small) {
             Text(store.text("сайтов в разделе", "Сайтов в разделе"))
                 .font(.system(size: 12)).foregroundStyle(Palette.text2).fixedSize()
-            Segmented(selection: $store.preferences.start.frequentCount, options: StartPage.frequentChoices.map { ($0, String($0)) }, compact: true, label: store.text("сайтов в разделе", "Сайтов в разделе"))
+            Segmented(selection: $browser.prefs.start.frequentCount, options: StartPage.frequentChoices.map { ($0, String($0)) }, compact: true, label: store.text("сайтов в разделе", "Сайтов в разделе"))
             Spacer(minLength: Space.small)
             IconButton(symbol: "arrow.counterclockwise", label: store.text("вернуть как было", "Вернуть как было"), size: 28) {
                 withMotion(Motion.quick) {
-                    store.preferences.start.sections = defaults.sections
-                    store.preferences.start.wordmark = defaults.wordmark
-                    store.preferences.start.frequentCount = defaults.frequentCount
+                    browser.prefs.start.sections = defaults.sections
+                    browser.prefs.start.wordmark = defaults.wordmark
+                    browser.prefs.start.frequentCount = defaults.frequentCount
                 }
             }.disabled(!changed)
             IconButton(symbol: "gearshape", label: store.text("все настройки", "Все настройки"), size: 28) {

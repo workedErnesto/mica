@@ -39,7 +39,10 @@ public sealed partial class BrowserWindow : Window
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "mica.ico"));
         Activated += (_, e) =>
         {
+            var wasKey = IsKey;
             IsKey = e.WindowActivationState != WindowActivationState.Deactivated;
+            // The shared palette takes the theme and colours of the profile of the window in front.
+            if (IsKey && !wasKey) model.Store.ApplyAppearance();
             if (backdropConfiguration is not null) backdropConfiguration.IsInputActive = true;
             root.SetActive(IsKey);
         };
@@ -67,7 +70,7 @@ public sealed partial class BrowserWindow : Window
 
     double GetDpiScale() => Win32.DpiFor(this) / 96.0;
 
-    public void UpdateTitle() => Title = "mica" + (Model.PrivateMode ? " — " + Model.Text("инкогнито", "Инкогнито") : "");
+    public void UpdateTitle() => Title = Model.WindowTitle;
 
     /// <summary>First appearance (macOS BrowserWindow.showWindow): WinUI has no window alpha, so the window content fades
     /// in over the backdrop, and the content card and start page start their entrance.</summary>
@@ -88,7 +91,8 @@ public sealed partial class BrowserWindow : Window
         var store = Model.Store;
         root.RequestedTheme = Palette.ElementTheme;
         var transparency = new Windows.UI.ViewManagement.UISettings().AdvancedEffectsEnabled;
-        var glass = store.Preferences.Frosted && transparency && !Palette.Contrast && DesktopAcrylicController.IsSupported();
+        var prefs = Model.Prefs;
+        var glass = prefs.Frosted && transparency && !Palette.Contrast && DesktopAcrylicController.IsSupported();
         if (glass && acrylic is null)
         {
             backdropConfiguration = new SystemBackdropConfiguration { IsInputActive = true, Theme = Palette.Dark ? SystemBackdropTheme.Dark : SystemBackdropTheme.Light };
@@ -98,7 +102,7 @@ public sealed partial class BrowserWindow : Window
         }
         else if (!glass && acrylic is not null) { acrylic.Dispose(); acrylic = null; backdropConfiguration = null; }
         if (backdropConfiguration is not null) backdropConfiguration.Theme = Palette.Dark ? SystemBackdropTheme.Dark : SystemBackdropTheme.Light;
-        root.SetGlass(glass, store.GlassTint);
+        root.SetGlass(glass, Store.GlassTint(prefs));
         var ink = Palette.Ink.Resolve();
         AppWindow.TitleBar.ButtonForegroundColor = ink;
         AppWindow.TitleBar.ButtonHoverForegroundColor = ink;

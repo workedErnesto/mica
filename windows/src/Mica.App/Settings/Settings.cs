@@ -5,20 +5,20 @@ using Mica.Design;
 
 namespace Mica.App.Settings;
 
-public enum SettingsSection { Space, Appearance, Start, Search, Session, Transfer, Permissions, Passwords, About }
+public enum SettingsSection { Space, Appearance, Start, Profiles, Search, Session, Transfer, Permissions, Passwords, About }
 
 public static class Sections
 {
     public static string Symbol(this SettingsSection s) => s switch
     {
-        SettingsSection.Space => "sidebar.squares.left", SettingsSection.Appearance => "paintbrush", SettingsSection.Start => "square.grid.2x2",
+        SettingsSection.Space => "sidebar.squares.left", SettingsSection.Appearance => "paintbrush", SettingsSection.Start => "square.grid.2x2", SettingsSection.Profiles => "person.crop.circle",
         SettingsSection.Search => "shield.lefthalf.filled", SettingsSection.Session => "square.stack", SettingsSection.Transfer => "square.and.arrow.down.on.square",
         SettingsSection.Permissions => "hand.raised", SettingsSection.Passwords => "key", _ => "info.circle",
     };
     public static string Title(this SettingsSection s, Store store) => s switch
     {
         SettingsSection.Space => store.Text("пространство", "Пространство"), SettingsSection.Appearance => store.Text("оформление", "Оформление"),
-        SettingsSection.Start => store.Text("начальная страница", "Начальная страница"), SettingsSection.Search => store.Text("поиск и защита", "Поиск и защита"),
+        SettingsSection.Start => store.Text("начальная страница", "Начальная страница"), SettingsSection.Profiles => store.Text("профили", "Профили"), SettingsSection.Search => store.Text("поиск и защита", "Поиск и защита"),
         SettingsSection.Session => store.Text("сессия и память", "Сессия и память"), SettingsSection.Transfer => store.Text("перенос данных", "Перенос данных"),
         SettingsSection.Permissions => store.Text("разрешения сайтов", "Разрешения сайтов"), SettingsSection.Passwords => store.Text("пароли", "Пароли"), _ => "mica",
     };
@@ -96,6 +96,7 @@ public sealed partial class SettingsView : Grid
             SettingsSection.Space => SettingsPages.Workspace(browser, dismiss),
             SettingsSection.Appearance => SettingsPages.Appearance(browser),
             SettingsSection.Start => SettingsPages.Start(browser),
+            SettingsSection.Profiles => new ProfileSettings(browser),
             SettingsSection.Search => SettingsPages.Search(browser),
             SettingsSection.Session => SettingsPages.Session(browser),
             SettingsSection.Transfer => new Import.ImportView(browser),
@@ -117,21 +118,21 @@ public static class Pickers
 {
     public static ToggleRow SidebarToggle(Store s)
     {
-        var row = new ToggleRow(s.Text("свернуть боковую панель до иконок", "Свернуть боковую панель до иконок"), s.Preferences.SidebarCollapsed, v => s.Change(p => p.SidebarCollapsed = v), divider: false);
-        void Render() => row.Switch.IsEnabled = !s.Preferences.Layout.IsHorizontal();
+        var row = new ToggleRow(s.Text("свернуть боковую панель до иконок", "Свернуть боковую панель до иконок"), s.ActivePrefs.SidebarCollapsed, v => s.Change(p => p.SidebarCollapsed = v), divider: false);
+        void Render() => row.Switch.IsEnabled = !s.ActivePrefs.Layout.IsHorizontal();
         row.Bind(h => s.PreferencesUpdated += h, h => s.PreferencesUpdated -= h, Render);
         Render();
         return row;
     }
     public static Segmented<TabLayout> LayoutPicker(Store s, double width = 0)
     {
-        var picker = new Segmented<TabLayout>(s.Preferences.Layout, [(TabLayout.Left, s.Text("слева", "Слева")), (TabLayout.Top, s.Text("под адресом", "Под адресом")), (TabLayout.TabsAbove, s.Text("над адресом", "Над адресом")), (TabLayout.Right, s.Text("справа", "Справа"))], minWidth: width, label: s.Text("вкладки", "Вкладки"), symbols: ["sidebar.left", "rectangle.topthird.inset.filled", "macwindow", "sidebar.right"]);
+        var picker = new Segmented<TabLayout>(s.ActivePrefs.Layout, [(TabLayout.Left, s.Text("слева", "Слева")), (TabLayout.Top, s.Text("под адресом", "Под адресом")), (TabLayout.TabsAbove, s.Text("над адресом", "Над адресом")), (TabLayout.Right, s.Text("справа", "Справа"))], minWidth: width, label: s.Text("вкладки", "Вкладки"), symbols: ["sidebar.left", "rectangle.topthird.inset.filled", "macwindow", "sidebar.right"]);
         picker.Changed += v => s.Change(p => p.Layout = v);
         return picker;
     }
     public static Segmented<Theme> ThemePicker(Store s, double width = 0)
     {
-        var picker = new Segmented<Theme>(s.Preferences.Theme, [(Core.Theme.System, s.Text("системная", "Системная")), (Core.Theme.Light, s.Text("светлая", "Светлая")), (Core.Theme.Dark, s.Text("тёмная", "Тёмная")), (Core.Theme.Custom, s.Text("кастом", "Кастом"))], minWidth: width, label: s.Text("тема", "Тема"));
+        var picker = new Segmented<Theme>(s.ActivePrefs.Theme, [(Core.Theme.System, s.Text("системная", "Системная")), (Core.Theme.Light, s.Text("светлая", "Светлая")), (Core.Theme.Dark, s.Text("тёмная", "Тёмная")), (Core.Theme.Custom, s.Text("кастом", "Кастом"))], minWidth: width, label: s.Text("тема", "Тема"));
         picker.Changed += v => s.Change(p => p.Theme = v);
         return picker;
     }
@@ -153,11 +154,11 @@ public static class Pickers
 
     public static IEnumerable<UIElement> NameRows(Store s)
     {
-        var field = new MTextField(s.Text("как к вам обращаться", "Как к вам обращаться"), s.Preferences.UserName, "person") { Width = 220, IsHitTestVisible = s.Preferences.GreetByName, Opacity = s.Preferences.GreetByName ? 1 : 0.45 };
+        var field = new MTextField(s.Text("как к вам обращаться", "Как к вам обращаться"), s.ActivePrefs.UserName, "person") { Width = 220, IsHitTestVisible = s.ActivePrefs.GreetByName, Opacity = s.ActivePrefs.GreetByName ? 1 : 0.45 };
         field.Box.MaxLength = Preferences.NameLimit;
         field.Box.TextChanged += (_, _) => s.Change(p => p.UserName = field.Text);
         yield return new SettingRow(s.Text("имя", "Имя"), field, s.Text("для приветствия на начальной странице", "Для приветствия на начальной странице"));
-        yield return new ToggleRow(s.Text("не обращаться по имени", "Не обращаться по имени"), !s.Preferences.GreetByName, v => { s.Change(p => p.GreetByName = !v); field.IsHitTestVisible = !v; field.Opacity = v ? 0.45 : 1; }, divider: false);
+        yield return new ToggleRow(s.Text("не обращаться по имени", "Не обращаться по имени"), !s.ActivePrefs.GreetByName, v => { s.Change(p => p.GreetByName = !v); field.IsHitTestVisible = !v; field.Opacity = v ? 0.45 : 1; }, divider: false);
     }
 
     public static UIElement Search(Store s)

@@ -24,8 +24,8 @@ struct StartScreen: View {
     var body: some View {
         let editing = browser.customizingStart
         let items = editing ? [] : Suggestion.make(text, browser: browser, store: store)
-        let options = store.preferences.start
-        let greeting = Greeting.text(store.preferences, hour: Calendar.current.component(.hour, from: Date()), seed: seed)
+        let options = browser.prefs.start
+        let greeting = Greeting.text(browser.prefs, hour: Calendar.current.component(.hour, from: Date()), seed: seed)
         let sections = visibleSections(options, editing: editing)
         ZStack {
             // ContentCard draws the canvas under the start page, translucent when the shell is frosted.
@@ -37,7 +37,7 @@ struct StartScreen: View {
                             if options.wordmark || editing {
                                 VStack(spacing: Space.normal) {
                                     if editing {
-                                        StartBlockHeader(title: greeting == nil ? store.text("знак mica", "Знак mica") : store.text("приветствие", "Приветствие"), editing: true, shown: $store.preferences.start.wordmark, store: store)
+                                        StartBlockHeader(title: greeting == nil ? store.text("знак mica", "Знак mica") : store.text("приветствие", "Приветствие"), editing: true, shown: $browser.prefs.start.wordmark, store: store)
                                             .transition(.opacity)
                                     }
                                     SwiftUI.Group {

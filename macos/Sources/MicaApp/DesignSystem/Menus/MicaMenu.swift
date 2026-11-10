@@ -55,7 +55,7 @@ final class MicaMenu {
         model.shown = false
         let store = Store.shared
         let root = MenuView(model: model) { [weak self] index in self?.choose(index) }
-            .environment(\.look, store.look)
+            .environment(\.look, store.look(for: window))
             .environment(\.locale, store.locale)
         let host = FirstMouseHost(rootView: AnyView(root))
         let size = host.fittingSize

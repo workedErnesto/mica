@@ -47,6 +47,7 @@ extension ToolbarControl {
         case .extensions: return "puzzlepiece.extension"
         case .incognito: return Glyph.incognito
         case .settings: return "gearshape"
+        case .profile: return "person.crop.circle"
         }
     }
     @MainActor func title(_ store: Store) -> String {
@@ -62,6 +63,7 @@ extension ToolbarControl {
         case .extensions: return store.text("расширения", "Расширения")
         case .incognito: return store.text("окно инкогнито", "Окно инкогнито")
         case .settings: return store.text("настройки", "Настройки")
+        case .profile: return store.text("профиль", "Профиль")
         }
     }
     var panel: Panel? {
@@ -79,9 +81,9 @@ struct ToolbarButton: View {
     var body: some View {
         switch item {
         case .sidebar:
-            let collapsed = store.preferences.sidebarCollapsed
+            let collapsed = browser.prefs.sidebarCollapsed
             IconButton(symbol: edge == .right ? "sidebar.right" : "sidebar.left", label: collapsed ? browser.text("развернуть боковую панель", "Развернуть боковую панель") : browser.text("свернуть боковую панель", "Свернуть боковую панель")) {
-                withMotion(Motion.panel) { store.preferences.sidebarCollapsed.toggle() }
+                withMotion(Motion.panel) { browser.prefs.sidebarCollapsed.toggle() }
             }
         case .back, .forward:
             if let tab = browser.selected { NavigationButton(tab: tab, browser: browser, forward: item == .forward) }
@@ -102,6 +104,8 @@ struct ToolbarButton: View {
             IconButton(symbol: item.symbol, label: item.title(store), selected: browser.panel == panel) { browser.panel = browser.panel == panel ? nil : panel }
         case .settings:
             IconButton(symbol: item.symbol, label: item.title(store)) { browser.showSettings = true }
+        case .profile:
+            ProfileButton(browser: browser, store: store)
         }
     }
 }

@@ -12,7 +12,7 @@ struct ContentCard: View {
     var body: some View {
         // The start page is mica's own surface, so with glass on it lets the frosted shell through; a site keeps an opaque card.
         let startPage = browser.selected.map { $0.webView == nil && $0.url == nil && $0.error == nil } ?? true
-        let see = startPage && store.glass(reduceTransparency: reduceTransparency, contrast: contrast)
+        let see = startPage && Store.glass(browser.prefs, reduceTransparency: reduceTransparency, contrast: contrast)
         ZStack(alignment: .topTrailing) {
             if let tab = browser.selected { PageSurface(tab: tab, browser: browser, store: store) }
             if browser.showFind, let tab = browser.selected {
@@ -21,7 +21,7 @@ struct ContentCard: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         // A translucent fill would show its own shadow through itself, so the see-through card keeps only its hairline.
-        .background(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).fill(Palette.canvas.opacity(see ? store.startTint : 1)).shadow(color: see ? .clear : Palette.shadow, radius: 6, y: 2))
+        .background(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).fill(Palette.canvas.opacity(see ? Store.startTint(browser.prefs) : 1)).shadow(color: see ? .clear : Palette.shadow, radius: 6, y: 2))
         .animation(Motion.hover, value: see)
         .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Palette.hairline, lineWidth: 1).allowsHitTesting(false))

@@ -82,10 +82,17 @@ struct ExtensionButton: View {
 }
 
 /// Holds the AppKit view behind an extension button so the popup opens under the button that was clicked.
-final class PopupAnchor { weak var view: NSView? }
+/// Where a popup hangs from. A control being replaced with a transition (switching profiles animates the shell) briefly
+/// has two backing views; the one that leaves used to overwrite the anchor and then vanish, and the menu had nowhere to
+/// open. The anchor keeps every view weakly and answers with the one still in a window.
+final class PopupAnchor {
+    private let views = NSHashTable<NSView>.weakObjects()
+    var view: NSView? { views.allObjects.last { $0.window != nil } ?? views.allObjects.last }
+    func attach(_ view: NSView) { views.add(view) }
+}
 
 struct PopupAnchorView: NSViewRepresentable {
     let anchor: PopupAnchor
-    func makeNSView(context: Context) -> NSView { let view = NSView(); anchor.view = view; return view }
-    func updateNSView(_ view: NSView, context: Context) { anchor.view = view }
+    func makeNSView(context: Context) -> NSView { let view = NSView(); anchor.attach(view); return view }
+    func updateNSView(_ view: NSView, context: Context) { anchor.attach(view) }
 }

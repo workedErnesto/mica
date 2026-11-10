@@ -25,7 +25,7 @@ public sealed partial class BrowserRoot : Grid
     TabStrip? strip;
     Grid? sidePanel;
     LibraryPanel? shownPanel;
-    UIElement? commandBar, settings, onboarding, clearData, customize;
+    UIElement? commandBar, settings, onboarding, clearData, customize, profilePrompt;
     string layoutKey = "";
     double? dragWidth;
 
@@ -86,16 +86,16 @@ public sealed partial class BrowserRoot : Grid
         shell.Background = Look.Shell;
         shell.Opacity = glass ? tint : 1;
         Background = glass ? Palette.Clear : Look.Shell;
-        card.SetGlass(glass, Store.StartTint);
+        card.SetGlass(glass, Store.StartTint(browser.Prefs));
     }
 
-    TabLayout EffectiveLayout => ActualWidth > 0 ? Store.Preferences.Layout.Fitting(ActualWidth) : Store.Preferences.Layout;
+    TabLayout EffectiveLayout => ActualWidth > 0 ? browser.Prefs.Layout.Fitting(ActualWidth) : browser.Prefs.Layout;
 
     void Render()
     {
         var layout = EffectiveLayout;
         var edge = layout.SidebarEdge();
-        var collapsed = Store.Preferences.SidebarCollapsed && edge is not null;
+        var collapsed = browser.Prefs.SidebarCollapsed && edge is not null;
         var key = $"{layout}|{collapsed}|{browser.CustomizingToolbar}";
         if (key != layoutKey)
         {
@@ -106,7 +106,7 @@ public sealed partial class BrowserRoot : Grid
         topBar.Render(layout, ActualWidth);
         // Clear of the caption buttons on the right; they are hidden in full screen.
         if (strip is not null && layout == TabLayout.TabsAbove) strip.Margin = new Thickness(Radius.Gutter, 0, (browser.FullScreen ? 0 : Chrome.CaptionInset) + Space.Small, 0);
-        if (sidebar is not null && !collapsed && dragWidth is null) sidebar.Width = Store.Preferences.SidebarWidth;
+        if (sidebar is not null && !collapsed && dragWidth is null) sidebar.Width = browser.Prefs.SidebarWidth;
         UpdatePanel();
         UpdateOverlays();
         card.SetCovered(browser.Modal || browser.CommandBar || browser.CustomizingToolbar);
@@ -136,7 +136,7 @@ public sealed partial class BrowserRoot : Grid
         body.Column(workspace, 1);
         if (edge is { } side)
         {
-            sidebar = new Sidebar(browser, collapsed, side) { Width = collapsed ? Chrome.Rail : dragWidth ?? Store.Preferences.SidebarWidth };
+            sidebar = new Sidebar(browser, collapsed, side) { Width = collapsed ? Chrome.Rail : dragWidth ?? browser.Prefs.SidebarWidth };
             var host = new Grid();
             host.Children.Add(sidebar);
             if (!collapsed) host.Children.Add(ResizeHandle(side == TabLayout.Left ? 1 : -1, side));
@@ -151,7 +151,7 @@ public sealed partial class BrowserRoot : Grid
         var handle = new ResizeGrip { Width = 6, Background = Palette.Clear, HorizontalAlignment = side == TabLayout.Left ? HorizontalAlignment.Right : HorizontalAlignment.Left };
         handle.Tip(Store.Text("ширина боковой панели", "Ширина боковой панели"));
         double start = 0, origin = 0;
-        handle.PointerPressed += (_, e) => { handle.CapturePointer(e.Pointer); start = e.GetCurrentPoint(this).Position.X; origin = Store.Preferences.SidebarWidth; dragWidth = origin; e.Handled = true; };
+        handle.PointerPressed += (_, e) => { handle.CapturePointer(e.Pointer); start = e.GetCurrentPoint(this).Position.X; origin = browser.Prefs.SidebarWidth; dragWidth = origin; e.Handled = true; };
         handle.PointerMoved += (_, e) =>
         {
             if (dragWidth is null) return;
@@ -189,6 +189,8 @@ public sealed partial class BrowserRoot : Grid
         Toggle(ref settings, browser.ShowSettings, () => new Settings.SettingsOverlay(browser), overlays);
         Toggle(ref onboarding, browser.ShowOnboarding, () => new ModalCard(new Onboarding.OnboardingView(browser), 860, 660, dismissible: false), overlays);
         Toggle(ref clearData, browser.ShowClearData, () => new ModalCard(new Library.ClearDataPanel(browser), 480, dismiss: () => browser.ShowClearData = false), overlays);
+        if (profilePrompt is not null && browser.ProfilePrompt is { } shownId && (profilePrompt as FrameworkElement)?.Tag is Guid id && id != shownId) { overlays.Children.Remove(profilePrompt); profilePrompt = null; }
+        Toggle(ref profilePrompt, browser.ProfilePrompt is not null, () => new ModalCard(new ProfileOpenPrompt(browser, browser.ProfilePrompt!.Value), 300, dismiss: () => browser.ProfilePrompt = null) { Tag = browser.ProfilePrompt!.Value }, overlays);
         Toggle(ref customize, browser.CustomizingToolbar, () => new CustomizeLayer(browser), workspace, column: 0);
     }
 

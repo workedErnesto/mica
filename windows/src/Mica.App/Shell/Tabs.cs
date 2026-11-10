@@ -389,7 +389,7 @@ public sealed partial class Sidebar : Grid
         this.ContextMenu(() => browser.CustomizingToolbar ? [] :
         [
             MenuEntry.Item(browser.Text("новая вкладка", "Новая вкладка"), () => { browser.Add(); browser.FocusAddress(); }, "plus"),
-            MenuEntry.Item(store.Preferences.SidebarCollapsed ? browser.Text("развернуть боковую панель", "Развернуть боковую панель") : browser.Text("свернуть боковую панель", "Свернуть боковую панель"), () => store.Change(p => p.SidebarCollapsed = !p.SidebarCollapsed), edge == TabLayout.Right ? "sidebar.right" : "sidebar.left"),
+            MenuEntry.Item(browser.Prefs.SidebarCollapsed ? browser.Text("развернуть боковую панель", "Развернуть боковую панель") : browser.Text("свернуть боковую панель", "Свернуть боковую панель"), () => store.Change(p => p.SidebarCollapsed = !p.SidebarCollapsed), edge == TabLayout.Right ? "sidebar.right" : "sidebar.left"),
             MenuEntry.Separator, .. LayoutMenu.Entries(store), MenuEntry.Separator,
             MenuEntry.Item(store.Text("настроить панель инструментов…", "Настроить панель инструментов…"), () => browser.CustomizingToolbar = true, "slider.horizontal.3"),
         ]);
@@ -417,7 +417,7 @@ public sealed partial class Sidebar : Grid
             Reconcile.Run(pinned, pinnedTabs, key => new PinnedTile(Find(key), browser) { Width = 52, Margin = new Thickness(3) });
             Reconcile.Run(regular, regularTabs, key => new TabRow(Find(key), browser, horizontal: false));
         }
-        var items = store.Preferences.Toolbar.Resolve(sidebarAvailable: true).Sidebar;
+        var items = browser.Prefs.Toolbar.Resolve(sidebarAvailable: true).Sidebar;
         var key = string.Join(",", items) + browser.CustomizingToolbar;
         if (key == footerKey) return;
         footerKey = key;

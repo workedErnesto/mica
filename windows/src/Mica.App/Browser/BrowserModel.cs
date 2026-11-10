@@ -33,9 +33,14 @@ public sealed partial class BrowserModel : Observable
     public bool Entered { get => entered; set { entered = value; Notify(); } }
     bool entered;
     public Settings.SettingsSection SettingsSection { get; set; } = Mica.App.Settings.SettingsSection.Space;
+    /// <summary>Profile open in the profile editor of settings.</summary>
+    public Guid? EditingProfile { get; set; }
     public int OnboardingStep { get; set; }
     /// <summary>A window-level card covers the page; the web view takes no input meanwhile.</summary>
-    public bool Modal => showSettings || showOnboarding || showClearData;
+    public bool Modal => showSettings || showOnboarding || showClearData || profilePrompt is not null;
+    Guid? profilePrompt;
+    /// <summary>Profile chosen in the profile menu while mica still has to ask where to open it.</summary>
+    public Guid? ProfilePrompt { get => profilePrompt; set { profilePrompt = value; if (value is not null) { CommandBar = false; CustomizingToolbar = false; } Notify(); } }
     public event Action? FocusAddressRequested;
     /// <summary>F10 or Alt+F: the "…" menu that stands in for the macOS menu bar.</summary>
     public event Action? MenuRequested;
@@ -50,9 +55,18 @@ public sealed partial class BrowserModel : Observable
     public event Action<Tab>? WebViewCreated;
     public event Action<string>? Message;
 
-    public BrowserModel(Store store, bool privateMode)
+    /// <summary>Profile of this window: start page, arrangement, greeting and pinned tabs, and while it is in front the
+    /// theme and colours of mica (the palette is shared by all windows). Data is shared by all profiles.</summary>
+    public Guid ProfileId { get; private set; }
+    public Profile Profile => Store.Profile(ProfileId);
+    /// <summary>Preferences in effect in this window.</summary>
+    public Preferences Prefs => Store.Prefs(ProfileId);
+    /// <summary>Edits this window's preferences: the look part goes to its profile.</summary>
+    public void Change(Action<Preferences> edit) => Store.Change(ProfileId, edit);
+
+    public BrowserModel(Store store, bool privateMode, Guid profile)
     {
-        Store = store; PrivateMode = privateMode;
+        Store = store; PrivateMode = privateMode; ProfileId = profile;
         Downloads = new Downloads.DownloadManager(this);
         Favicons = privateMode ? new Favicons(null) : store.Favicons;
         showOnboarding = !store.Preferences.OnboardingComplete && !privateMode;
@@ -60,7 +74,52 @@ public sealed partial class BrowserModel : Observable
 
     public string Text(string low, string regular) => Store.Text(low, regular);
     public Tab? Selected => Tabs.FirstOrDefault(t => t.Id == SelectedId);
-    public SavedWindow Snapshot => new() { Tabs = Tabs.Select(t => t.Saved).ToList(), Selected = SelectedId };
+    public SavedWindow Snapshot => new() { Tabs = Tabs.Select(t => t.Saved).ToList(), Selected = SelectedId, Profile = ProfileId };
+
+    /// <summary>The window takes another profile's look. Its pinned tabs are kept for the old profile and the new
+    /// profile's pinned tabs take their place, loaded when selected.</summary>
+    public void SwitchProfile(Guid id)
+    {
+        var target = Store.Profile(id).Id;
+        if (target == ProfileId) return;
+        if (!PrivateMode)
+        {
+            RememberPinned();
+            var selectedPinned = Selected?.Pinned == true;
+            foreach (var tab in Tabs.Where(t => t.Pinned).ToList()) Close(tab, remember: false);
+            foreach (var pin in Store.Profile(target).Pinned) Add(new SavedTab { Url = pin.Url, Title = pin.Title, Pinned = true }, activate: false, restored: true);
+            if (!Tabs.Any(t => !t.Pinned)) Add();
+            else if (selectedPinned || Selected is null) Select(Tabs.First(t => !t.Pinned));
+        }
+        ProfileId = target;
+        Window?.UpdateTitle();
+        Store.ApplyAppearance();
+        Store.ScheduleSession();
+        Notify();
+        Store.NotifyProfileSwitch();
+    }
+
+    /// <summary>Stores this window's pinned tabs as the profile's own.</summary>
+    public void RememberPinned()
+    {
+        if (PrivateMode) return;
+        var pinned = Tabs.Where(t => t.Pinned).Select(t => t.Saved).Where(t => t.Url is { } u && (u.StartsWith("https://", StringComparison.OrdinalIgnoreCase) || u.StartsWith("http://", StringComparison.OrdinalIgnoreCase))).ToList();
+        var current = Profile.Pinned;
+        if (current.Select(t => t.Url + "\n" + t.Title).SequenceEqual(pinned.Select(t => t.Url + "\n" + t.Title))) return;
+        Store.ChangeProfile(ProfileId, p => p.Pinned = pinned.Select(t => t.Copy()).ToList());
+    }
+
+    /// <summary>The window list and Alt+Tab tell windows of different profiles apart by name.</summary>
+    public string WindowTitle
+    {
+        get
+        {
+            var parts = new List<string> { "mica" };
+            if (Store.Profiles.Count > 1 || !Profile.IsStandard) parts.Add(Store.ProfileName(Profile));
+            if (PrivateMode) parts.Add(Text("инкогнито", "Инкогнито"));
+            return string.Join(" — ", parts);
+        }
+    }
 
     public void FocusAddress() { if (Selected?.Url is not null) CommandBar = true; FocusAddressRequested?.Invoke(); }
     public void Show(string message) => Message?.Invoke(message);
@@ -96,18 +155,20 @@ public sealed partial class BrowserModel : Observable
     }
 
     /// <summary>No hidden reloads: closing explicitly ends the tab, forms and media included.</summary>
-    public void Close(Tab tab)
+    public void Close(Tab tab) => Close(tab, remember: true);
+
+    void Close(Tab tab, bool remember)
     {
         var index = Tabs.FindIndex(t => t.Id == tab.Id);
         if (index < 0) return;
-        Closed.Insert(0, tab.Saved);
-        if (Closed.Count > 30) Closed.RemoveRange(30, Closed.Count - 30);
+        if (remember) { Closed.Insert(0, tab.Saved); if (Closed.Count > 30) Closed.RemoveRange(30, Closed.Count - 30); }
         tab.Dispose();
         Tabs.RemoveAt(index);
         if (SelectedId == tab.Id)
         {
             if (Tabs.Count > 0) Select(Tabs[Math.Min(index, Tabs.Count - 1)]);
-            else Add();
+            else if (remember) Add();
+            else SelectedId = null;
         }
         Store.ScheduleSession();
         Notify();
@@ -151,7 +212,7 @@ public sealed partial class BrowserModel : Observable
 
     public async void Navigate(string input)
     {
-        var target = AddressParser.Resolve(input, Store.Preferences.Search);
+        var target = AddressParser.Resolve(input, Prefs.Search);
         switch (target.Kind)
         {
             case AddressKind.Web: Selected?.Load(target.Value); break;

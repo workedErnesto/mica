@@ -61,7 +61,7 @@ public static class Commands
             case "find": if (tab?.Core is not null) browser.ShowFind = !browser.ShowFind; break;
             case "findNext": browser.StepFind(back: false); break;
             case "findPrevious": browser.StepFind(back: true); break;
-            case "sidebar": store.Change(p => p.SidebarCollapsed = !p.SidebarCollapsed); break;
+            case "sidebar": browser.Change(p => p.SidebarCollapsed = !p.SidebarCollapsed); break;
             case "bookmark": if (tab is not null) store.Bookmark(tab); break;
             case "history": browser.Panel = browser.Panel == LibraryPanel.History ? null : LibraryPanel.History; break;
             case "clearData": browser.ShowClearData = true; break;

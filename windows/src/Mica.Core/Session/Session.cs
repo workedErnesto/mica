@@ -13,6 +13,8 @@ public sealed class SavedWindow
 {
     public List<SavedTab> Tabs { get; set; } = [];
     public Guid? Selected { get; set; }
+    /// <summary>Profile of the window; null in sessions from before profiles means the standard one.</summary>
+    public Guid? Profile { get; set; }
 }
 
 public sealed class Session
@@ -32,7 +34,7 @@ public sealed class Session
             var tabs = window.Tabs.Take(300).Where(tab =>
                 (tab.Url is null || (IsWeb(tab.Url) && AddressParser.Navigable(tab.Url)) || AddressParser.OpenableFile(tab.Url)) && ids.Add(tab.Id)).ToList();
             tabs = [.. tabs.Where(t => t.Pinned), .. tabs.Where(t => !t.Pinned)];
-            result.Windows.Add(new SavedWindow { Tabs = tabs, Selected = tabs.Any(t => t.Id == window.Selected) ? window.Selected : tabs.FirstOrDefault()?.Id });
+            result.Windows.Add(new SavedWindow { Tabs = tabs, Selected = tabs.Any(t => t.Id == window.Selected) ? window.Selected : tabs.FirstOrDefault()?.Id, Profile = window.Profile });
         }
         return result;
     }

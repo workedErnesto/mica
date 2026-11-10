@@ -8,6 +8,7 @@ import UniformTypeIdentifiers
 struct ShortcutDrag: ViewModifier {
     let site: StartSite
     @ObservedObject var store: Store
+    @ObservedObject var browser: BrowserModel
     func body(content: Content) -> some View {
         if let id = site.shortcut {
             content
@@ -16,7 +17,7 @@ struct ShortcutDrag: ViewModifier {
                     guard let provider = providers.first else { return false }
                     _ = provider.loadObject(ofClass: String.self) { string, _ in
                         guard let string, string.hasPrefix("mica-shortcut:"), let source = UUID(uuidString: String(string.dropFirst("mica-shortcut:".count))) else { return }
-                        Task { @MainActor in withMotion(Motion.quick) { store.preferences.start.moveShortcut(source, before: id) } }
+                        Task { @MainActor in withMotion(Motion.quick) { browser.prefs.start.moveShortcut(source, before: id) } }
                     }
                     return true
                 }
@@ -67,6 +68,7 @@ struct TileBox: ViewModifier {
 
 struct AddShortcutTile: View {
     @ObservedObject var store: Store
+    @ObservedObject var browser: BrowserModel
     @State private var hover = false
     @State private var adding = false
     @Environment(\.accessibilityReduceMotion) private var reduced
@@ -83,7 +85,7 @@ struct AddShortcutTile: View {
         .buttonStyle(PressStyle(scale: 0.95))
         .onHover { hover = $0 }
         .animation(reduced ? Motion.hover : Motion.snappySpring, value: hover)
-        .popover(isPresented: $adding, arrowEdge: .bottom) { ShortcutEditor(store: store, editing: nil) { adding = false } }
+        .popover(isPresented: $adding, arrowEdge: .bottom) { ShortcutEditor(store: store, browser: browser, editing: nil) { adding = false } }
         .accessibilityLabel(store.text("добавить сайт на начальную страницу", "Добавить сайт на начальную страницу"))
     }
 }

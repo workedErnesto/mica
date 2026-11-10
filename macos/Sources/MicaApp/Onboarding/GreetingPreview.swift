@@ -6,8 +6,9 @@ import MicaCore
 /// What the start page will show above the search field: the greeting with the typed name, or the mica wordmark.
 struct GreetingPreview: View {
     @ObservedObject var store: Store
+    @ObservedObject var browser: BrowserModel
     var body: some View {
-        let greeting = Greeting.text(store.preferences, hour: Calendar.current.component(.hour, from: Date()), seed: 1)
+        let greeting = Greeting.text(browser.prefs, hour: Calendar.current.component(.hour, from: Date()), seed: 1)
         VStack(spacing: Space.small) {
             Spacer(minLength: 0)
             Text(greeting ?? "mica").font(.system(size: greeting == nil ? 30 : 24, weight: .light)).tracking(greeting == nil ? -1.1 : -0.7)
@@ -31,7 +32,7 @@ struct GreetingPreview: View {
         .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(Palette.hairline, lineWidth: 1))
         .padding(8)
         .frame(height: 150)
-        .background(store.look.shell)
+        .background(browser.look.shell)
         .clipShape(RoundedRectangle(cornerRadius: Radius.panel - 4, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: Radius.panel - 4, style: .continuous).strokeBorder(Palette.hairlineStrong, lineWidth: 1))
         .animation(Motion.hover, value: greeting)

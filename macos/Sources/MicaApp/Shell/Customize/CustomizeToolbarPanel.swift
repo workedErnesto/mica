@@ -14,8 +14,8 @@ struct CustomizeToolbarPanel: View {
     /// content and scrolls only when the window is too short for it.
     @State private var contentHeight: CGFloat = 0
     var body: some View {
-        let toolbar = store.preferences.toolbar
-        let moves = ToolbarMoves(store: store)
+        let toolbar = browser.prefs.toolbar
+        let moves = ToolbarMoves(store: store, browser: browser)
         ScrollView {
         VStack(alignment: .leading, spacing: Space.section) {
             VStack(alignment: .leading, spacing: 4) {
@@ -27,7 +27,7 @@ struct CustomizeToolbarPanel: View {
             }
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 96, maximum: 140), spacing: Space.small)], spacing: Space.small) {
                 ForEach(ToolbarControl.allCases, id: \.self) { item in
-                    PaletteTile(item: item, zone: toolbar.zone(of: item), store: store, layout: layout)
+                    PaletteTile(item: item, zone: toolbar.zone(of: item), store: store, browser: browser, layout: layout)
                 }
             }
             .padding(Space.small)
@@ -38,11 +38,11 @@ struct CustomizeToolbarPanel: View {
             VStack(alignment: .leading, spacing: Space.normal) {
                 HStack(spacing: Space.normal) {
                     Text(store.text("длина адресной строки", "Длина адресной строки")).font(.system(size: 12.5)).foregroundStyle(Palette.text2)
-                    MSlider(value: $store.preferences.toolbar.addressWidth, range: ToolbarLayout.addressRange, label: store.text("длина адресной строки", "Длина адресной строки")).frame(maxWidth: 180)
+                    MSlider(value: $browser.prefs.toolbar.addressWidth, range: ToolbarLayout.addressRange, label: store.text("длина адресной строки", "Длина адресной строки")).frame(maxWidth: 180)
                     Text(String(Int(toolbar.addressWidth.rounded())) + " pt").font(.system(size: 11.5).monospacedDigit()).foregroundStyle(Palette.text3).fixedSize()
                 }
                 HStack(spacing: Space.small) {
-                    Button(store.text("вернуть как было", "Вернуть как было")) { withMotion(Motion.quick) { store.preferences.toolbar = ToolbarLayout() } }
+                    Button(store.text("вернуть как было", "Вернуть как было")) { withMotion(Motion.quick) { browser.prefs.toolbar = ToolbarLayout() } }
                         .buttonStyle(MButtonStyle(kind: .ghost)).disabled(toolbar == ToolbarLayout()).fixedSize()
                     Spacer(minLength: 0)
                     Button(store.text("готово", "Готово")) { browser.customizingToolbar = false }
@@ -79,10 +79,11 @@ private struct PaletteTile: View {
     let item: ToolbarControl
     let zone: ToolbarZone
     @ObservedObject var store: Store
+    @ObservedObject var browser: BrowserModel
     let layout: TabLayout
     @State private var hover = false
     var body: some View {
-        let moves = ToolbarMoves(store: store)
+        let moves = ToolbarMoves(store: store, browser: browser)
         let placed = zone != .hidden
         VStack(spacing: 6) {
             Glyph(name: item.symbol, size: 14)

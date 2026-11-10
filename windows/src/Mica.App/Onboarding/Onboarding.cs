@@ -118,7 +118,7 @@ public sealed partial class OnboardingView : Grid
                     .Add(Pickers.SidebarToggle(s)));
             case 3:
                 return Ui.V(Space.Normal, new Appearance.LayoutPreview(s) { Height = 120 }, SettingsPages.ThemeGroup(s),
-                    new SettingsGroup().Add(new ToggleRow(s.Text("матовое стекло оболочки", "Матовое стекло оболочки"), s.Preferences.Frosted, v => s.Change(p => p.Frosted = v), divider: false)),
+                    new SettingsGroup().Add(new ToggleRow(s.Text("матовое стекло оболочки", "Матовое стекло оболочки"), s.ActivePrefs.Frosted, v => s.Change(p => p.Frosted = v), divider: false)),
                     new SettingsGroup(s.Text("иконка приложения", "Иконка приложения")).Add(new Appearance.IconPicker(s) { Margin = new Thickness(14) }));
             case 4:
                 return Ui.V(Space.Normal, new SettingsGroup()

@@ -15,7 +15,7 @@ struct TopBar: View {
     let leadingInset: CGFloat
     private let gap = Space.small
     var body: some View {
-        let toolbar = store.preferences.toolbar
+        let toolbar = browser.prefs.toolbar
         let items = toolbar.resolved(sidebarAvailable: !layout.horizontal)
         let edge = layout.sidebarEdge
         let editing = browser.customizingToolbar
@@ -93,14 +93,14 @@ struct TopBar: View {
             if !editing {
                 MenuEntry.item(store.text("настроить панель инструментов…", "Настроить панель инструментов…"), symbol: "slider.horizontal.3") { browser.customizingToolbar = true }
                 MenuEntry.divider
-                LayoutMenu.entries(store: store)
+                LayoutMenu.entries(store: store, browser: browser)
             }
         }
         .animation(Motion.quick, value: toolbar)
         .animation(Motion.quick, value: editing)
     }
     private func zone(_ zone: ToolbarZone, _ items: ToolbarLayout.Resolved, alignment: Alignment) -> some View {
-        ToolbarDropZone(zone: zone, items: items.items(in: zone), store: store, layout: layout, alignment: alignment, minWidth: 0)
+        ToolbarDropZone(zone: zone, items: items.items(in: zone), store: store, browser: browser, layout: layout, alignment: alignment, minWidth: 0)
     }
     private func buttons(_ list: [ToolbarControl], _ edge: TabLayout?) -> some View {
         ForEach(list, id: \.self) { ToolbarButton(item: $0, browser: browser, store: store, edge: edge).transition(Motion.pop) }

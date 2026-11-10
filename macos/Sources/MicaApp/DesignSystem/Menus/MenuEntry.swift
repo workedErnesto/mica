@@ -15,9 +15,14 @@ struct MenuEntry: Identifiable {
     var enabled = true
     var checked = false
     var destructive = false
+    /// Profile mark drawn in place of the symbol.
+    var profile: Profile?
     var action: () -> Void = {}
     static func item(_ title: String, symbol: String? = nil, enabled: Bool = true, checked: Bool = false, destructive: Bool = false, action: @escaping () -> Void) -> MenuEntry {
         MenuEntry(title: title, symbol: symbol, enabled: enabled, checked: checked, destructive: destructive, action: action)
+    }
+    static func profile(_ title: String, profile: Profile, checked: Bool = false, action: @escaping () -> Void) -> MenuEntry {
+        MenuEntry(title: title, checked: checked, profile: profile, action: action)
     }
     static var divider: MenuEntry { MenuEntry(kind: .divider) }
     func with(enabled: Bool) -> MenuEntry { var copy = self; copy.enabled = self.enabled && enabled; return copy }

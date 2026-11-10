@@ -6,13 +6,14 @@ import MicaCore
 /// Miniature of the real shell: same tokens and geometry, reacting to layout, collapsed rail, theme, accent and material.
 struct LayoutPreview: View {
     @ObservedObject var store: Store
+    @ObservedObject var browser: BrowserModel
     @Environment(\.colorScheme) private var scheme
     var body: some View {
-        let mode = store.appearanceMode
+        let mode = Store.appearanceMode(browser.prefs)
         let dark = mode == .dark || (mode == .system && scheme == .dark)
-        let look = store.look
-        let layout = store.preferences.layout
-        let collapsed = store.preferences.sidebarCollapsed && !layout.horizontal
+        let look = browser.look
+        let layout = browser.prefs.layout
+        let collapsed = browser.prefs.sidebarCollapsed && !layout.horizontal
         ZStack {
             look.shell
             VStack(spacing: 6) {
@@ -52,7 +53,7 @@ struct LayoutPreview: View {
         .animation(Motion.panel, value: layout)
         .animation(Motion.panel, value: collapsed)
         .animation(Motion.hover, value: dark)
-        .animation(Motion.hover, value: store.preferences.accent)
+        .animation(Motion.hover, value: browser.prefs.accent)
         .accessibilityElement().accessibilityLabel(store.text("предпросмотр оформления и раскладки", "Предпросмотр оформления и раскладки"))
     }
     private var address: some View {

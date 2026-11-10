@@ -27,8 +27,12 @@ final class BrowserModel: NSObject, ObservableObject, WKWebExtensionWindow {
     @Published var showSettings = false
     @Published var showClearData = false
     /// A window-level card (settings, onboarding, clearing data) covers the page; the web view takes no clicks meanwhile.
-    var modal: Bool { showSettings || showOnboarding || showClearData }
+    var modal: Bool { showSettings || showOnboarding || showClearData || profilePrompt != nil }
+    /// Profile chosen in the profile menu while mica still has to ask where to open it.
+    @Published var profilePrompt: UUID?
     @Published var settingsSection: SettingsSection = .space
+    /// Profile open in the profile editor of settings.
+    @Published var editingProfile: UUID?
     @Published var onboardingStep = 0
     @Published var showOnboarding = false
     @Published var message: String?
@@ -41,17 +45,61 @@ final class BrowserModel: NSObject, ObservableObject, WKWebExtensionWindow {
     /// Set once the window is first ordered in; the content card and the start page play their entrance from it.
     @Published var entered = false
     weak var controller: BrowserWindow?
+    /// Profile of this window: its start page, arrangement, theme, colours and greeting. Data is shared by all profiles.
+    @Published private(set) var profileID: UUID
+    var profile: Profile { store.profile(profileID) }
+    /// Preferences in effect in this window. Writing splits them between the profile and the application.
+    var prefs: Preferences {
+        get { store.prefs(for: profileID) }
+        set { store.setPrefs(newValue, for: profileID) }
+    }
+    var look: Look { Look(prefs) }
+    private var profileWatch: AnyCancellable?
     var closed: [SavedTab] = []
     var transientPermissions: [SitePermission] = []
     lazy var downloads = DownloadManager(browser: self)
     var selected: Tab? { tabs.first { $0.id == selectedID } }
-    var snapshot: SavedWindow { SavedWindow(tabs: tabs.map(\.saved), selected: selectedID) }
-    init(store: Store, privateMode: Bool) {
-        self.store = store; self.privateMode = privateMode
+    var snapshot: SavedWindow { SavedWindow(tabs: tabs.map(\.saved), selected: selectedID, profile: profileID) }
+    init(store: Store, privateMode: Bool, profile: UUID = Profile.standardID) {
+        self.store = store; self.privateMode = privateMode; profileID = profile
         dataStore = privateMode ? .nonPersistent() : store.websiteDataStore
         favicons = privateMode ? Favicons(persistent: false) : store.favicons
         super.init()
         showOnboarding = !store.preferences.onboardingComplete && !privateMode
+        // Views that observe only this window redraw when its profile is edited, in this or another window.
+        var last = store.profile(profile)
+        profileWatch = store.$profiles.sink { [weak self] list in
+            guard let self else { return }
+            let current = Profiles.resolve(self.profileID, in: list)
+            guard current != last else { return }
+            last = current
+            self.objectWillChange.send()
+        }
+    }
+    /// The window takes another profile's look. Pinned tabs belong to a profile, so this window's are kept for the old
+    /// profile and the new profile's pinned tabs take their place, loaded when selected.
+    func switchProfile(to id: UUID) {
+        let target = store.profile(id).id
+        guard target != profileID else { return }
+        if !privateMode {
+            rememberPinned()
+            let selectedPinned = selected?.pinned == true
+            for tab in tabs where tab.pinned { close(tab, remember: false) }
+            for pin in store.profile(target).pinned { _ = add(saved: SavedTab(url: pin.url, title: pin.title, pinned: true), activate: false, restored: true) }
+            if !tabs.contains(where: { !$0.pinned }) { _ = add() }
+            else if selectedPinned || selected == nil, let first = tabs.first(where: { !$0.pinned }) ?? tabs.first { select(first) }
+        }
+        profileID = target
+        controller?.applyProfile()
+        store.scheduleSession()
+    }
+    /// Stores this window's pinned tabs as the profile's own.
+    func rememberPinned() {
+        guard !privateMode else { return }
+        let pinned = tabs.filter(\.pinned).map(\.saved).filter { $0.url.map { ["http", "https"].contains($0.scheme?.lowercased() ?? "") } == true }
+        store.updateProfile(profileID) { profile in
+            if profile.pinned.map(\.url) != pinned.map(\.url) || profile.pinned.map(\.title) != pinned.map(\.title) { profile.pinned = pinned }
+        }
     }
     func text(_ low: String, _ regular: String) -> String { store.text(low, regular) }
     @discardableResult func add(saved: SavedTab = SavedTab(), activate: Bool = true, restored: Bool = false, configuration: WKWebViewConfiguration? = nil) -> Tab {
@@ -70,24 +118,32 @@ final class BrowserModel: NSObject, ObservableObject, WKWebExtensionWindow {
         selectedID = tab.id
         tab.ensureLoaded()
         if !privateMode { store.extensions.controller.didActivateTab(tab, previousActiveTab: previous) }
-        controller?.window?.title = "mica" + (privateMode ? " — " + text("инкогнито", "Инкогнито") : "")
+        controller?.window?.title = windowTitle
         store.scheduleSession()
+    }
+    /// The window menu and Mission Control tell windows of different profiles apart by name.
+    var windowTitle: String {
+        var parts = ["mica"]
+        if store.profiles.count > 1 || !profile.isStandard { parts.append(store.profileName(profile)) }
+        if privateMode { parts.append(text("инкогнито", "Инкогнито")) }
+        return parts.joined(separator: " — ")
     }
     func cycle(_ offset: Int) {
         guard !tabs.isEmpty else { return }
         let index = tabs.firstIndex(where: { $0.id == selectedID }) ?? 0
         select(tabs[(index + offset + tabs.count) % tabs.count])
     }
-    func close(_ tab: Tab) {
+    func close(_ tab: Tab, remember: Bool = true) {
         guard let index = tabs.firstIndex(where: { $0.id == tab.id }) else { return }
         // No hidden reloads. Closing explicitly ends the tab, including forms and media.
-        closed.insert(tab.saved, at: 0); closed = Array(closed.prefix(30))
+        if remember { closed.insert(tab.saved, at: 0); closed = Array(closed.prefix(30)) }
         if !privateMode { store.extensions.controller.didCloseTab(tab, windowIsClosing: false) }
         tab.dispose()
         tabs.remove(at: index)
         if selectedID == tab.id {
             if let next = tabs.isEmpty ? nil : tabs[min(index, tabs.count - 1)] { select(next) }
-            else { _ = add() }
+            else if remember { _ = add() }
+            else { selectedID = nil }
         }
         store.scheduleSession()
     }
@@ -114,7 +170,7 @@ final class BrowserModel: NSObject, ObservableObject, WKWebExtensionWindow {
         store.scheduleSession()
     }
     func navigate(_ input: String) {
-        switch AddressParser.resolve(input, engine: store.preferences.search) {
+        switch AddressParser.resolve(input, engine: prefs.search) {
         case .web(let url): selected?.load(url)
         case .external(let url): Task { await external(url) }
         case .rejected: message = text("этот адрес или протокол не поддерживается", "Этот адрес или протокол не поддерживается")

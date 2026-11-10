@@ -12,6 +12,15 @@ struct VisitRow: View {
         Button { browser.selected?.load(visit.url) } label: {
             HStack(spacing: 10) {
                 SiteIcon(url: visit.url, favicons: browser.favicons, size: Chrome.rowIcon, tiled: true)
+                    .overlay(alignment: .bottomTrailing) {
+                        // Where the page was opened, once there is more than one profile. A removed profile leaves no mark.
+                        if panel == .history, store.profiles.count > 1, let owner = store.profiles.first(where: { $0.id == Profiles.owner(of: visit) }) {
+                            ProfileMark(profile: owner, size: 13)
+                                .padding(1.5).background(RoundedRectangle(cornerRadius: 5, style: .continuous).fill(Palette.surface))
+                                .offset(x: 4, y: 4)
+                                .help(store.profileName(owner))
+                        }
+                    }
                 VStack(alignment: .leading, spacing: 1) {
                     Text(visit.title.isEmpty ? visit.url.absoluteString : visit.title).font(.system(size: 12.5)).foregroundStyle(Palette.ink).lineLimit(1)
                     HStack(spacing: 6) {

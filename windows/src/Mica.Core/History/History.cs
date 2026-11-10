@@ -8,8 +8,10 @@ public sealed class Visit
     public string Url { get; set; } = "";
     public string Title { get; set; } = "";
     public DateTimeOffset Date { get; set; } = DateTimeOffset.Now;
+    /// <summary>Profile of the window the page was opened in; null for visits from before profiles (the standard one).</summary>
+    public Guid? Profile { get; set; }
     public Visit() { }
-    public Visit(string url, string title) { Url = url; Title = title; }
+    public Visit(string url, string title, Guid? profile = null) { Url = url; Title = title; Profile = profile; }
     public string? Host => AddressParser.Host(Url);
 }
 

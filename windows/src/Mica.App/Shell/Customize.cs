@@ -23,7 +23,7 @@ public static class ToolbarMoves
     /// <summary>In the top layout sidebar items show after the right-hand ones, so a drop at the end of the right zone joins them.</summary>
     public static void Append(Store store, ToolbarControl item, ToolbarZone zone, TabLayout layout)
     {
-        if (zone == ToolbarZone.Trailing && layout.IsHorizontal() && store.Preferences.Toolbar.Sidebar.Any(i => i != item)) Move(store, item, ToolbarZone.Sidebar);
+        if (zone == ToolbarZone.Trailing && layout.IsHorizontal() && store.ActivePrefs.Toolbar.Sidebar.Any(i => i != item)) Move(store, item, ToolbarZone.Sidebar);
         else Move(store, item, zone);
     }
 
@@ -31,7 +31,7 @@ public static class ToolbarMoves
 
     public static IEnumerable<MenuEntry> Menu(Store store, ToolbarControl item, TabLayout layout)
     {
-        var current = store.Preferences.Toolbar.ZoneOf(item);
+        var current = store.ActivePrefs.Toolbar.ZoneOf(item);
         foreach (var zone in Placements)
             yield return MenuEntry.Item(zone.Title(store), () => Move(store, item, zone), @checked: current == zone, enabled: current != zone && !(zone == ToolbarZone.Sidebar && layout.IsHorizontal()));
         yield return MenuEntry.Separator;
@@ -94,7 +94,7 @@ public sealed partial class ToolbarEditTile : Grid
         Drop += async (_, e) =>
         {
             caret.Opacity = 0; e.Handled = true;
-            if (await ToolbarMoves.Dropped(e) is { } dragged && dragged != item) ToolbarMoves.Move(store, dragged, store.Preferences.Toolbar.ZoneOf(item), item);
+            if (await ToolbarMoves.Dropped(e) is { } dragged && dragged != item) ToolbarMoves.Move(store, dragged, browser.Prefs.Toolbar.ZoneOf(item), item);
         };
         this.ContextMenu(() => ToolbarMoves.Menu(store, item, layout));
         this.Tip(item.Title(store));
@@ -107,7 +107,7 @@ public sealed partial class CustomizeToolbarPanel : Grid
     public CustomizeToolbarPanel(BrowserModel browser)
     {
         var store = browser.Store;
-        var layout = store.Preferences.Layout;
+        var layout = browser.Prefs.Layout;
         MaxWidth = 820;
         var content = new StackPanel { Spacing = Space.Section, Padding = new Thickness(Space.Section) };
         content.Children.Add(Ui.V(4,
@@ -119,8 +119,8 @@ public sealed partial class CustomizeToolbarPanel : Grid
         var tray = Ui.Rounded(Radius.Panel - 4, new SolidColorBrush(Palette.WithAlpha(Palette.Track.Resolve(), Palette.Track.Resolve().A / 255.0 * 0.5)), null, 0, tiles);
         tray.Padding = new Thickness(Space.Small);
         content.Children.Add(tray);
-        var slider = new MSlider(store.Preferences.Toolbar.AddressWidth, ToolbarLayout.AddressMin, ToolbarLayout.AddressMax, store.Text("длина адресной строки", "Длина адресной строки")) { Width = 180 };
-        var value = Ui.Text(Math.Round(store.Preferences.Toolbar.AddressWidth) + " px", 11.5, Palette.Text3.Brush());
+        var slider = new MSlider(browser.Prefs.Toolbar.AddressWidth, ToolbarLayout.AddressMin, ToolbarLayout.AddressMax, store.Text("длина адресной строки", "Длина адресной строки")) { Width = 180 };
+        var value = Ui.Text(Math.Round(browser.Prefs.Toolbar.AddressWidth) + " px", 11.5, Palette.Text3.Brush());
         slider.Changed += v => { value.Text = Math.Round(v) + " px"; store.Change(p => p.Toolbar.AddressWidth = v); };
         content.Children.Add(Ui.H(Space.Normal, Ui.Text(store.Text("длина адресной строки", "Длина адресной строки"), 12.5, Palette.Text2.Brush()), slider, value));
         var reset = new MButton(store.Text("вернуть как было", "Вернуть как было"), ButtonKind.Ghost);
@@ -136,8 +136,8 @@ public sealed partial class CustomizeToolbarPanel : Grid
         void Render()
         {
             tiles.Children.Clear();
-            foreach (var item in ToolbarLayout.AllControls) tiles.Children.Add(new PaletteTile(item, store.Preferences.Toolbar.ZoneOf(item), browser, layout));
-            reset.IsEnabled = !Same(store.Preferences.Toolbar, new ToolbarLayout().Sanitized());
+            foreach (var item in ToolbarLayout.AllControls) tiles.Children.Add(new PaletteTile(item, browser.Prefs.Toolbar.ZoneOf(item), browser, layout));
+            reset.IsEnabled = !Same(browser.Prefs.Toolbar, new ToolbarLayout().Sanitized());
         }
         this.Bind(h => store.PreferencesUpdated += h, h => store.PreferencesUpdated -= h, Render);
         AllowDrop = true;

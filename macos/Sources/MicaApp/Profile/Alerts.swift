@@ -9,6 +9,8 @@ import MicaCore
 func ask(title: String, detail: String, buttons: [String], window: NSWindow? = nil) async -> Int {
     let window = window ?? NSApp.keyWindow
     let alert = NSAlert(); alert.messageText = title
+    // NSAlert draws the bundle icon; the icon chosen in settings is the one in the Dock.
+    alert.icon = NSApp.applicationIconImage
     if detail.count > 1600 {
         let scroll = NSScrollView(frame: NSRect(x: 0, y: 0, width: 440, height: 240))
         scroll.hasVerticalScroller = true; scroll.drawsBackground = false

@@ -1,0 +1,15 @@
+{
+  "$comment": "Profile icon pack and background presets of both platforms. Icons are SF Symbol names; each one needs a Segoe Fluent pair in glyphs.json (scripts/check-parity.py). scripts/generate.py writes MicaCore/Preferences/ProfileCatalog.swift and Mica.Core/Preferences/ProfileCatalog.g.cs.",
+  "standard": { "icon": "person", "background": "#8D7B6A" },
+  "icons": [
+    "person", "house", "briefcase", "book", "graduationcap", "chevron.left.forwardslash.chevron.right",
+    "wrench.and.screwdriver", "paintpalette", "camera", "film", "music.note", "headphones",
+    "gamecontroller", "cup.and.saucer", "cart", "airplane", "car", "globe",
+    "mappin", "heart", "star", "bolt", "lightbulb", "moon",
+    "flag", "cloud"
+  ],
+  "backgrounds": [
+    "#E5484D", "#F76B15", "#E8A33D", "#3FA34D", "#1F9D8B", "#0EA5E9",
+    "#3E7BFA", "#6E56CF", "#D6409F", "#C9B79C", "#8D7B6A", "#3A3A3F"
+  ]
+}

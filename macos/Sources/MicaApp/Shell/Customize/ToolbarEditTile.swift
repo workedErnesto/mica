@@ -7,12 +7,13 @@ import MicaCore
 struct ToolbarEditTile: View {
     let item: ToolbarControl
     @ObservedObject var store: Store
+    @ObservedObject var browser: BrowserModel
     let layout: TabLayout
     @State private var targeted = false
     @State private var hover = false
     @Environment(\.look) private var look
     var body: some View {
-        let moves = ToolbarMoves(store: store)
+        let moves = ToolbarMoves(store: store, browser: browser)
         Glyph(name: item == .sidebar && layout == .right ? "sidebar.right" : item.symbol, size: 13.5)
             .foregroundStyle(Palette.ink)
             .frame(width: 28, height: 28)
@@ -26,7 +27,7 @@ struct ToolbarEditTile: View {
             .overlay { TitlebarDragSource(payload: ToolbarDrag.payload(item)) { moves.menu(item, layout: layout) } }
             .dropDestination(for: String.self) { payloads, _ in
                 guard let dragged = payloads.first.flatMap(ToolbarDrag.item), dragged != item else { return false }
-                moves.move(dragged, to: store.preferences.toolbar.zone(of: item), before: item)
+                moves.move(dragged, to: browser.prefs.toolbar.zone(of: item), before: item)
                 return true
             } isTargeted: { targeted = $0 }
             .animation(Motion.hover, value: targeted)

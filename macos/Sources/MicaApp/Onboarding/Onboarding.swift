@@ -30,7 +30,7 @@ struct Onboarding: View {
                 }
                 .padding(Space.normal)
                 .frame(width: compact ? 60 : 228)
-                .background(store.look.shell)
+                .background(browser.look.shell)
                 Rectangle().fill(Palette.hairline).frame(width: 1)
                 VStack(alignment: .leading, spacing: 0) {
                     VStack(alignment: .leading, spacing: 6) {
@@ -60,7 +60,7 @@ struct Onboarding: View {
                 .background(Palette.canvas)
             }
         }
-        .environment(\.look, store.look)
+        .environment(\.look, browser.look)
         .animation(Motion.panel, value: step)
     }
     private func stepName(_ index: Int) -> String {
@@ -118,12 +118,12 @@ struct Onboarding: View {
         case 0:
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.normal) {
-                    GreetingPreview(store: store)
+                    GreetingPreview(store: store, browser: browser)
                     DefaultBrowserSetting(store: store)
                     SettingsGroup {
                         SettingRow(title: store.text("язык", "Язык")) { LanguagePicker(store: store, width: 300) }
                         SettingRow(title: store.text("текст интерфейса", "Текст интерфейса")) { CasePicker(store: store, width: 300) }
-                        NameSettingRows(store: store)
+                        NameSettingRows(store: store, browser: browser)
                     }
                 }
             }.scrollIndicators(.never)
@@ -131,19 +131,19 @@ struct Onboarding: View {
             ScrollView { ImportView(store: store, manager: store.importer).frame(maxWidth: .infinity, alignment: .leading) }.scrollIndicators(.never)
         case 2:
             VStack(alignment: .leading, spacing: Space.normal) {
-                LayoutPreview(store: store).frame(height: 150)
+                LayoutPreview(store: store, browser: browser).frame(height: 150)
                 SettingsGroup {
-                    SettingRow(title: store.text("вкладки", "Вкладки")) { LayoutPicker(store: store, width: 300) }
-                    Toggle(store.text("свернуть боковую панель до иконок", "Свернуть боковую панель до иконок"), isOn: Binding(get: { store.preferences.sidebarCollapsed }, set: { value in withMotion(Motion.panel) { store.preferences.sidebarCollapsed = value } })).toggleStyle(MToggleStyle()).modifier(RowInset(divider: false)).disabled(store.preferences.layout.horizontal)
+                    SettingRow(title: store.text("вкладки", "Вкладки")) { LayoutPicker(store: store, browser: browser, width: 300) }
+                    Toggle(store.text("свернуть боковую панель до иконок", "Свернуть боковую панель до иконок"), isOn: Binding(get: { browser.prefs.sidebarCollapsed }, set: { value in withMotion(Motion.panel) { browser.prefs.sidebarCollapsed = value } })).toggleStyle(MToggleStyle()).modifier(RowInset(divider: false)).disabled(browser.prefs.layout.horizontal)
                 }
             }
         case 3:
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.normal) {
-                    LayoutPreview(store: store).frame(height: 120)
-                    ThemeGroup(store: store)
+                    LayoutPreview(store: store, browser: browser).frame(height: 120)
+                    ThemeGroup(store: store, browser: browser)
                     SettingsGroup {
-                        Toggle(store.text("матовое стекло оболочки", "Матовое стекло оболочки"), isOn: $store.preferences.frosted).toggleStyle(MToggleStyle()).modifier(RowInset(divider: false))
+                        Toggle(store.text("матовое стекло оболочки", "Матовое стекло оболочки"), isOn: $browser.prefs.frosted).toggleStyle(MToggleStyle()).modifier(RowInset(divider: false))
                     }
                     SettingsGroup(title: store.text("иконка приложения", "Иконка приложения")) { IconPicker(store: store).padding(14) }
                 }

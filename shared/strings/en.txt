@@ -615,3 +615,51 @@ mica не может показать файл из этой папки: macOS �
 Раньше⟩earlier⟩Earlier
 Убрать из списка⟩remove from list⟩Remove from list
 из⟩of⟩of
+Взять цвет с экрана⟩pick a colour from the screen⟩Pick a colour from the screen
+Все⟩all⟩All
+Его окна перейдут в обычный профиль, закреплённые вкладки профиля закроются. Пароли, история и закладки останутся.⟩its windows will switch to the standard profile and the profile’s pinned tabs will close. passwords, history and bookmarks stay.⟩Its windows will switch to the standard profile and the profile’s pinned tabs will close. Passwords, history and bookmarks stay.
+Иконка⟩icon⟩Icon
+Иконка ⟩icon ⟩Icon\u{20}
+Название⟩name⟩Name
+Название профиля⟩profile name⟩Profile name
+Настроить профили…⟩manage profiles…⟩Manage profiles…
+Настройки профиля ⟩settings of profile ⟩Settings of profile\u{20}
+Не открыт⟩not open⟩Not open
+Новый профиль⟩new profile⟩New profile
+Новый профиль…⟩new profile…⟩New profile…
+Основной, его нельзя удалить⟩main profile, cannot be deleted⟩Main profile, cannot be deleted
+Открыт в другом окне⟩open in another window⟩Open in another window
+Оттенок⟩hue⟩Hue
+Пароли, cookie, история, закладки, загрузки и расширения общие для всех профилей. Профиль меняет начальную страницу, расположение вкладок и кнопок, тему, цвета, обращение и закреплённые вкладки. В истории видно, в каком профиле открыта страница.⟩passwords, cookies, history, bookmarks, downloads and extensions are shared by all profiles. a profile changes the start page, the layout of tabs and buttons, theme, colours, greeting and pinned tabs. history shows which profile a page was opened in.⟩Passwords, cookies, history, bookmarks, downloads and extensions are shared by all profiles. A profile changes the start page, the layout of tabs and buttons, theme, colours, greeting and pinned tabs. History shows which profile a page was opened in.
+Переключить это окно⟩switch this window⟩Switch this window
+Профили⟩profiles⟩Profiles
+Профиль⟩profile⟩Profile
+Профиль ⟩profile ⟩Profile\u{20}
+Профиль: ⟩profile: ⟩Profile:\u{20}
+Раскладка, оформление и начальная страница этого окна сохраняются в этот профиль.⟩layout, appearance and the start page of this window are saved to this profile.⟩Layout, appearance and the start page of this window are saved to this profile.
+Раскладку, оформление и начальную страницу профиля настраивают в его окне.⟩a profile’s layout, appearance and start page are set in its own window.⟩A profile’s layout, appearance and start page are set in its own window.
+Удалить профиль ⟩delete profile ⟩Delete profile\u{20}
+Удалить профиль…⟩delete profile…⟩Delete profile…
+Фон⟩background⟩Background
+Это окно⟩this window⟩This window
+Яркость⟩brightness⟩Brightness
+Обычный⟩default⟩Default
+Авто⟩auto⟩Auto
+Авто берёт читаемый на фоне⟩auto picks the readable one⟩Auto picks the readable one
+Белый⟩white⟩White
+Вид этого окна⟩this window’s look⟩This window’s look
+Значок⟩mark⟩Mark
+Основной⟩main⟩Main
+Цвет значка⟩mark colour⟩Mark colour
+Чёрный⟩black⟩Black
+Открыть профиль ⟩open profile ⟩Open profile\u{20}
+В этом окне закреплённые вкладки сменятся закреплёнными вкладками профиля, остальные вкладки останутся. В новом окне это окно не изменится.⟩in this window, pinned tabs are replaced with the profile’s pinned tabs and other tabs stay. a new window leaves this one as it is.⟩In this window, pinned tabs are replaced with the profile’s pinned tabs and other tabs stay. A new window leaves this one as it is.
+В новом окне⟩in new window⟩In new window
+В этом окне⟩in this window⟩In this window
+Запомнить выбор⟩remember my choice⟩Remember my choice
+В этом окне закреплённые вкладки сменятся закреплёнными вкладками профиля. В новом окне откроется окно профиля или выйдет вперёд уже открытое. В Доке и строке меню профиль всегда открывается своим окном.⟩in this window, pinned tabs are replaced with the profile’s. in new window opens the profile’s window or brings an open one forward. the Dock and the menu bar always open a profile in its own window.⟩In this window, pinned tabs are replaced with the profile’s. In new window opens the profile’s window or brings an open one forward. The Dock and the menu bar always open a profile in its own window.
+Профиль из меню открывать⟩open profiles from the menu⟩Open profiles from the menu
+В этом окне закреплённые вкладки сменятся закреплёнными вкладками профиля. В новом окне откроется окно профиля или выйдет вперёд уже открытое. В списке переходов панели задач и меню «…» профиль всегда открывается своим окном.⟩in this window, pinned tabs are replaced with the profile’s. in new window opens the profile’s window or brings an open one forward. the taskbar jump list and the “…” menu always open a profile in its own window.⟩In this window, pinned tabs are replaced with the profile’s. In new window opens the profile’s window or brings an open one forward. The taskbar jump list and the “…” menu always open a profile in its own window.
+Ответ можно поменять в настройках, в разделе «профили».⟩you can change the answer in settings, profiles.⟩You can change the answer in Settings, Profiles.
+Браузер на системном WebKit: вкладки не перезагружаются, когда вы к ним возвращаетесь.⟩a browser on the system WebKit: tabs do not reload when you come back to them.⟩A browser on the system WebKit: tabs do not reload when you come back to them.
+Профили, блокировка трекеров, зашифрованные пароли и расширения Chrome Web Store и Firefox Add-ons. Собственной телеметрии нет.⟩profiles, tracker blocking, encrypted passwords, and extensions from the Chrome Web Store and Firefox Add-ons. no telemetry of its own.⟩Profiles, tracker blocking, encrypted passwords, and extensions from the Chrome Web Store and Firefox Add-ons. No telemetry of its own.

@@ -39,6 +39,9 @@ for path in (root / 'macos/Sources/MicaApp').rglob('*.swift'):
         if name not in glyphs and name != 'mica.incognito':
             problems.append(f'SF Symbol {name!r} has no Windows glyph in shared/glyphs.json ({path.relative_to(root)})')
 
+for name in json.loads((root / 'shared/profiles.json').read_text())['icons']:
+    if name not in glyphs: problems.append(f'profile icon {name!r} has no Windows glyph in shared/glyphs.json')
+
 version = (root / 'shared/version.txt').read_text().strip()
 plist = (root / 'macos/Resources/App/Info.plist').read_text()
 found = re.search(r'<key>CFBundleShortVersionString</key>\s*<string>([^<]+)</string>', plist)

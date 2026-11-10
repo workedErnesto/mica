@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let store = Store.shared
     private let launchStart = ProcessInfo.processInfo.systemUptime
     private var observer: AnyCancellable?
+    private var profileObserver: AnyCancellable?
     private var selfTest: SmokeTest?
     /// Links and files that arrive before `store.start()` restores the session wait here, so a cold launch from a link
     /// neither opens a window that the restored session buries nor duplicates one.
@@ -19,6 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         buildMenu()
         QuitHold.shared.install()
         observer = store.$preferences.map { "\($0.lowercase)-\($0.language.rawValue)" }.removeDuplicates().sink { [weak self] _ in DispatchQueue.main.async { self?.buildMenu() } }
+        profileObserver = store.$profiles.map { $0.map { "\($0.id)\($0.name)\($0.icon)\($0.background)" } }.removeDuplicates().sink { [weak self] _ in DispatchQueue.main.async { self?.buildMenu() } }
         Task {
             await store.start()
             started = true
@@ -32,6 +34,52 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if ProcessInfo.processInfo.arguments.contains("--ui-tour") && ProcessInfo.processInfo.arguments.contains("--qa") { await UITour.run(store: store) }
             if ProcessInfo.processInfo.arguments.contains("--smoke-test") && ProcessInfo.processInfo.arguments.contains("--qa") { let test = SmokeTest(store: store); selfTest = test; await test.run() }
         }
+    }
+    /// Right click on the Dock icon: every profile. Choosing one brings its window forward or opens one.
+    func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
+        let menu = NSMenu()
+        for item in profileItems() { menu.addItem(item) }
+        return menu
+    }
+    /// One item per profile with its mark; a check shows profiles that have an open window.
+    fileprivate func profileItems() -> [NSMenuItem] {
+        store.profiles.map { profile in
+            let item = NSMenuItem(title: store.profileName(profile), action: #selector(openProfile(_:)), keyEquivalent: "")
+            item.target = self; item.representedObject = profile.id
+            item.image = Self.mark(profile)
+            item.state = store.windows.contains { $0.model.profileID == profile.id && !$0.model.privateMode } ? .on : .off
+            return item
+        }
+    }
+    /// The standard about panel with what mica is, the icon chosen in the Dock and the marketing version alone: the
+    /// build number (always 1 for local builds) used to show up as "(1)" next to it.
+    @objc func showAbout(_ sender: Any?) {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        let body = NSMutableParagraphStyle(); body.alignment = .center; body.paragraphSpacing = 6
+        let text = NSMutableAttributedString()
+        func line(_ string: String, _ size: CGFloat = 11, color: NSColor = .secondaryLabelColor, link: URL? = nil) {
+            var attributes: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: size), .foregroundColor: color, .paragraphStyle: body]
+            if let link { attributes[.link] = link }
+            text.append(NSAttributedString(string: string + "\n", attributes: attributes))
+        }
+        line(store.text("браузер на системном WebKit: вкладки не перезагружаются, когда вы к ним возвращаетесь.", "Браузер на системном WebKit: вкладки не перезагружаются, когда вы к ним возвращаетесь."), color: .labelColor)
+        line(store.text("профили, блокировка трекеров, зашифрованные пароли и расширения Chrome Web Store и Firefox Add-ons. собственной телеметрии нет.", "Профили, блокировка трекеров, зашифрованные пароли и расширения Chrome Web Store и Firefox Add-ons. Собственной телеметрии нет."))
+        line("github.com/workedErnesto/mica", link: URL(string: "https://github.com/workedErnesto/mica"))
+        line(store.text("develop whoa with ❤️", "Develop whoa with ❤️"), color: .tertiaryLabelColor)
+        if text.length > 0 { text.deleteCharacters(in: NSRange(location: text.length - 1, length: 1)) }
+        var options: [NSApplication.AboutPanelOptionKey: Any] = [.applicationName: "mica", .applicationVersion: version, .version: "", .credits: text]
+        if let icon = NSApp.applicationIconImage { options[.applicationIcon] = icon }
+        NSApp.orderFrontStandardAboutPanel(options: options)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+    @objc func openProfile(_ sender: NSMenuItem) {
+        guard let id = sender.representedObject as? UUID else { return }
+        store.openProfile(id)
+    }
+    private static func mark(_ profile: Profile) -> NSImage? {
+        let renderer = ImageRenderer(content: ProfileMark(profile: profile, size: 16))
+        renderer.scale = NSScreen.main?.backingScaleFactor ?? 2
+        return renderer.nsImage
     }
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool { if !flag { _ = store.newWindow() }; return true }
     /// Web links from other apps, and local HTML, XHTML or PDF files from Finder, another app or a drop on the Dock icon.
@@ -85,7 +133,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case "forward": browser?.selected?.webView?.goForward()
         case "find": browser?.showFind.toggle()
         case "findNext", "findPrevious": browser?.stepFind(backwards: sender.representedObject as? String == "findPrevious")
-        case "sidebar": withMotion(Motion.panel) { store.preferences.sidebarCollapsed.toggle() }
+        case "sidebar": if let browser { withMotion(Motion.panel) { browser.prefs.sidebarCollapsed.toggle() } }
         case "bookmark": if let tab = browser?.selected { store.bookmark(tab) }
         case "history": browser?.panel = browser?.panel == .history ? nil : .history
         case "clearData": browser?.showClearData = true
@@ -102,6 +150,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if let command = sender.representedObject as? String, let index = Int(command), let browser, !browser.tabs.isEmpty { browser.select(browser.tabs[min(index, browser.tabs.count - 1)]) }
         }
     }
+    private lazy var profileMenuDelegate = ProfileMenuDelegate(owner: self)
+    /// The profiles menu rebuilds when it opens, so the checks follow windows opened and closed since.
+    final class ProfileMenuDelegate: NSObject, NSMenuDelegate {
+        weak var owner: AppDelegate?
+        init(owner: AppDelegate) { self.owner = owner }
+        func menuNeedsUpdate(_ menu: NSMenu) {
+            MainActor.assumeIsolated {
+                guard let owner else { return }
+                menu.removeAllItems()
+                for item in owner.profileItems() { menu.addItem(item) }
+            }
+        }
+    }
     func buildMenu() {
         let main = NSMenu()
         func menu(_ title: String) -> NSMenu { let item = NSMenuItem(); item.title = title; let menu = NSMenu(title: title); item.submenu = menu; main.addItem(item); return menu }
@@ -114,7 +175,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             item.keyEquivalentModifierMask = modifiers; item.isHidden = true; item.allowsKeyEquivalentWhenHidden = true; menu.addItem(item)
         }
         let app = menu("mica")
-        app.addItem(withTitle: store.text("о mica", "О mica"), action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        let about = NSMenuItem(title: store.text("о mica", "О mica"), action: #selector(showAbout(_:)), keyEquivalent: ""); about.target = self; app.addItem(about)
         item(app, "настройки…", "Настройки…", ",", "settings")
         app.addItem(.separator())
         let services = NSMenu(); let serviceItem = NSMenuItem(title: store.text("службы", "Службы"), action: nil, keyEquivalent: ""); serviceItem.submenu = services; app.addItem(serviceItem); NSApp.servicesMenu = services
@@ -144,6 +205,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         alternate(go, String(Character(UnicodeScalar(NSRightArrowFunctionKey)!)), "next", [.command, .option]); alternate(go, String(Character(UnicodeScalar(NSLeftArrowFunctionKey)!)), "previous", [.command, .option])
         for index in 1...9 { let title = store.text("вкладка ", "Вкладка ") + String(index); item(go, title, title, String(index), String(index == 9 ? 999 : index - 1)) }
         let library = menu(store.text("библиотека", "Библиотека")); item(library, "закладка для страницы", "Закладка для страницы", "d", "bookmark"); item(library, "история", "История", "y", "history"); item(library, "очистить историю…", "Очистить историю…", "\u{8}", "clearData", [.command, .shift]); item(library, "загрузки", "Загрузки", "j", "downloads", [.command, .shift]); item(library, "расширения", "Расширения", "e", "extensions", [.command, .shift])
+        let profiles = menu(store.text("профили", "Профили"))
+        profiles.delegate = profileMenuDelegate
+        for entry in profileItems() { profiles.addItem(entry) }
         let windows = menu(store.text("окно", "Окно")); NSApp.windowsMenu = windows; windows.addItem(withTitle: store.text("свернуть", "Свернуть"), action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
         NSApp.mainMenu = main
     }
