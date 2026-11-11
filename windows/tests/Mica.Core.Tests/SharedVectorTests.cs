@@ -64,6 +64,10 @@ public class SharedVectorTests
                 bool O(string key) => c[key]?.GetValue<bool>() ?? false;
                 var style = new AddressStyle { Full = O("full"), DimSubdomain = O("dimSubdomain"), DimPath = O("dimPath") };
                 return new JsonArray([.. AddressDisplay.Parts(S("url"), style).Select(p => (JsonNode)JsonValue.Create((p.Dim ? "~" : "") + p.Text))]);
+            case "faviconTone":
+                // "ink" when the glyph is redrawn in the shell's ink, "keep" when its own colour reads, "image" for icons that are not a glyph.
+                var pixels = S("pixels").Split(' ').SelectMany(t => { var v = Convert.ToUInt32(t, 16); return new[] { (byte)(v >> 24), (byte)(v >> 16), (byte)(v >> 8), (byte)v }; }).ToArray();
+                return FaviconTone.Glyph(pixels) is { } glyph ? (FaviconTone.NeedsInk(glyph, HexColor.Luminance(S("background"))!.Value) ? "ink" : "keep") : "image";
             case "profileGlyph": return Profiles.LightGlyph(S("hex"), c["glyph"]?.GetValue<string>() switch { "light" => ProfileGlyph.Light, "dark" => ProfileGlyph.Dark, _ => ProfileGlyph.Auto }) ? "light" : "dark";
             default: throw new InvalidOperationException(section);
         }

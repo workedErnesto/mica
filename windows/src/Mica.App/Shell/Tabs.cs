@@ -19,12 +19,14 @@ public sealed partial class TabIcon : Grid
         this.tab = tab; this.size = size; this.plain = plain; Width = size; Height = size;
         this.Bind(tab, Render);
         if (tab.Owner?.Favicons is { } favicons) this.Bind(h => favicons.Changed += h, h => favicons.Changed -= h, Render);
+        this.Bind(h => Palette.Changed += h, h => Palette.Changed -= h, Render);
     }
     /// <summary>Monogram colour for rail tiles, which brighten it on hover and selection like the plus glyph.</summary>
     public void SetTint(Brush value) { if (ReferenceEquals(tint, value)) return; tint = value; state = ""; Render(); }
     void Render()
     {
         var favicon = tab.Phase == TabPhase.Terminated || tab.Loading ? null : tab.Favicon;
+        if (favicon is not null && tab.Owner?.Favicons is { } store) favicon = SiteIcon.Adapted(store, favicon);
         var host = AddressParser.Host(tab.Url);
         var next = tab.Phase == TabPhase.Terminated ? "error" : tab.Loading ? "loading" : (favicon is null ? "mono:" : "icon:") + host + tab.Phase;
         if (next == state && ReferenceEquals(favicon, image)) { if (shown is Mica.Design.ProgressRing ring) ring.SetProgress(tab.Progress); return; }
@@ -503,10 +505,18 @@ public sealed partial class SiteIcon : Grid
         Width = size; Height = size; IsHitTestVisible = false;
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetAccessibilityView(this, Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw);
         this.Bind(h => favicons.Changed += h, h => favicons.Changed -= h, Render);
+        this.Bind(h => Palette.Changed += h, h => Palette.Changed -= h, Render);
+    }
+    /// <summary>A neutral one-colour glyph that would vanish on the surface (GitHub's white mark in the light theme) is
+    /// drawn in ink instead; contrast is measured against the surface of the current appearance.</summary>
+    public static ImageSource Adapted(Favicons favicons, ImageSource image)
+    {
+        var surface = Palette.Surface.Resolve();
+        return favicons.Adapted(image, FaviconTone.Luminance(surface.R, surface.G, surface.B), Palette.Ink.Resolve());
     }
     void Render()
     {
-        var image = favicons.Image(url);
+        var image = favicons.Image(url) is { } stored ? Adapted(favicons, stored) : null;
         if (rendered && ReferenceEquals(image, shown)) return;
         var arrived = rendered && shown is null && image is not null;
         rendered = true; shown = image;

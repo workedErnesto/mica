@@ -1,4 +1,5 @@
 import AppKit
+import MicaCore
 import SwiftUI
 import WebKit
 
@@ -29,6 +30,8 @@ final class Favicons: ObservableObject {
     }()
     static let pixels = 64
     static let byteLimit = 1_000_000
+    private let glyphs = NSCache<NSImage, Glyph>()
+    private final class Glyph { let luminance: Double?; init(_ luminance: Double?) { self.luminance = luminance } }
 
     init(persistent: Bool) {
         self.persistent = persistent
@@ -98,6 +101,36 @@ final class Favicons: ObservableObject {
     }
 
     static let darkSuffix = "~dark"
+
+    /// Luminance of a neutral one-colour glyph on transparency (FaviconTone), measured once per image; nil for icons
+    /// with colours, several tones or their own backdrop.
+    func glyph(_ image: NSImage) -> Double? {
+        if let known = glyphs.object(forKey: image) { return known.luminance }
+        let luminance = Self.measure(image)
+        glyphs.setObject(Glyph(luminance), forKey: image)
+        return luminance
+    }
+
+    /// Reads the icon at the stored 64 px as straight-alpha sRGB, the form FaviconTone expects.
+    static func measure(_ image: NSImage) -> Double? {
+        guard let cg = image.cgImage(forProposedRect: nil, context: nil, hints: nil), let space = CGColorSpace(name: CGColorSpace.sRGB) else { return nil }
+        let side = pixels
+        var data = [UInt8](repeating: 0, count: side * side * 4)
+        let drawn = data.withUnsafeMutableBytes { buffer -> Bool in
+            guard let context = CGContext(data: buffer.baseAddress, width: side, height: side, bitsPerComponent: 8, bytesPerRow: side * 4,
+                                          space: space, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return false }
+            context.interpolationQuality = .high
+            context.draw(cg, in: CGRect(x: 0, y: 0, width: side, height: side))
+            return true
+        }
+        guard drawn else { return nil }
+        for index in stride(from: 0, to: data.count, by: 4) {
+            let alpha = Int(data[index + 3])
+            guard alpha > 0, alpha < 255 else { continue }
+            for channel in 0..<3 { data[index + channel] = UInt8(min(255, (Int(data[index + channel]) * 255 + alpha / 2) / alpha)) }
+        }
+        return FaviconTone.glyph(rgba: data)
+    }
 
     private func store(_ normalized: (image: NSImage, png: Data), as key: String) {
         icons[key] = normalized.image
@@ -263,7 +296,8 @@ final class Favicons: ObservableObject {
 }
 
 /// A site's favicon, slightly rounded, or its monogram until an icon is known. `icon`, when given, is the icon the
-/// page itself declared on its latest load and wins over the stored icon of its origin.
+/// page itself declared on its latest load and wins over the stored icon of its origin. A neutral one-colour glyph
+/// that would vanish on the surface (GitHub's white mark in the light theme) is drawn in ink instead.
 struct SiteIcon: View {
     let url: URL?
     var icon: NSImage? = nil
@@ -275,6 +309,7 @@ struct SiteIcon: View {
     /// List rows: the icon sits on the same plate as the monogram and the download kinds, at 60 % of the tile.
     var tiled = false
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.self) private var environment
     var body: some View {
         // A dark variant comes from the same load as `icon`, so it wins while mica is dark.
         let image = (scheme == .dark ? favicons.image(for: url, dark: true) : nil) ?? icon ?? favicons.image(for: url)
@@ -283,7 +318,8 @@ struct SiteIcon: View {
             if let image {
                 ZStack {
                     if tiled { RoundedRectangle(cornerRadius: size * 0.3, style: .continuous).fill(Palette.track) }
-                    Image(nsImage: image).resizable().interpolation(.high).aspectRatio(contentMode: .fit)
+                    Image(nsImage: image).renderingMode(inked(image) ? .template : .original).resizable().interpolation(.high).aspectRatio(contentMode: .fit)
+                        .foregroundStyle(Palette.ink)
                         .clipShape(RoundedRectangle(cornerRadius: side * 0.2, style: .continuous))
                         .frame(width: side, height: side)
                 }
@@ -295,5 +331,13 @@ struct SiteIcon: View {
         .frame(width: size, height: size)
         .animation(Motion.hover, value: image.map(ObjectIdentifier.init))
         .accessibilityHidden(true)
+    }
+
+    /// Contrast is measured against the surface of the current appearance, Increase Contrast included.
+    private func inked(_ image: NSImage) -> Bool {
+        guard let glyph = favicons.glyph(image) else { return false }
+        let surface = Palette.surface.resolve(in: environment)
+        let background = 0.2126 * Double(surface.linearRed) + 0.7152 * Double(surface.linearGreen) + 0.0722 * Double(surface.linearBlue)
+        return FaviconTone.needsInk(glyph: glyph, background: background)
     }
 }
