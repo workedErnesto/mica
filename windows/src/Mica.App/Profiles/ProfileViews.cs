@@ -43,13 +43,22 @@ public static class ProfileMenu
         foreach (var profile in store.Profiles.ToList())
         {
             var p = profile;
-            yield return new MenuEntry(store.ProfileName(p), () => _ = Open(p.Id, browser), Checked: p.Id == browser.ProfileId, Leading: () => new ProfileMark(p, 16));
+            yield return new MenuEntry(browser.ProfileName(p), () => _ = Open(p.Id, browser), Checked: p.Id == browser.ProfileId, Leading: () => new ProfileMark(p, 16)) { Secondary = Choices(p.Id, browser) };
         }
         yield return MenuEntry.Separator;
         if (store.Profiles.Count < Core.Profiles.Limit)
             yield return MenuEntry.Item(browser.Text("новый профиль…", "Новый профиль…"), () => Edit(browser, store.AddProfile(browser.ProfileId).Id), "plus");
         yield return MenuEntry.Item(browser.Text("настроить профили…", "Настроить профили…"), () => Edit(browser, browser.ProfileId), "gearshape");
     }
+
+    /// <summary>Right click choices of a profile row: where to open it, regardless of the remembered answer.</summary>
+    public static List<MenuEntry> Choices(Guid id, BrowserModel browser) =>
+    [
+        MenuEntry.Item(browser.Text("открыть в новом окне", "Открыть в новом окне"), () => browser.Store.OpenProfile(id, newWindow: true), "macwindow.badge.plus"),
+        MenuEntry.Item(browser.Text("открыть в этом окне", "Открыть в этом окне"), () => browser.SwitchProfile(id), "macwindow", enabled: id != browser.ProfileId),
+        MenuEntry.Separator,
+        MenuEntry.Item(browser.Text("настроить…", "Настроить…"), () => Edit(browser, id), "gearshape"),
+    ];
 
     /// <summary>The "…" menu lists every profile, as the macOS menu bar and Dock do: a window of it comes forward or opens.</summary>
     public static IEnumerable<MenuEntry> OpenEntries(Store store) =>
@@ -120,10 +129,10 @@ public static class ProfileScope
             var row = new Grid { ColumnSpacing = Space.Small, Padding = new Thickness(10, 0, 4, 0), Height = 36 };
             row.ColumnDefinitions.Add(Ui.Auto()); row.ColumnDefinitions.Add(Ui.Star()); row.ColumnDefinitions.Add(Ui.Auto());
             row.Column(new ProfileMark(browser.Profile, 18) { VerticalAlignment = VerticalAlignment.Center }, 0);
-            var text = Ui.Text(store.Text("настройки профиля ", "Настройки профиля ") + store.Quoted(store.ProfileName(browser.Profile)), 12, Palette.Text2.Brush());
+            var text = Ui.Text(browser.Text("настройки профиля ", "Настройки профиля ") + browser.Quoted(browser.ProfileName(browser.Profile)), 12, Palette.Text2.Brush());
             text.VerticalAlignment = VerticalAlignment.Center;
             row.Column(text, 1);
-            var open = new MButton(store.Text("профили", "Профили"), ButtonKind.Ghost, compact: true) { VerticalAlignment = VerticalAlignment.Center };
+            var open = new MButton(browser.Text("профили", "Профили"), ButtonKind.Ghost, compact: true) { VerticalAlignment = VerticalAlignment.Center };
             open.Click += () => ProfileMenu.Edit(browser, browser.ProfileId);
             row.Column(open, 2);
             host.Children.Add(Ui.Rounded(Radius.Panel - 4, new SolidColorBrush(Palette.WithAlpha(Palette.Track.Resolve(), 0.6)), null, 0, row));
@@ -356,22 +365,22 @@ public sealed partial class ProfileOpenPrompt : StackPanel
         var profile = store.Profile(id);
         Padding = new Thickness(22, 24, 22, 18);
         var mark = new ProfileMark(profile, 56) { HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 0, 0, 14) };
-        var title = Ui.Text(store.Text("открыть профиль ", "Открыть профиль ") + store.Quoted(store.ProfileName(profile)) + "?", 14, Palette.Ink.Brush(), Ui.Semibold, wrap: true);
+        var title = Ui.Text(browser.Text("открыть профиль ", "Открыть профиль ") + browser.Quoted(browser.ProfileName(profile)) + "?", 14, Palette.Ink.Brush(), Ui.Semibold, wrap: true);
         title.TextAlignment = TextAlignment.Center; title.HorizontalAlignment = HorizontalAlignment.Center; title.Margin = new Thickness(0, 0, 0, 6);
-        var detail = Ui.Text(store.Text("в этом окне закреплённые вкладки сменятся закреплёнными вкладками профиля, остальные вкладки останутся. в новом окне это окно не изменится.", "В этом окне закреплённые вкладки сменятся закреплёнными вкладками профиля, остальные вкладки останутся. В новом окне это окно не изменится."), 12, Palette.Text2.Brush(), wrap: true);
+        var detail = Ui.Text(browser.Text("в этом окне закреплённые вкладки сменятся закреплёнными вкладками профиля, остальные вкладки останутся. в новом окне это окно не изменится.", "В этом окне закреплённые вкладки сменятся закреплёнными вкладками профиля, остальные вкладки останутся. В новом окне это окно не изменится."), 12, Palette.Text2.Brush(), wrap: true);
         detail.TextAlignment = TextAlignment.Center; detail.Margin = new Thickness(0, 0, 0, 18);
-        var remember = new ToggleRow(store.Text("запомнить выбор", "Запомнить выбор"), false, _ => { }, divider: false) { HorizontalAlignment = HorizontalAlignment.Center };
+        var remember = new ToggleRow(browser.Text("запомнить выбор", "Запомнить выбор"), false, _ => { }, divider: false) { HorizontalAlignment = HorizontalAlignment.Center };
         void Choose(ProfileOpening choice)
         {
             if (remember.Switch.IsOn) store.Change(p => p.ProfileOpening = choice);
             browser.ProfilePrompt = null;
             if (choice == ProfileOpening.Here) browser.SwitchProfile(id); else store.OpenProfile(id);
         }
-        var newWindow = new MButton(store.Text("в новом окне", "В новом окне"), ButtonKind.Primary, stretch: true);
+        var newWindow = new MButton(browser.Text("в новом окне", "В новом окне"), ButtonKind.Primary, stretch: true);
         newWindow.Click += () => Choose(ProfileOpening.NewWindow);
-        var here = new MButton(store.Text("в этом окне", "В этом окне"), ButtonKind.Secondary, stretch: true);
+        var here = new MButton(browser.Text("в этом окне", "В этом окне"), ButtonKind.Secondary, stretch: true);
         here.Click += () => Choose(ProfileOpening.Here);
-        var cancel = new MButton(store.Text("отмена", "Отмена"), ButtonKind.Ghost, stretch: true);
+        var cancel = new MButton(browser.Text("отмена", "Отмена"), ButtonKind.Ghost, stretch: true);
         cancel.Click += () => browser.ProfilePrompt = null;
         var buttons = Ui.V(Space.Small, newWindow, here, cancel); buttons.Margin = new Thickness(0, 0, 0, 14);
         Children.Add(mark); Children.Add(title); Children.Add(detail); Children.Add(buttons); Children.Add(remember);

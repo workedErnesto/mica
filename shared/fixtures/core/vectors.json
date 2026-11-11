@@ -636,6 +636,29 @@
       ]
     }
   ],
+  "profileText" : [
+    {
+      "expect" : "en-regular",
+      "language" : "en",
+      "lookLanguage" : null,
+      "lookLowercase" : null,
+      "lowercase" : false
+    },
+    {
+      "expect" : "ru-low",
+      "language" : "en",
+      "lookLanguage" : "ru",
+      "lookLowercase" : true,
+      "lowercase" : false
+    },
+    {
+      "expect" : "en-low",
+      "language" : "ru",
+      "lookLanguage" : "en",
+      "lookLowercase" : null,
+      "lowercase" : true
+    }
+  ],
   "shortcut" : [
     {
       "engine" : "DuckDuckGo",

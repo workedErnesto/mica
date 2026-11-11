@@ -50,20 +50,20 @@ extension ToolbarControl {
         case .profile: return "person.crop.circle"
         }
     }
-    @MainActor func title(_ store: Store) -> String {
+    @MainActor func title(_ browser: BrowserModel) -> String {
         switch self {
-        case .sidebar: return store.text("боковая панель", "Боковая панель")
-        case .back: return store.text("назад", "Назад")
-        case .forward: return store.text("вперёд", "Вперёд")
-        case .reload: return store.text("перезагрузить", "Перезагрузить")
-        case .newTab: return store.text("новая вкладка", "Новая вкладка")
-        case .bookmarks: return store.text("закладки", "Закладки")
-        case .history: return store.text("история", "История")
-        case .downloads: return store.text("загрузки", "Загрузки")
-        case .extensions: return store.text("расширения", "Расширения")
-        case .incognito: return store.text("окно инкогнито", "Окно инкогнито")
-        case .settings: return store.text("настройки", "Настройки")
-        case .profile: return store.text("профиль", "Профиль")
+        case .sidebar: return browser.text("боковая панель", "Боковая панель")
+        case .back: return browser.text("назад", "Назад")
+        case .forward: return browser.text("вперёд", "Вперёд")
+        case .reload: return browser.text("перезагрузить", "Перезагрузить")
+        case .newTab: return browser.text("новая вкладка", "Новая вкладка")
+        case .bookmarks: return browser.text("закладки", "Закладки")
+        case .history: return browser.text("история", "История")
+        case .downloads: return browser.text("загрузки", "Загрузки")
+        case .extensions: return browser.text("расширения", "Расширения")
+        case .incognito: return browser.text("окно инкогнито", "Окно инкогнито")
+        case .settings: return browser.text("настройки", "Настройки")
+        case .profile: return browser.text("профиль", "Профиль")
         }
     }
     var panel: Panel? {
@@ -87,23 +87,23 @@ struct ToolbarButton: View {
             }
         case .back, .forward:
             if let tab = browser.selected { NavigationButton(tab: tab, browser: browser, forward: item == .forward) }
-            else { IconButton(symbol: item.symbol, label: item.title(store)) {}.disabled(true) }
+            else { IconButton(symbol: item.symbol, label: item.title(browser)) {}.disabled(true) }
         case .reload:
             if let tab = browser.selected { ReloadButton(tab: tab, browser: browser, size: 28) }
-            else { IconButton(symbol: item.symbol, label: item.title(store)) {}.disabled(true) }
+            else { IconButton(symbol: item.symbol, label: item.title(browser)) {}.disabled(true) }
         case .newTab:
-            IconButton(symbol: "plus", label: item.title(store) + " ⌘T") { _ = browser.add(); browser.focusAddress += 1 }
+            IconButton(symbol: "plus", label: item.title(browser) + " ⌘T") { _ = browser.add(); browser.focusAddress += 1 }
         case .extensions:
             // In the top bar the extension buttons sit next to the puzzle; in the sidebar they get their own row above the footer.
-            if inSidebar { IconButton(symbol: item.symbol, label: item.title(store), selected: browser.panel == .extensions) { browser.panel = browser.panel == .extensions ? nil : .extensions } }
+            if inSidebar { IconButton(symbol: item.symbol, label: item.title(browser), selected: browser.panel == .extensions) { browser.panel = browser.panel == .extensions ? nil : .extensions } }
             else { ExtensionActions(manager: store.extensions, browser: browser, store: store) }
         case .incognito:
             IconButton(symbol: item.symbol, label: browser.text("новое окно инкогнито", "Новое окно инкогнито") + " ⌘⇧N") { store.newWindow(privateMode: true) }
         case .bookmarks, .history, .downloads:
             let panel = item.panel!
-            IconButton(symbol: item.symbol, label: item.title(store), selected: browser.panel == panel) { browser.panel = browser.panel == panel ? nil : panel }
+            IconButton(symbol: item.symbol, label: item.title(browser), selected: browser.panel == panel) { browser.panel = browser.panel == panel ? nil : panel }
         case .settings:
-            IconButton(symbol: item.symbol, label: item.title(store)) { browser.showSettings = true }
+            IconButton(symbol: item.symbol, label: item.title(browser)) { browser.showSettings = true }
         case .profile:
             ProfileButton(browser: browser, store: store)
         }

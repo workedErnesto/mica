@@ -18,7 +18,7 @@ struct VisitRow: View {
                             ProfileMark(profile: owner, size: 13)
                                 .padding(1.5).background(RoundedRectangle(cornerRadius: 5, style: .continuous).fill(Palette.surface))
                                 .offset(x: 4, y: 4)
-                                .help(store.profileName(owner))
+                                .help(browser.profileName(owner))
                         }
                     }
                 VStack(alignment: .leading, spacing: 1) {

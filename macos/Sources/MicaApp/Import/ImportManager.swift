@@ -56,7 +56,7 @@ final class ImportManager: ObservableObject {
         }
     }
 
-    func title(_ profile: ImportProfile) -> String { profile.browser.displayName(store.preferences.language) }
+    func title(_ profile: ImportProfile) -> String { profile.browser.displayName(store.language) }
 
 
     func run() {

@@ -31,7 +31,7 @@ macOS попросит открыть папку данных браузера. 
 Автозаполнение⟩autofill⟩Autofill
 Предлагать сохранение и создание паролей⟩offer to save and generate passwords⟩Offer to save and generate passwords
 Предлагать сохранённые учётные записи⟩offer saved accounts⟩Offer saved accounts
-Хранилище недоступно: ⟩vault unavailable: ⟩Vault unavailable: \\u{20}
+Хранилище недоступно: ⟩vault unavailable: ⟩Vault unavailable:  
 Сохранённые пароли⟩saved passwords⟩Saved passwords
 Поиск по сайту или имени⟩search sites or usernames⟩Search sites or usernames
 Пароли не найдены⟩no passwords found⟩No passwords found
@@ -59,14 +59,14 @@ macOS ограничивает доступ к файлам Safari. Экспор
 Закладки и избранное⟩bookmarks and favorites⟩Bookmarks and favorites
 Перенести⟩import⟩Import
 Из файла экспорта…⟩from an export file…⟩From an export file…
-Готово: ⟩done: ⟩Done:\\u{20}
-История: ⟩history: ⟩History:\\u{20}
-Закладки: ⟩bookmarks: ⟩Bookmarks:\\u{20}
+Готово: ⟩done: ⟩Done: 
+История: ⟩history: ⟩History: 
+Закладки: ⟩bookmarks: ⟩Bookmarks: 
 Выберите архив экспорта Safari, его папку или HTML-файл с закладками⟩choose a Safari export archive, its folder, or an HTML bookmarks file⟩Choose a Safari export archive, its folder, or an HTML bookmarks file
 В файле нет закладок или истории в известном формате⟩the file contains no bookmarks or history in a recognized format⟩The file contains no bookmarks or history in a recognized format
 : нет доступа к файлу⟩: no access to the file⟩: no access to the file
 : файл не прочитан, возможно, браузер сменил формат⟩: could not read the file, the browser may have changed its format⟩: could not read the file, the browser may have changed its format
-Доступна mica ⟩mica is available: ⟩mica is available:\\u{20}
+Доступна mica ⟩mica is available: ⟩mica is available: 
 Образ будет проверен по SHA-256 и открыт в Finder. Установку вы завершите сами⟩the disk image will be checked against its SHA-256 checksum and opened in Finder. you will finish installation yourself⟩The disk image will be checked against its SHA-256 checksum and opened in Finder. You will finish installation yourself
 Позже⟩later⟩Later
 Не предлагать эту версию⟩skip this version⟩Skip this version
@@ -80,8 +80,8 @@ macOS ограничивает доступ к файлам Safari. Экспор
 Установить mica в «Программы»?⟩install mica in Applications?⟩Install mica in Applications?
 Выберите папку «Программы» для установки⟩choose the Applications folder to install⟩Choose the Applications folder to install
 Обновить mica в «Программах»?⟩update mica in Applications?⟩Update mica in Applications?
-Установлена версия ⟩installed version: ⟩Installed version:\\u{20}
-, на образе версия ⟩, disk image version: ⟩, disk image version:\\u{20}
+Установлена версия ⟩installed version: ⟩Installed version: 
+, на образе версия ⟩, disk image version: ⟩, disk image version: 
 Продолжить⟩continue⟩Continue
 Выберите папку «Программы»⟩choose the Applications folder⟩Choose the Applications folder
 Выбрать⟩choose⟩Choose
@@ -286,7 +286,7 @@ Return устанавливает. mica скачивает тот же паке�
 Иконка в Доке⟩Dock icon⟩Dock Icon
 Меняется иконка в Доке и переключателе приложений, пока mica запущена. После выхода Док и Finder показывают иконку сборки: приложение в песочнице не может изменить собственный bundle.⟩the icon changes in the Dock and the app switcher while mica runs. after quitting, the Dock and Finder show the build icon: a sandboxed app cannot change its own bundle.⟩The icon changes in the Dock and the app switcher while mica runs. After quitting, the Dock and Finder show the build icon: a sandboxed app cannot change its own bundle.
 Язык и текст⟩language and text⟩Language and Text
-Язык меняет только интерфейс mica. Страницы сайтов, адреса и ваши данные не переводятся.⟩the language changes only the mica interface. web pages, addresses and your data are not translated.⟩The language changes only the mica interface. Web pages, addresses and your data are not translated.
+У каждого профиля свои язык и регистр, здесь они меняются для профиля этого окна. Страницы сайтов, адреса и ваши данные не переводятся.⟩each profile has its own language and case, here they change for this window’s profile. web pages, addresses and your data are not translated.⟩Each profile has its own language and case, here they change for this window’s profile. Web pages, addresses and your data are not translated.
 Язык⟩language⟩Language
 Текст интерфейса⟩interface text⟩Interface text
 Названия брендов и сайтов сохраняют написание⟩brand and site names keep their spelling⟩Brand and site names keep their spelling
@@ -635,26 +635,26 @@ mica не может показать файл из этой папки: macOS �
 Все⟩all⟩All
 Его окна перейдут в обычный профиль, закреплённые вкладки профиля закроются. Пароли, история и закладки останутся.⟩its windows will switch to the standard profile and the profile’s pinned tabs will close. passwords, history and bookmarks stay.⟩Its windows will switch to the standard profile and the profile’s pinned tabs will close. Passwords, history and bookmarks stay.
 Иконка⟩icon⟩Icon
-Иконка ⟩icon ⟩Icon\\u{20}
+Иконка ⟩icon ⟩Icon 
 Название⟩name⟩Name
 Название профиля⟩profile name⟩Profile name
 Настроить профили…⟩manage profiles…⟩Manage profiles…
-Настройки профиля ⟩settings of profile ⟩Settings of profile\\u{20}
+Настройки профиля ⟩settings of profile ⟩Settings of profile 
 Не открыт⟩not open⟩Not open
 Новый профиль⟩new profile⟩New profile
 Новый профиль…⟩new profile…⟩New profile…
 Основной, его нельзя удалить⟩main profile, cannot be deleted⟩Main profile, cannot be deleted
 Открыт в другом окне⟩open in another window⟩Open in another window
 Оттенок⟩hue⟩Hue
-Пароли, cookie, история, закладки, загрузки и расширения общие для всех профилей. Профиль меняет начальную страницу, расположение вкладок и кнопок, тему, цвета, обращение и закреплённые вкладки. В истории видно, в каком профиле открыта страница.⟩passwords, cookies, history, bookmarks, downloads and extensions are shared by all profiles. a profile changes the start page, the layout of tabs and buttons, theme, colours, greeting and pinned tabs. history shows which profile a page was opened in.⟩Passwords, cookies, history, bookmarks, downloads and extensions are shared by all profiles. A profile changes the start page, the layout of tabs and buttons, theme, colours, greeting and pinned tabs. History shows which profile a page was opened in.
+Пароли, cookie, история, закладки, загрузки и расширения общие для всех профилей. Профиль меняет начальную страницу, расположение вкладок и кнопок, тему, цвета, язык и регистр текста, обращение и закреплённые вкладки. В истории видно, в каком профиле открыта страница.⟩passwords, cookies, history, bookmarks, downloads and extensions are shared by all profiles. a profile changes the start page, the layout of tabs and buttons, theme, colours, language and text case, greeting and pinned tabs. history shows which profile a page was opened in.⟩Passwords, cookies, history, bookmarks, downloads and extensions are shared by all profiles. A profile changes the start page, the layout of tabs and buttons, theme, colours, language and text case, greeting and pinned tabs. History shows which profile a page was opened in.
 Переключить это окно⟩switch this window⟩Switch this window
 Профили⟩profiles⟩Profiles
 Профиль⟩profile⟩Profile
-Профиль ⟩profile ⟩Profile\\u{20}
-Профиль: ⟩profile: ⟩Profile:\\u{20}
+Профиль ⟩profile ⟩Profile 
+Профиль: ⟩profile: ⟩Profile: 
 Раскладка, оформление и начальная страница этого окна сохраняются в этот профиль.⟩layout, appearance and the start page of this window are saved to this profile.⟩Layout, appearance and the start page of this window are saved to this profile.
 Раскладку, оформление и начальную страницу профиля настраивают в его окне.⟩a profile’s layout, appearance and start page are set in its own window.⟩A profile’s layout, appearance and start page are set in its own window.
-Удалить профиль ⟩delete profile ⟩Delete profile\\u{20}
+Удалить профиль ⟩delete profile ⟩Delete profile 
 Удалить профиль…⟩delete profile…⟩Delete profile…
 Фон⟩background⟩Background
 Это окно⟩this window⟩This window
@@ -668,7 +668,7 @@ mica не может показать файл из этой папки: macOS �
 Основной⟩main⟩Main
 Цвет значка⟩mark colour⟩Mark colour
 Чёрный⟩black⟩Black
-Открыть профиль ⟩open profile ⟩Open profile\\u{20}
+Открыть профиль ⟩open profile ⟩Open profile 
 В этом окне закреплённые вкладки сменятся закреплёнными вкладками профиля, остальные вкладки останутся. В новом окне это окно не изменится.⟩in this window, pinned tabs are replaced with the profile’s pinned tabs and other tabs stay. a new window leaves this one as it is.⟩In this window, pinned tabs are replaced with the profile’s pinned tabs and other tabs stay. A new window leaves this one as it is.
 В новом окне⟩in new window⟩In new window
 В этом окне⟩in this window⟩In this window
@@ -679,5 +679,7 @@ mica не может показать файл из этой папки: macOS �
 Ответ можно поменять в настройках, в разделе «профили».⟩you can change the answer in settings, profiles.⟩You can change the answer in Settings, Profiles.
 Браузер на системном WebKit: вкладки не перезагружаются, когда вы к ним возвращаетесь.⟩a browser on the system WebKit: tabs do not reload when you come back to them.⟩A browser on the system WebKit: tabs do not reload when you come back to them.
 Профили, блокировка трекеров, зашифрованные пароли и расширения Chrome Web Store и Firefox Add-ons. Собственной телеметрии нет.⟩profiles, tracker blocking, encrypted passwords, and extensions from the Chrome Web Store and Firefox Add-ons. no telemetry of its own.⟩Profiles, tracker blocking, encrypted passwords, and extensions from the Chrome Web Store and Firefox Add-ons. No telemetry of its own.
+Открыть в этом окне⟩open in this window⟩Open in This Window
+Настроить…⟩edit…⟩Edit…
 """
 }

@@ -17,12 +17,23 @@ final class ProfileTests: XCTestCase {
         XCTAssertTrue(profiles[0].look.sidebarCollapsed)
     }
     func testLookOverlaysOnlyItsOwnPart() {
-        var global = Preferences(); global.search = .kagi; global.language = .en; global.theme = .dark
-        var look = ProfileLook(); look.theme = .light; look.layout = .top
+        var global = Preferences(); global.search = .kagi; global.language = .en; global.lowercase = true; global.theme = .dark
+        var look = ProfileLook(); look.theme = .light; look.layout = .top; look.language = .ru; look.lowercase = false
         let effective = look.applied(to: global)
-        XCTAssertEqual(effective.search, .kagi); XCTAssertEqual(effective.language, .en)
+        XCTAssertEqual(effective.search, .kagi); XCTAssertEqual(effective.language, .ru); XCTAssertFalse(effective.lowercase)
         XCTAssertEqual(effective.theme, .light); XCTAssertEqual(effective.layout, .top)
         XCTAssertEqual(ProfileLook(effective), look)
+    }
+    func testProfilesSavedWithoutLanguageTakeTheApplicationOne() throws {
+        let old = ##"[{"id":"\##(UUID().uuidString)","name":"Работа","icon":"briefcase","background":"#3E7BFA","look":{"theme":"dark"},"pinned":[]}]"##
+        let decoded = try JSONDecoder().decode([Profile].self, from: Data(old.utf8))
+        XCTAssertNil(decoded[0].look.language); XCTAssertNil(decoded[0].look.lowercase)
+        var global = Preferences(); global.language = .en; global.lowercase = false
+        let profiles = Profiles.normalized(decoded, fallback: ProfileLook(global))
+        XCTAssertEqual(profiles.map { $0.look.language }, [Language.en, Language.en]); XCTAssertEqual(profiles.map { $0.look.lowercase }, [false, false])
+        var own = profiles[1]; own.look.language = Language.ru
+        let again = try JSONDecoder().decode(Profile.self, from: JSONEncoder().encode(own))
+        XCTAssertEqual(again.look.language, Language.ru); XCTAssertEqual(again.look.lowercase, Bool?.some(false))
     }
     func testProfileRoundTripAndRepair() throws {
         var look = ProfileLook(); look.transparency = 0.2

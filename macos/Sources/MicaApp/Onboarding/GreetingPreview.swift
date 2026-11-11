@@ -18,7 +18,7 @@ struct GreetingPreview: View {
                 .overlay(alignment: .leading) {
                     HStack(spacing: Space.small) {
                         Image(systemName: "magnifyingglass").font(.system(size: 11, weight: .medium))
-                        Text(store.text("поиск или адрес", "Поиск или адрес")).font(.system(size: 12))
+                        Text(browser.text("поиск или адрес", "Поиск или адрес")).font(.system(size: 12))
                     }
                     .foregroundStyle(Palette.text3).padding(.horizontal, Space.normal)
                 }
@@ -36,6 +36,6 @@ struct GreetingPreview: View {
         .clipShape(RoundedRectangle(cornerRadius: Radius.panel - 4, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: Radius.panel - 4, style: .continuous).strokeBorder(Palette.hairlineStrong, lineWidth: 1))
         .animation(Motion.hover, value: greeting)
-        .accessibilityElement().accessibilityLabel(store.text("начальная страница: ", "Начальная страница: ") + (greeting ?? "mica"))
+        .accessibilityElement().accessibilityLabel(browser.text("начальная страница: ", "Начальная страница: ") + (greeting ?? "mica"))
     }
 }

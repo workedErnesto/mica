@@ -111,21 +111,21 @@ public sealed partial class CustomizeToolbarPanel : Grid
         MaxWidth = 820;
         var content = new StackPanel { Spacing = Space.Section, Padding = new Thickness(Space.Section) };
         content.Children.Add(Ui.V(4,
-            Ui.Text(store.Text("перетащите кнопки на панель", "Перетащите кнопки на панель"), 15, null, Ui.Medium),
+            Ui.Text(browser.Text("перетащите кнопки на панель", "Перетащите кнопки на панель"), 15, null, Ui.Medium),
             Ui.Text(layout.IsHorizontal()
-                ? store.Text("в шапке четыре места: у краёв окна и рядом с адресом. чтобы убрать кнопку, верните её сюда.", "В шапке четыре места: у краёв окна и рядом с адресом. Чтобы убрать кнопку, верните её сюда.")
-                : store.Text("в шапке четыре места: у краёв окна и рядом с адресом, ещё одно внизу боковой панели. чтобы убрать кнопку, верните её сюда.", "В шапке четыре места: у краёв окна и рядом с адресом, ещё одно внизу боковой панели. Чтобы убрать кнопку, верните её сюда."), 12, Palette.Text3.Brush(), wrap: true)));
+                ? browser.Text("в шапке четыре места: у краёв окна и рядом с адресом. чтобы убрать кнопку, верните её сюда.", "В шапке четыре места: у краёв окна и рядом с адресом. Чтобы убрать кнопку, верните её сюда.")
+                : browser.Text("в шапке четыре места: у краёв окна и рядом с адресом, ещё одно внизу боковой панели. чтобы убрать кнопку, верните её сюда.", "В шапке четыре места: у краёв окна и рядом с адресом, ещё одно внизу боковой панели. Чтобы убрать кнопку, верните её сюда."), 12, Palette.Text3.Brush(), wrap: true)));
         var tiles = new VariableSizedWrapGrid { Orientation = Orientation.Horizontal, ItemWidth = 112, ItemHeight = 92 };
         var tray = Ui.Rounded(Radius.Panel - 4, new SolidColorBrush(Palette.WithAlpha(Palette.Track.Resolve(), Palette.Track.Resolve().A / 255.0 * 0.5)), null, 0, tiles);
         tray.Padding = new Thickness(Space.Small);
         content.Children.Add(tray);
-        var slider = new MSlider(browser.Prefs.Toolbar.AddressWidth, ToolbarLayout.AddressMin, ToolbarLayout.AddressMax, store.Text("длина адресной строки", "Длина адресной строки")) { Width = 180 };
+        var slider = new MSlider(browser.Prefs.Toolbar.AddressWidth, ToolbarLayout.AddressMin, ToolbarLayout.AddressMax, browser.Text("длина адресной строки", "Длина адресной строки")) { Width = 180 };
         var value = Ui.Text(Math.Round(browser.Prefs.Toolbar.AddressWidth) + " px", 11.5, Palette.Text3.Brush());
         slider.Changed += v => { value.Text = Math.Round(v) + " px"; store.Change(p => p.Toolbar.AddressWidth = v); };
-        content.Children.Add(Ui.H(Space.Normal, Ui.Text(store.Text("длина адресной строки", "Длина адресной строки"), 12.5, Palette.Text2.Brush()), slider, value));
-        var reset = new MButton(store.Text("вернуть как было", "Вернуть как было"), ButtonKind.Ghost);
+        content.Children.Add(Ui.H(Space.Normal, Ui.Text(browser.Text("длина адресной строки", "Длина адресной строки"), 12.5, Palette.Text2.Brush()), slider, value));
+        var reset = new MButton(browser.Text("вернуть как было", "Вернуть как было"), ButtonKind.Ghost);
         reset.Click += () => store.Change(p => p.Toolbar = new ToolbarLayout().Sanitized());
-        var done = new MButton(store.Text("готово", "Готово"), ButtonKind.Primary) { HorizontalAlignment = HorizontalAlignment.Right };
+        var done = new MButton(browser.Text("готово", "Готово"), ButtonKind.Primary) { HorizontalAlignment = HorizontalAlignment.Right };
         done.Click += () => browser.CustomizingToolbar = false;
         var actions = new Grid(); actions.ColumnDefinitions.Add(Ui.Auto()); actions.ColumnDefinitions.Add(Ui.Star()); actions.ColumnDefinitions.Add(Ui.Auto());
         actions.Column(reset, 0); actions.Column(done, 2);
@@ -161,7 +161,7 @@ public sealed partial class CustomizeToolbarPanel : Grid
                 new Glyph(item.Symbol(), 14, placed ? Palette.Text3.Brush() : Palette.Ink.Brush()) { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center });
             plate.Width = 40; plate.Height = 32; plate.HorizontalAlignment = HorizontalAlignment.Center;
             var title = Ui.Text(item.Title(store), 11.5); title.HorizontalAlignment = HorizontalAlignment.Center;
-            var where = Ui.Text(placed ? zone.Title(store) : store.Text("можно добавить", "Можно добавить"), 10.5, Palette.Text3.Brush()); where.HorizontalAlignment = HorizontalAlignment.Center;
+            var where = Ui.Text(placed ? zone.Title(store) : browser.Text("можно добавить", "Можно добавить"), 10.5, Palette.Text3.Brush()); where.HorizontalAlignment = HorizontalAlignment.Center;
             var stack = Ui.V(6, plate, Ui.V(1, title, where));
             stack.Padding = new Thickness(4, Space.Small, 4, Space.Small);
             Children.Add(hover); Children.Add(stack);

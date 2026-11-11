@@ -34,7 +34,7 @@ public sealed partial class TopBar : Grid
         menuButton.Click += () => MicaMenu.ShowBelow(AppMenu.Entries(browser), menuButton);
         browser.MenuRequested += () => MicaMenu.ShowBelow(AppMenu.Entries(browser), menuButton);
         Children.Add(leadingEdge); Children.Add(trailingEdge); Children.Add(leadingInner); Children.Add(trailingInner); Children.Add(addressHost); Children.Add(editingZones);
-        this.ContextMenu(() => browser.CustomizingToolbar ? [] : [MenuEntry.Item(Store.Text("настроить панель инструментов…", "Настроить панель инструментов…"), () => browser.CustomizingToolbar = true, "slider.horizontal.3"), MenuEntry.Separator, .. LayoutMenu.Entries(Store)]);
+        this.ContextMenu(() => browser.CustomizingToolbar ? [] : [MenuEntry.Item(browser.Text("настроить панель инструментов…", "Настроить панель инструментов…"), () => browser.CustomizingToolbar = true, "slider.horizontal.3"), MenuEntry.Separator, .. LayoutMenu.Entries(Store)]);
     }
 
     public IEnumerable<FrameworkElement> Interactive()

@@ -8,7 +8,7 @@ struct LayoutPicker: View {
     @ObservedObject var browser: BrowserModel
     var width: CGFloat = 0
     var body: some View {
-        Segmented(selection: $browser.prefs.layout, options: [(.left, store.text("слева", "Слева")), (.top, store.text("под адресом", "Под адресом")), (.tabsAbove, store.text("над адресом", "Над адресом")), (.right, store.text("справа", "Справа"))], symbols: ["sidebar.left", "rectangle.topthird.inset.filled", "macwindow", "sidebar.right"], width: width, label: store.text("вкладки", "Вкладки"))
+        Segmented(selection: $browser.prefs.layout, options: [(.left, browser.text("слева", "Слева")), (.top, browser.text("под адресом", "Под адресом")), (.tabsAbove, browser.text("над адресом", "Над адресом")), (.right, browser.text("справа", "Справа"))], symbols: ["sidebar.left", "rectangle.topthird.inset.filled", "macwindow", "sidebar.right"], width: width, label: browser.text("вкладки", "Вкладки"))
     }
 }
 
@@ -17,26 +17,28 @@ struct ThemePicker: View {
     @ObservedObject var browser: BrowserModel
     var width: CGFloat = 0
     var body: some View {
-        Segmented(selection: $browser.prefs.theme, options: [(.system, store.text("системная", "Системная")), (.light, store.text("светлая", "Светлая")), (.dark, store.text("тёмная", "Тёмная")), (.custom, store.text("кастом", "Кастом"))], width: width, label: store.text("тема", "Тема"))
+        Segmented(selection: $browser.prefs.theme, options: [(.system, browser.text("системная", "Системная")), (.light, browser.text("светлая", "Светлая")), (.dark, browser.text("тёмная", "Тёмная")), (.custom, browser.text("кастом", "Кастом"))], width: width, label: browser.text("тема", "Тема"))
     }
 }
 
 /// Each option is written in the style it selects.
 struct CasePicker: View {
     @ObservedObject var store: Store
+    @ObservedObject var browser: BrowserModel
     var width: CGFloat = 0
     var body: some View {
-        let english = store.preferences.language == .en
-        Segmented(selection: $store.preferences.lowercase, options: [(true, english ? "lowercase" : "со строчной"), (false, english ? "Standard" : "Обычный")], width: width, label: store.text("текст интерфейса", "Текст интерфейса"))
+        let english = browser.prefs.language == .en
+        Segmented(selection: $browser.prefs.lowercase, options: [(true, english ? "lowercase" : "со строчной"), (false, english ? "Standard" : "Обычный")], width: width, label: browser.text("текст интерфейса", "Текст интерфейса"))
     }
 }
 
 /// Language names are written in their own language.
 struct LanguagePicker: View {
     @ObservedObject var store: Store
+    @ObservedObject var browser: BrowserModel
     var width: CGFloat = 0
     var body: some View {
-        Segmented(selection: $store.preferences.language, options: [(.ru, store.preferences.lowercase ? "русский" : "Русский"), (.en, store.preferences.lowercase ? "english" : "English")], width: width, label: store.text("язык", "Язык"))
+        Segmented(selection: $browser.prefs.language, options: [(.ru, browser.prefs.lowercase ? "русский" : "Русский"), (.en, browser.prefs.lowercase ? "english" : "English")], width: width, label: browser.text("язык", "Язык"))
     }
 }
 
@@ -45,28 +47,29 @@ struct NameSettingRows: View {
     @ObservedObject var store: Store
     @ObservedObject var browser: BrowserModel
     var body: some View {
-        SettingRow(title: store.text("имя", "Имя"), detail: store.text("для приветствия на начальной странице", "Для приветствия на начальной странице")) {
-            MTextField(placeholder: store.text("как к вам обращаться", "Как к вам обращаться"), text: Binding(get: { browser.prefs.userName }, set: { browser.prefs.userName = String($0.prefix(Preferences.nameLimit)) }), symbol: "person")
+        SettingRow(title: browser.text("имя", "Имя"), detail: browser.text("для приветствия на начальной странице", "Для приветствия на начальной странице")) {
+            MTextField(placeholder: browser.text("как к вам обращаться", "Как к вам обращаться"), text: Binding(get: { browser.prefs.userName }, set: { browser.prefs.userName = String($0.prefix(Preferences.nameLimit)) }), symbol: "person")
                 .frame(width: 220)
                 .disabled(!browser.prefs.greetByName)
         }
-        Toggle(store.text("не обращаться по имени", "Не обращаться по имени"), isOn: Binding(get: { !browser.prefs.greetByName }, set: { value in withMotion(Motion.quick) { browser.prefs.greetByName = !value } })).toggleStyle(MToggleStyle()).modifier(RowInset(divider: false))
+        Toggle(browser.text("не обращаться по имени", "Не обращаться по имени"), isOn: Binding(get: { !browser.prefs.greetByName }, set: { value in withMotion(Motion.quick) { browser.prefs.greetByName = !value } })).toggleStyle(MToggleStyle()).modifier(RowInset(divider: false))
     }
 }
 
 struct SearchPicker: View {
     @ObservedObject var store: Store
+    @ObservedObject var browser: BrowserModel
     @Namespace private var space
     var body: some View {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 6)], spacing: 6) {
             ForEach(SearchEngine.allCases, id: \.self) { engine in
-                EngineChoice(title: engine.title(store.preferences.language), host: URL(string: engine.home)?.host, selected: store.preferences.search == engine, namespace: space) {
+                EngineChoice(title: engine.title(browser.prefs.language), host: URL(string: engine.home)?.host, selected: store.preferences.search == engine, namespace: space) {
                     withMotion(Motion.quick) { store.preferences.search = engine }
                 }
             }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(store.text("поисковик", "Поисковик"))
+        .accessibilityLabel(browser.text("поисковик", "Поисковик"))
     }
 }
 

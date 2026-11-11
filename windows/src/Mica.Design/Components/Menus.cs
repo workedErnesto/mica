@@ -12,6 +12,8 @@ namespace Mica.Design;
 /// <param name="Leading">Drawn in place of the symbol, for a profile mark.</param>
 public sealed record MenuEntry(string Title, Action Action, string? Symbol = null, bool Enabled = true, bool Checked = false, bool Destructive = false, bool Divider = false, string? Shortcut = null, Func<FrameworkElement>? Leading = null)
 {
+    /// <summary>Shown on a right click of this row in place of the menu; wins over the row's own action.</summary>
+    public IReadOnlyList<MenuEntry> Secondary { get; init; } = [];
     public static readonly MenuEntry Separator = new("", () => { }, Divider: true);
     public static MenuEntry Item(string title, Action action, string? symbol = null, bool enabled = true, bool @checked = false, bool destructive = false, string? shortcut = null) =>
         new(title, action, symbol, enabled, @checked, destructive, false, shortcut);
@@ -38,7 +40,28 @@ public static partial class MicaMenu
 
     public static bool IsOpen => open?.IsOpen == true;
 
-    public static void Close() { if (open is { } popup) { open = null; popup.IsOpen = false; } }
+    /// <summary>The choices of a row opened by a right click, beside the menu, which stays open under them.</summary>
+    static Popup? child;
+
+    public static void Close()
+    {
+        if (child is { } c) { child = null; c.IsOpen = false; }
+        if (open is { } popup) { open = null; popup.IsOpen = false; }
+    }
+
+    static void ShowChild(IEnumerable<MenuEntry> source, UIElement relativeTo, Windows.Foundation.Point point)
+    {
+        var entries = source.Tidy();
+        if (entries.Count == 0 || relativeTo.XamlRoot is null) return;
+        if (child is { } old) { child = null; old.IsOpen = false; }
+        var at = relativeTo.TransformToVisual(relativeTo.XamlRoot.Content).TransformPoint(point);
+        var panel = Build(entries, out var rows);
+        var popup = new Popup { Child = panel, XamlRoot = relativeTo.XamlRoot, IsLightDismissEnabled = true, ShouldConstrainToRootBounds = false, HorizontalOffset = at.X, VerticalOffset = at.Y };
+        popup.Closed += (_, _) => { if (child == popup) child = null; };
+        child = popup;
+        popup.IsOpen = true;
+        panel.Loaded += (_, _) => { Motion.Appear(panel); rows.FirstOrDefault()?.Focus(FocusState.Programmatic); };
+    }
 
     /// <summary>Opens at a point in the coordinates of <paramref name="relativeTo"/>.</summary>
     public static void ShowAt(IEnumerable<MenuEntry> source, UIElement relativeTo, Windows.Foundation.Point point)
@@ -129,9 +152,12 @@ public static partial class MicaMenu
             var brush = !entry.Enabled ? new SolidColorBrush(Palette.WithAlpha(Palette.Text3.Resolve(), 0.7)) : entry.Destructive ? Palette.Danger.Brush() : Palette.Ink.Brush();
             var line = new Grid { Height = 26, Padding = new Thickness(8, 0, 8, 0), ColumnSpacing = 8 };
             line.ColumnDefinitions.Add(Ui.Auto()); line.ColumnDefinitions.Add(Ui.Auto()); line.ColumnDefinitions.Add(Ui.Star()); line.ColumnDefinitions.Add(Ui.Auto());
-            if (checks) line.Column(new Glyph("checkmark", 10, brush) { Width = 12, Opacity = entry.Checked ? 1 : 0, VerticalAlignment = VerticalAlignment.Center }, 0);
-            if (symbols) line.Column(entry.Leading is { } leading ? leading().Align(HorizontalAlignment.Center, VerticalAlignment.Center) : entry.Symbol is null ? new Grid { Width = 16 } : new Glyph(entry.Symbol, 12, brush) { Width = 16, VerticalAlignment = VerticalAlignment.Center }, 1);
-            line.Column(Ui.Text(entry.Title, 13, brush), 2);
+            if (symbols) line.Column(entry.Leading is { } leading ? leading().Align(HorizontalAlignment.Center, VerticalAlignment.Center) : entry.Symbol is null ? new Grid { Width = 16 } : new Glyph(entry.Symbol, 12, brush) { Width = 16, VerticalAlignment = VerticalAlignment.Center }, 0);
+            // The check follows the title closely, so rows without one keep no empty column on the left.
+            var title = Ui.H(6, Ui.Text(entry.Title, 13, brush));
+            title.VerticalAlignment = VerticalAlignment.Center;
+            if (entry.Checked) title.Children.Add(new Glyph("checkmark", 10, brush) { VerticalAlignment = VerticalAlignment.Center });
+            line.Column(title, 1);
             if (entry.Shortcut is not null) line.Column(Ui.Text(entry.Shortcut, 12, Palette.Text3.Brush()).Margin(16, 0, 0, 0), 3);
             var root = new Grid { Background = Palette.Clear };
             root.Children.Add(plate); root.Children.Add(line);
@@ -142,6 +168,8 @@ public static partial class MicaMenu
             GotFocus += (_, _) => Highlight(true);
             LostFocus += (_, _) => Highlight(false);
             Tapped += (_, e) => { if (entry.Enabled) { e.Handled = true; choose(); } };
+            if (entry.Secondary.Count > 0)
+                RightTapped += (_, e) => { e.Handled = true; var at = e.GetPosition(this); ShowChild(entry.Secondary, this, at); };
             KeyDown += (_, e) => { if (entry.Enabled && e.Key is Windows.System.VirtualKey.Enter or Windows.System.VirtualKey.Space) { e.Handled = true; choose(); } };
             AutomationProperties.SetName(this, entry.Title);
         }

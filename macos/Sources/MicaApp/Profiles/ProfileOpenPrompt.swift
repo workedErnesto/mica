@@ -19,26 +19,26 @@ struct ProfileOpenPrompt: View {
                 .shadow(color: Color(hex: profile.background).opacity(0.35), radius: 12, y: 5)
                 .scaleEffect(shown || reduced ? 1 : 0.8)
                 .padding(.bottom, 14)
-            Text(store.text("открыть профиль ", "Открыть профиль ") + store.quoted(store.profileName(profile)) + "?")
+            Text(browser.text("открыть профиль ", "Открыть профиль ") + browser.quoted(browser.profileName(profile)) + "?")
                 .font(.system(size: 14, weight: .semibold)).foregroundStyle(Palette.ink)
                 .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
                 .padding(.bottom, 6)
-            Text(store.text("в этом окне закреплённые вкладки сменятся закреплёнными вкладками профиля, остальные вкладки останутся. в новом окне это окно не изменится.", "В этом окне закреплённые вкладки сменятся закреплёнными вкладками профиля, остальные вкладки останутся. В новом окне это окно не изменится."))
+            Text(browser.text("в этом окне закреплённые вкладки сменятся закреплёнными вкладками профиля, остальные вкладки останутся. в новом окне это окно не изменится.", "В этом окне закреплённые вкладки сменятся закреплёнными вкладками профиля, остальные вкладки останутся. В новом окне это окно не изменится."))
                 .font(.system(size: 12)).foregroundStyle(Palette.text2).lineSpacing(2)
                 .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
                 .padding(.bottom, 18)
             VStack(spacing: Space.small) {
-                Button(store.text("в новом окне", "В новом окне")) { choose(.newWindow) }
+                Button(browser.text("в новом окне", "В новом окне")) { choose(.newWindow) }
                     .buttonStyle(MButtonStyle(kind: .primary, fill: true)).keyboardShortcut(.defaultAction)
-                Button(store.text("в этом окне", "В этом окне")) { choose(.here) }
+                Button(browser.text("в этом окне", "В этом окне")) { choose(.here) }
                     .buttonStyle(MButtonStyle(kind: .secondary, fill: true))
-                Button(store.text("отмена", "Отмена")) { browser.profilePrompt = nil }
+                Button(browser.text("отмена", "Отмена")) { browser.profilePrompt = nil }
                     .buttonStyle(MButtonStyle(kind: .ghost, fill: true)).keyboardShortcut(.cancelAction)
             }
             .padding(.bottom, 14)
-            Toggle(store.text("запомнить выбор", "Запомнить выбор"), isOn: $remember)
+            Toggle(browser.text("запомнить выбор", "Запомнить выбор"), isOn: $remember)
                 .toggleStyle(MToggleStyle()).font(.system(size: 12.5)).foregroundStyle(Palette.text2).fixedSize()
-                .help(store.text("ответ можно поменять в настройках, в разделе «профили».", "Ответ можно поменять в настройках, в разделе «профили»."))
+                .help(browser.text("ответ можно поменять в настройках, в разделе «профили».", "Ответ можно поменять в настройках, в разделе «профили»."))
         }
         .padding(.horizontal, 22).padding(.top, 24).padding(.bottom, 18)
         .fixedSize(horizontal: false, vertical: true)

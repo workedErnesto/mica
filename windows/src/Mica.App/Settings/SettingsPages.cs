@@ -63,7 +63,7 @@ public static class SettingsPages
             .Add(new SettingRow(s.Text("прозрачность", "Прозрачность"), Ui.H(Mica.Design.Space.Small, transparency, percent), divider: false));
         var icon = new SettingsGroup(s.Text("иконка приложения", "Иконка приложения"), s.Text("иконка меняется на панели задач и в переключателе окон, пока mica открыта. ярлыки в меню «пуск» и закреплённый значок остаются стандартными.", "Иконка меняется на панели задач и в переключателе окон, пока mica открыта. Ярлыки в меню «Пуск» и закреплённый значок остаются стандартными."))
             .Add(new Appearance.IconPicker(s) { Margin = new Thickness(14) });
-        var language = new SettingsGroup(s.Text("язык и текст", "Язык и текст"), s.Text("язык меняет только интерфейс mica. страницы сайтов, адреса и ваши данные не переводятся.", "Язык меняет только интерфейс mica. Страницы сайтов, адреса и ваши данные не переводятся."))
+        var language = new SettingsGroup(s.Text("язык и текст", "Язык и текст"), s.Text("у каждого профиля свои язык и регистр, здесь они меняются для профиля этого окна. страницы сайтов, адреса и ваши данные не переводятся.", "У каждого профиля свои язык и регистр, здесь они меняются для профиля этого окна. Страницы сайтов, адреса и ваши данные не переводятся."))
             .Add(new SettingRow(s.Text("язык", "Язык"), Pickers.LanguagePicker(s, 260)))
             .Add(new SettingRow(s.Text("текст интерфейса", "Текст интерфейса"), Pickers.CasePicker(s, 260), divider: false));
         return Page(ProfileScope.Make(b), new Appearance.LayoutPreview(s) { Height = 168 }, ThemeGroup(s), material, icon, language);

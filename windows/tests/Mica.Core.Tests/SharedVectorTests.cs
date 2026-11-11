@@ -49,6 +49,16 @@ public class SharedVectorTests
                 var list = icons.Zip(backgrounds, (i, b) => new Profile { Name = "x", Icon = i, Background = b }).ToList();
                 var next = Profiles.Next(list, "", new ProfileLook());
                 return new JsonObject { ["icon"] = next.Icon, ["background"] = next.Background };
+            case "profileText":
+                // A profile without its own language or case takes the application-wide ones.
+                var look = new ProfileLook
+                {
+                    Language = c["lookLanguage"]?.GetValue<string>() is { } own ? (own == "en" ? Language.En : Language.Ru) : null,
+                    Lowercase = c["lookLowercase"]?.GetValue<bool>(),
+                };
+                var global = new Preferences { Language = S("language") == "en" ? Language.En : Language.Ru, Lowercase = c["lowercase"]!.GetValue<bool>() };
+                var applied = look.AppliedTo(global);
+                return (applied.Language == Language.En ? "en" : "ru") + (applied.Lowercase ? "-low" : "-regular");
             case "profileGlyph": return Profiles.LightGlyph(S("hex"), c["glyph"]?.GetValue<string>() switch { "light" => ProfileGlyph.Light, "dark" => ProfileGlyph.Dark, _ => ProfileGlyph.Auto }) ? "light" : "dark";
             default: throw new InvalidOperationException(section);
         }

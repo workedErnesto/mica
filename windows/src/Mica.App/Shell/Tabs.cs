@@ -391,7 +391,7 @@ public sealed partial class Sidebar : Grid
             MenuEntry.Item(browser.Text("новая вкладка", "Новая вкладка"), () => { browser.Add(); browser.FocusAddress(); }, "plus"),
             MenuEntry.Item(browser.Prefs.SidebarCollapsed ? browser.Text("развернуть боковую панель", "Развернуть боковую панель") : browser.Text("свернуть боковую панель", "Свернуть боковую панель"), () => store.Change(p => p.SidebarCollapsed = !p.SidebarCollapsed), edge == TabLayout.Right ? "sidebar.right" : "sidebar.left"),
             MenuEntry.Separator, .. LayoutMenu.Entries(store), MenuEntry.Separator,
-            MenuEntry.Item(store.Text("настроить панель инструментов…", "Настроить панель инструментов…"), () => browser.CustomizingToolbar = true, "slider.horizontal.3"),
+            MenuEntry.Item(browser.Text("настроить панель инструментов…", "Настроить панель инструментов…"), () => browser.CustomizingToolbar = true, "slider.horizontal.3"),
         ]);
         this.Bind(browser, Render);
         this.Bind(h => store.PreferencesUpdated += h, h => store.PreferencesUpdated -= h, Render);

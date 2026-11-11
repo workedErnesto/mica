@@ -32,7 +32,7 @@ public sealed partial class ImportManager(Store store)
         Changed?.Invoke();
     }
 
-    public string Title(ImportProfile profile) => profile.Browser.DisplayName(store.Preferences.Language);
+    public string Title(ImportProfile profile) => profile.Browser.DisplayName(store.TextStyle(store.Active?.ProfileId).Language);
     public void Select(ImportProfile profile) { if (State == Phase.Reading) return; Reset(); Selection = profile.Id; Changed?.Invoke(); }
     public void Reset() { State = Phase.Idle; Result = null; Failure = null; }
 

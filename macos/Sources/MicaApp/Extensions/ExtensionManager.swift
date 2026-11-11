@@ -236,7 +236,7 @@ final class ExtensionManager: NSObject, ObservableObject, WKWebExtensionControll
         searchTask?.cancel()
         guard !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { catalog = []; catalogStatus = store.text("введите название для поиска в Firefox Add-ons", "Введите название для поиска в Firefox Add-ons"); return }
         catalogStatus = store.text("поиск в Firefox Add-ons", "Поиск в Firefox Add-ons")
-        let language = store.preferences.language
+        let language = store.language
         searchTask = Task {
             do {
                 var c = URLComponents(string: "https://addons.mozilla.org/api/v5/addons/search/")!

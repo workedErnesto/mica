@@ -42,6 +42,12 @@ final class SharedVectorTests: XCTestCase {
             let list = zip(c["icons"] as! [String], c["backgrounds"] as! [String]).map { Profile(name: "x", icon: $0, background: $1) }
             let next = Profiles.next(after: list, name: "", look: ProfileLook())
             return ["icon": next.icon, "background": next.background]
+        case "profileText":
+            // A profile without its own language or case takes the application-wide ones.
+            var look = ProfileLook(); look.language = (c["lookLanguage"] as? String).flatMap(Language.init(rawValue:)); look.lowercase = c["lookLowercase"] as? Bool
+            var global = Preferences(); global.language = Language(rawValue: c["language"] as! String)!; global.lowercase = c["lowercase"] as! Bool
+            let p = look.applied(to: global)
+            return p.language.rawValue + (p.lowercase ? "-low" : "-regular")
         case "profileGlyph": return Profiles.lightGlyph(on: c["hex"] as! String, glyph: ProfileGlyph(rawValue: c["glyph"] as? String ?? "auto") ?? .auto) ? "light" : "dark"
         default: XCTFail("unknown section \(section)"); return NSNull()
         }

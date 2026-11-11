@@ -36,6 +36,8 @@ struct MTextField: View {
     var symbol: String?
     /// Search field look (surface, shadow, larger text) instead of the tonal field.
     var prominent = false
+    /// Takes the focus when it appears, for the first field of a form in a popover.
+    var autofocus = false
     var onSubmit: () -> Void = {}
     @FocusState private var focused: Bool
     @Environment(\.look) private var look
@@ -64,5 +66,6 @@ struct MTextField: View {
         .frame(height: prominent ? 36 : 32)
         .modifier(FieldChrome(focused: focused, prominent: prominent))
         .animation(Motion.hover, value: text.isEmpty)
+        .onAppear { if autofocus { DispatchQueue.main.async { focused = true } } }
     }
 }

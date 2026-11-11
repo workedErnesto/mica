@@ -23,10 +23,10 @@ struct Suggestion: Identifiable, Equatable {
         let engine = store.preferences.search
         if case .web(let url) = AddressParser.resolve(query, engine: engine) {
             if engine.isSearch(url, for: query) {
-                result.append(Suggestion(id: "search", kind: .search, title: query, detail: browser.text("поиск: ", "Поиск: ") + engine.title(store.preferences.language), url: url))
+                result.append(Suggestion(id: "search", kind: .search, title: query, detail: browser.text("поиск: ", "Поиск: ") + engine.title(browser.prefs.language), url: url))
             } else {
                 result.append(Suggestion(id: "open", kind: .open, title: url.absoluteString, detail: browser.text("открыть адрес", "Открыть адрес"), url: url))
-                result.append(Suggestion(id: "search", kind: .search, title: query, detail: browser.text("поиск: ", "Поиск: ") + engine.title(store.preferences.language), url: engine.search(query)))
+                result.append(Suggestion(id: "search", kind: .search, title: query, detail: browser.text("поиск: ", "Поиск: ") + engine.title(browser.prefs.language), url: engine.search(query)))
             }
         }
         func matches(_ title: String, _ url: URL) -> Bool { title.localizedCaseInsensitiveContains(query) || url.absoluteString.localizedCaseInsensitiveContains(query) }

@@ -39,9 +39,9 @@ struct ProfileScope: View {
         if store.profiles.count > 1 {
             HStack(spacing: Space.small) {
                 ProfileMark(profile: browser.profile, size: 18)
-                Text(store.text("настройки профиля ", "Настройки профиля ") + store.quoted(store.profileName(browser.profile))).font(.system(size: 12)).foregroundStyle(Palette.text2).lineLimit(1)
+                Text(browser.text("настройки профиля ", "Настройки профиля ") + browser.quoted(browser.profileName(browser.profile))).font(.system(size: 12)).foregroundStyle(Palette.text2).lineLimit(1)
                 Spacer(minLength: Space.small)
-                Button(store.text("профили", "Профили")) { withMotion(Motion.quick) { browser.editingProfile = browser.profileID; browser.settingsSection = .profiles } }
+                Button(browser.text("профили", "Профили")) { withMotion(Motion.quick) { browser.editingProfile = browser.profileID; browser.settingsSection = .profiles } }
                     .buttonStyle(MButtonStyle(kind: .ghost, compact: true))
             }
             .padding(.leading, 10).padding(.trailing, 4).frame(height: 36)

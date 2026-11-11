@@ -5,23 +5,24 @@ import MicaCore
 
 struct IconPicker: View {
     @ObservedObject var store: Store
+    @ObservedObject var browser: BrowserModel
     var body: some View {
         VStack(alignment: .leading, spacing: Space.normal) {
             if !AppIcons.available {
-                Text(store.text("в этой сборке нет набора иконок", "В этой сборке нет набора иконок")).font(.system(size: 12)).foregroundStyle(Palette.text3)
+                Text(browser.text("в этой сборке нет набора иконок", "В этой сборке нет набора иконок")).font(.system(size: 12)).foregroundStyle(Palette.text3)
             } else {
                 ForEach(AppIcons.sets) { set in
                     VStack(alignment: .leading, spacing: 6) {
-                        Text(store.text(set.low, set.regular)).font(.system(size: 11.5, weight: .medium)).foregroundStyle(Palette.text3)
+                        Text(browser.text(set.low, set.regular)).font(.system(size: 11.5, weight: .medium)).foregroundStyle(Palette.text3)
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 46, maximum: 52), spacing: 6)], alignment: .leading, spacing: 6) {
-                            ForEach(set.icons) { icon in IconChoice(id: icon.id, label: store.text(icon.low, icon.regular), store: store) }
+                            ForEach(set.icons) { icon in IconChoice(id: icon.id, label: browser.text(icon.low, icon.regular), store: store, browser: browser) }
                         }
                     }
                 }
             }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(store.text("иконка приложения", "Иконка приложения"))
+        .accessibilityLabel(browser.text("иконка приложения", "Иконка приложения"))
     }
 }
 
@@ -29,6 +30,7 @@ struct IconChoice: View {
     let id: String?
     let label: String
     @ObservedObject var store: Store
+    @ObservedObject var browser: BrowserModel
     @State private var hover = false
     @Environment(\.look) private var look
     @Environment(\.accessibilityReduceMotion) private var reduced

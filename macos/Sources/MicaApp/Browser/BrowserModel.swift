@@ -91,6 +91,7 @@ final class BrowserModel: NSObject, ObservableObject, WKWebExtensionWindow {
         }
         profileID = target
         controller?.applyProfile()
+        store.updateTextStyle()
         store.scheduleSession()
     }
     /// Stores this window's pinned tabs as the profile's own.
@@ -101,7 +102,12 @@ final class BrowserModel: NSObject, ObservableObject, WKWebExtensionWindow {
             if profile.pinned.map(\.url) != pinned.map(\.url) || profile.pinned.map(\.title) != pinned.map(\.title) { profile.pinned = pinned }
         }
     }
-    func text(_ low: String, _ regular: String) -> String { store.text(low, regular) }
+    /// Text of this window in its profile's language and case.
+    var textStyle: TextStyle { TextStyle(prefs) }
+    func text(_ low: String, _ regular: String) -> String { textStyle.text(low, regular) }
+    func quoted(_ text: String) -> String { textStyle.quoted(text) }
+    func profileName(_ profile: Profile) -> String { textStyle.profileName(profile) }
+    var locale: Locale { textStyle.locale }
     @discardableResult func add(saved: SavedTab = SavedTab(), activate: Bool = true, restored: Bool = false, configuration: WKWebViewConfiguration? = nil) -> Tab {
         let tab = Tab(saved: saved, owner: self, restored: restored)
         if saved.pinned { tabs.insert(tab, at: tabs.prefix(while: { $0.pinned }).count) } else { tabs.append(tab) }
@@ -112,6 +118,8 @@ final class BrowserModel: NSObject, ObservableObject, WKWebExtensionWindow {
         store.scheduleSession()
         return tab
     }
+    /// Takes the page off the start page's own sites of this window's profile.
+    func removeStartShortcut(_ url: URL) { prefs.start.shortcuts.removeAll { $0.url == url } }
     func open(_ url: URL, background: Bool = false) { _ = add(saved: SavedTab(url: url), activate: !background) }
     func select(_ tab: Tab) {
         let previous = selected
@@ -124,7 +132,7 @@ final class BrowserModel: NSObject, ObservableObject, WKWebExtensionWindow {
     /// The window menu and Mission Control tell windows of different profiles apart by name.
     var windowTitle: String {
         var parts = ["mica"]
-        if store.profiles.count > 1 || !profile.isStandard { parts.append(store.profileName(profile)) }
+        if store.profiles.count > 1 || !profile.isStandard { parts.append(profileName(profile)) }
         if privateMode { parts.append(text("инкогнито", "Инкогнито")) }
         return parts.joined(separator: " — ")
     }

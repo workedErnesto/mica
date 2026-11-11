@@ -15,15 +15,15 @@ struct SettingsView: View {
         HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 2) {
                 if !compact {
-                    Text(store.text("настройки", "Настройки")).font(.system(size: 20, weight: .regular)).tracking(-0.4).foregroundStyle(Palette.ink)
+                    Text(browser.text("настройки", "Настройки")).font(.system(size: 20, weight: .regular)).tracking(-0.4).foregroundStyle(Palette.ink)
                         .padding(.horizontal, 10).padding(.top, 6).padding(.bottom, Space.normal)
                 }
                 ForEach(SettingsSection.allCases) { item in navItem(item, compact: compact) }
                 Spacer()
                 if compact {
-                    IconButton(symbol: "xmark", label: store.text("готово", "Готово"), size: 36) { dismiss() }
+                    IconButton(symbol: "xmark", label: browser.text("готово", "Готово"), size: 36) { dismiss() }
                 } else {
-                    Button(store.text("готово", "Готово")) { dismiss() }.buttonStyle(MButtonStyle(kind: .primary, fill: true)).keyboardShortcut(.cancelAction)
+                    Button(browser.text("готово", "Готово")) { dismiss() }.buttonStyle(MButtonStyle(kind: .primary, fill: true)).keyboardShortcut(.cancelAction)
                 }
             }
             .padding(Space.normal)
@@ -33,7 +33,7 @@ struct SettingsView: View {
             Rectangle().fill(Palette.hairline).frame(width: 1)
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.section) {
-                    Text(section.title(store)).font(.system(size: 22, weight: .regular)).tracking(-0.5).foregroundStyle(Palette.ink)
+                    Text(section.title(browser)).font(.system(size: 22, weight: .regular)).tracking(-0.5).foregroundStyle(Palette.ink)
                     content(height: geo.size.height)
                 }
                 .padding(28)
@@ -44,7 +44,7 @@ struct SettingsView: View {
             .scrollIndicators(.never)
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if section == .about {
-                    Text(store.text("develop whoa with ❤️", "Develop whoa with ❤️")).font(.system(size: 12)).foregroundStyle(Palette.text3)
+                    Text(browser.text("develop whoa with ❤️", "Develop whoa with ❤️")).font(.system(size: 12)).foregroundStyle(Palette.text3)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 28).padding(.bottom, 22).padding(.top, Space.small)
                         .transition(.opacity)
@@ -62,7 +62,7 @@ struct SettingsView: View {
     }
 
     private func navItem(_ item: SettingsSection, compact: Bool) -> some View {
-        NavItem(title: item.title(store), symbol: item.symbol, selected: section == item, namespace: selection, compact: compact) { withMotion(Motion.quick) { browser.settingsSection = item } }
+        NavItem(title: item.title(browser), symbol: item.symbol, selected: section == item, namespace: selection, compact: compact) { withMotion(Motion.quick) { browser.settingsSection = item } }
     }
 
     @ViewBuilder private func content(height: CGFloat) -> some View {
@@ -72,10 +72,10 @@ struct SettingsView: View {
         case .start: StartSettings(store: store, browser: browser)
         case .profiles: ProfileSettings(store: store, browser: browser)
         case .search: SearchSettings(store: store, browser: browser)
-        case .session: SessionSettings(store: store)
-        case .transfer: ImportView(store: store, manager: store.importer)
-        case .permissions: PermissionSettings(store: store)
-        case .passwords: PasswordSettings(store: store, passwords: store.passwords)
+        case .session: SessionSettings(store: store, browser: browser)
+        case .transfer: ImportView(store: store, browser: browser, manager: store.importer)
+        case .permissions: PermissionSettings(store: store, browser: browser)
+        case .passwords: PasswordSettings(store: store, browser: browser, passwords: store.passwords)
         case .about: AboutSettings(store: store, browser: browser, dismiss: dismiss)
         }
     }

@@ -14,7 +14,10 @@ final class Store: ObservableObject {
     /// only seeds the standard profile when preferences from a build before profiles are first loaded.
     @Published var preferences: Preferences { didSet { schedulePreferences(); if oldValue.appIcon != preferences.appIcon { AppIcons.apply(preferences.appIcon); flushPreferences(); AppIcons.announce() }; if oldValue.blocking != preferences.blocking || oldValue.blockingExceptions != preferences.blockingExceptions { Task { await blocker.rebuild() } } } }
     /// The standard profile first. Each window shows one of them; deleting a profile moves its windows to the standard one.
-    @Published var profiles: [Profile] { didSet { scheduleProfiles(); for window in windows { window.applyProfile() } } }
+    @Published var profiles: [Profile] { didSet { scheduleProfiles(); for window in windows { window.applyProfile() }; updateTextStyle() } }
+    /// Language and case of text that belongs to no window (the menu bar, alerts without a window, extension and update
+    /// messages): those of the profile of the window in front. A window's own text follows its profile (`BrowserModel.text`).
+    @Published private(set) var textStyle = TextStyle(language: .ru, lowercase: true)
     @Published var bookmarks: [Visit] { didSet { save(bookmarks, "bookmarks.json") } }
     @Published var history: [Visit] { didSet { save(history, "history.json") } }
     @Published var permissions: [SitePermission] { didSet { save(permissions, "permissions.json") } }
@@ -62,13 +65,21 @@ final class Store: ObservableObject {
         bookmarks = read([Visit].self, "bookmarks.json") ?? []
         history = read([Visit].self, "history.json") ?? []
         permissions = read([SitePermission].self, "permissions.json") ?? []
+        textStyle = TextStyle(Profiles.resolve(nil, in: profiles).look.applied(to: loaded))
         unreadableFiles = Set(loadIssues.map { String($0.prefix { $0 != ":" }) })
         if !loadIssues.isEmpty { issue = "mica: " + loadIssues.joined(separator: "\n") }
         if ProcessInfo.processInfo.arguments.contains("--qa") { preferences.onboardingComplete = true; preferences.restore = false }
         // The first launch with profiles writes the standard profile made from the old preferences.
         if !FileManager.default.fileExists(atPath: storageRoot.appendingPathComponent("profiles.json").path) { save(profiles, "profiles.json") }
     }
-    func text(_ low: String, _ regular: String) -> String { Copy.text(low, regular, lowercase: preferences.lowercase, language: preferences.language) }
+    func text(_ low: String, _ regular: String) -> String { textStyle.text(low, regular) }
+    var language: Language { textStyle.language }
+    var lowercase: Bool { textStyle.lowercase }
+    /// Called when another window comes in front or a profile changes.
+    func updateTextStyle() {
+        let style = TextStyle(prefs(for: active?.profileID))
+        if style != textStyle { textStyle = style }
+    }
     func capabilityName(_ capability: SiteCapability) -> String {
         switch capability {
         case .camera: return text("камера", "Камера")
@@ -76,7 +87,7 @@ final class Store: ObservableObject {
         case .notifications: return text("уведомления", "Уведомления")
         }
     }
-    var locale: Locale { Locale(identifier: preferences.language == .ru ? "ru_RU" : "en_US") }
+    var locale: Locale { textStyle.locale }
     func save<T: Encodable>(_ value: T, _ name: String) {
         guard !unreadableFiles.contains(name) else { return }
         do { try Persistence.write(value, at: root.appendingPathComponent(name)) } catch { issue = text("не удалось сохранить данные: ", "Не удалось сохранить данные: ") + error.localizedDescription }
@@ -97,8 +108,8 @@ final class Store: ObservableObject {
     }
     func profile(_ id: UUID?) -> Profile { Profiles.resolve(id, in: profiles) }
     /// A name inside authored text: «…» in Russian, “…” in English.
-    func quoted(_ text: String) -> String { preferences.language == .en ? "“" + text + "”" : "«" + text + "»" }
-    func profileName(_ profile: Profile) -> String { Profiles.displayName(profile, lowercase: preferences.lowercase, language: preferences.language) }
+    func quoted(_ text: String) -> String { textStyle.quoted(text) }
+    func profileName(_ profile: Profile) -> String { textStyle.profileName(profile) }
     /// Preferences in effect for a window of this profile: the application-wide ones with the profile's look over them.
     func prefs(for id: UUID?) -> Preferences { profile(id).look.applied(to: preferences) }
     /// Splits an edited copy back: the profile's part goes to the profile, the rest to the application-wide preferences.
@@ -250,4 +261,17 @@ final class Store: ObservableObject {
         if choice.cache { types.formUnion([WKWebsiteDataTypeDiskCache, WKWebsiteDataTypeMemoryCache, WKWebsiteDataTypeFetchCache, WKWebsiteDataTypeOfflineWebApplicationCache]) }
         if !types.isEmpty { await websiteDataStore.removeData(ofTypes: types, modifiedSince: start) }
     }
+}
+
+/// Language and letter case of interface text, taken from a profile's preferences.
+struct TextStyle: Equatable {
+    var language: Language
+    var lowercase: Bool
+    init(language: Language, lowercase: Bool) { self.language = language; self.lowercase = lowercase }
+    init(_ p: Preferences) { language = p.language; lowercase = p.lowercase }
+    func text(_ low: String, _ regular: String) -> String { Copy.text(low, regular, lowercase: lowercase, language: language) }
+    var locale: Locale { Locale(identifier: language == .ru ? "ru_RU" : "en_US") }
+    /// A name inside authored text: «…» in Russian, “…” in English.
+    func quoted(_ text: String) -> String { language == .en ? "“" + text + "”" : "«" + text + "»" }
+    func profileName(_ profile: Profile) -> String { Profiles.displayName(profile, lowercase: lowercase, language: language) }
 }

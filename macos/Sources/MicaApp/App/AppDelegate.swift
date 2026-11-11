@@ -19,7 +19,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         store.notifier.start()
         buildMenu()
         QuitHold.shared.install()
-        observer = store.$preferences.map { "\($0.lowercase)-\($0.language.rawValue)" }.removeDuplicates().sink { [weak self] _ in DispatchQueue.main.async { self?.buildMenu() } }
+        observer = store.$textStyle.removeDuplicates().sink { [weak self] _ in DispatchQueue.main.async { self?.buildMenu() } }
         profileObserver = store.$profiles.map { $0.map { "\($0.id)\($0.name)\($0.icon)\($0.background)" } }.removeDuplicates().sink { [weak self] _ in DispatchQueue.main.async { self?.buildMenu() } }
         Task {
             await store.start()
@@ -188,9 +188,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         item(file, "закрыть вкладку", "Закрыть вкладку", "w", "close"); item(file, "восстановить вкладку", "Восстановить вкладку", "t", "reopen", [.command, .shift]); item(file, "печать…", "Печать…", "p", "print")
         let edit = menu(store.text("правка", "Правка"))
         // Undo and redo share Russian words with cancel and retry elsewhere, so their English is spelled out here.
-        let english = store.preferences.language == .en
+        let english = store.language == .en
         for (low, regular, key, action) in [("отменить", "Отменить", "z", "undo:"), ("повторить", "Повторить", "Z", "redo:"), ("вырезать", "Вырезать", "x", "cut:"), ("копировать", "Копировать", "c", "copy:"), ("вставить", "Вставить", "v", "paste:"), ("выбрать всё", "Выбрать всё", "a", "selectAll:")] {
-            let title = english && action == "undo:" ? (store.preferences.lowercase ? "undo" : "Undo") : english && action == "redo:" ? (store.preferences.lowercase ? "redo" : "Redo") : store.text(low, regular)
+            let title = english && action == "undo:" ? (store.lowercase ? "undo" : "Undo") : english && action == "redo:" ? (store.lowercase ? "redo" : "Redo") : store.text(low, regular)
             edit.addItem(withTitle: title, action: Selector(action), keyEquivalent: key)
             if action == "paste:" {
                 edit.addItem(withTitle: store.text("вставить без форматирования", "Вставить без форматирования"), action: Selector(("pasteAsPlainText:")), keyEquivalent: "v").keyEquivalentModifierMask = [.command, .option, .shift]

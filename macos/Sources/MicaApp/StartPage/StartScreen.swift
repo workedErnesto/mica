@@ -37,7 +37,7 @@ struct StartScreen: View {
                             if options.wordmark || editing {
                                 VStack(spacing: Space.normal) {
                                     if editing {
-                                        StartBlockHeader(title: greeting == nil ? store.text("знак mica", "Знак mica") : store.text("приветствие", "Приветствие"), editing: true, shown: $browser.prefs.start.wordmark, store: store)
+                                        StartBlockHeader(title: greeting == nil ? browser.text("знак mica", "Знак mica") : browser.text("приветствие", "Приветствие"), editing: true, shown: $browser.prefs.start.wordmark, store: store, browser: browser)
                                             .transition(.opacity)
                                     }
                                     SwiftUI.Group {
@@ -98,7 +98,7 @@ struct StartScreen: View {
                     .padding(.horizontal, Space.normal).padding(.bottom, Space.normal)
                     .transition(Motion.slide(.bottom))
             } else {
-                StartCustomizeButton(store: store) { withMotion(Motion.panel) { browser.customizingStart = true } }
+                StartCustomizeButton(store: store, browser: browser) { withMotion(Motion.panel) { browser.customizingStart = true } }
                     .padding(Space.normal)
                     .entrance(shown, delay: Entrance.step(5 + sections.count), rise: 0)
                     .transition(.opacity)
@@ -153,7 +153,7 @@ struct StartScreen: View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 Image(systemName: "magnifyingglass").font(.system(size: 15, weight: .medium)).foregroundStyle(Palette.text2)
-                TextField(browser.text("поиск в ", "Поиск в ") + store.preferences.search.title(store.preferences.language) + browser.text(" или адрес", " или адрес"), text: $text)
+                TextField(browser.text("поиск в ", "Поиск в ") + store.preferences.search.title(browser.prefs.language) + browser.text(" или адрес", " или адрес"), text: $text)
                     .textFieldStyle(.plain).font(.system(size: 16)).focused($focused)
                     .onSubmit { if items.indices.contains(highlighted), highlighted > 0 || [.open, .search].contains(items[0].kind) { items[highlighted].activate(in: browser) } else if !text.isEmpty { browser.navigate(text) } }
                     .modifier(SuggestionKeys(count: items.count, highlighted: $highlighted))

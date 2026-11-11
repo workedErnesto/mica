@@ -23,7 +23,7 @@ struct Onboarding: View {
                     }
                     Spacer()
                     if !compact {
-                        Text(store.text("шаг ", "Шаг ") + "\(step + 1) / \(Self.steps)").font(.system(size: 11.5).monospacedDigit()).foregroundStyle(Palette.text3)
+                        Text(browser.text("шаг ", "Шаг ") + "\(step + 1) / \(Self.steps)").font(.system(size: 11.5).monospacedDigit()).foregroundStyle(Palette.text3)
                             .padding(.horizontal, 10).padding(.bottom, Space.micro)
                             .contentTransition(.numericText())
                     }
@@ -45,9 +45,9 @@ struct Onboarding: View {
                     .frame(maxHeight: .infinity, alignment: .top)
                     .padding(.top, Space.section)
                     HStack(spacing: Space.small) {
-                        if step > 0 { Button(store.text("назад", "Назад")) { move(-1) }.buttonStyle(MButtonStyle(kind: .ghost)).transition(.opacity) }
+                        if step > 0 { Button(browser.text("назад", "Назад")) { move(-1) }.buttonStyle(MButtonStyle(kind: .ghost)).transition(.opacity) }
                         Spacer()
-                        Button(step == Self.steps - 1 ? store.text("начать", "Начать") : store.text("дальше", "Дальше")) {
+                        Button(step == Self.steps - 1 ? browser.text("начать", "Начать") : browser.text("дальше", "Дальше")) {
                             if step < Self.steps - 1 { move(1) }
                             else { store.preferences.onboardingComplete = true; browser.showOnboarding = false; browser.focusAddress += 1 }
                         }
@@ -65,12 +65,12 @@ struct Onboarding: View {
     }
     private func stepName(_ index: Int) -> String {
         switch index {
-        case 0: return store.text("знакомство", "Знакомство")
-        case 1: return store.text("перенос данных", "Перенос данных")
-        case 2: return store.text("пространство", "Пространство")
-        case 3: return store.text("оформление", "Оформление")
-        case 4: return store.text("поиск и защита", "Поиск и защита")
-        default: return store.text("сессия", "Сессия")
+        case 0: return browser.text("знакомство", "Знакомство")
+        case 1: return browser.text("перенос данных", "Перенос данных")
+        case 2: return browser.text("пространство", "Пространство")
+        case 3: return browser.text("оформление", "Оформление")
+        case 4: return browser.text("поиск и защита", "Поиск и защита")
+        default: return browser.text("сессия", "Сессия")
         }
     }
     private func stepSymbol(_ index: Int) -> String {
@@ -95,22 +95,22 @@ struct Onboarding: View {
     private func move(_ delta: Int) { forward = delta > 0; withMotion(Motion.panel ?? .easeInOut(duration: 0.12)) { browser.onboardingStep += delta } }
     private var title: String {
         switch step {
-        case 0: return store.text("привет, это mica", "Привет, это mica")
-        case 1: return store.text("всё уже на месте", "Всё уже на месте")
-        case 2: return store.text("ваше пространство", "Ваше пространство")
-        case 3: return store.text("цвет и иконка", "Цвет и иконка")
-        case 4: return store.text("спокойнее с первого запуска", "Спокойнее с первого запуска")
-        default: return store.text("работа остаётся с вами", "Работа остаётся с вами")
+        case 0: return browser.text("привет, это mica", "Привет, это mica")
+        case 1: return browser.text("всё уже на месте", "Всё уже на месте")
+        case 2: return browser.text("ваше пространство", "Ваше пространство")
+        case 3: return browser.text("цвет и иконка", "Цвет и иконка")
+        case 4: return browser.text("спокойнее с первого запуска", "Спокойнее с первого запуска")
+        default: return browser.text("работа остаётся с вами", "Работа остаётся с вами")
         }
     }
     private var subtitle: String {
         switch step {
-        case 0: return store.text("язык, имя и стиль текста. всё можно поменять позже в настройках", "Язык, имя и стиль текста. Всё можно поменять позже в настройках")
-        case 1: return store.text("история и закладки из другого браузера. шаг можно пропустить", "История и закладки из другого браузера. Шаг можно пропустить")
-        case 2: return store.text("изменения видны сразу", "Изменения видны сразу")
-        case 3: return store.text("тема окна, акцент и иконка mica в Доке", "Тема окна, акцент и иконка mica в Доке")
-        case 4: return store.text("поиск, блокировка и разрешения", "Поиск, блокировка и разрешения")
-        default: return store.text("вкладки, сессия и клавиши", "Вкладки, сессия и клавиши")
+        case 0: return browser.text("язык, имя и стиль текста. всё можно поменять позже в настройках", "Язык, имя и стиль текста. Всё можно поменять позже в настройках")
+        case 1: return browser.text("история и закладки из другого браузера. шаг можно пропустить", "История и закладки из другого браузера. Шаг можно пропустить")
+        case 2: return browser.text("изменения видны сразу", "Изменения видны сразу")
+        case 3: return browser.text("тема окна, акцент и иконка mica в Доке", "Тема окна, акцент и иконка mica в Доке")
+        case 4: return browser.text("поиск, блокировка и разрешения", "Поиск, блокировка и разрешения")
+        default: return browser.text("вкладки, сессия и клавиши", "Вкладки, сессия и клавиши")
         }
     }
     @ViewBuilder private var stepContent: some View {
@@ -119,22 +119,22 @@ struct Onboarding: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.normal) {
                     GreetingPreview(store: store, browser: browser)
-                    DefaultBrowserSetting(store: store)
+                    DefaultBrowserSetting(store: store, browser: browser)
                     SettingsGroup {
-                        SettingRow(title: store.text("язык", "Язык")) { LanguagePicker(store: store, width: 300) }
-                        SettingRow(title: store.text("текст интерфейса", "Текст интерфейса")) { CasePicker(store: store, width: 300) }
+                        SettingRow(title: browser.text("язык", "Язык")) { LanguagePicker(store: store, browser: browser, width: 300) }
+                        SettingRow(title: browser.text("текст интерфейса", "Текст интерфейса")) { CasePicker(store: store, browser: browser, width: 300) }
                         NameSettingRows(store: store, browser: browser)
                     }
                 }
             }.scrollIndicators(.never)
         case 1:
-            ScrollView { ImportView(store: store, manager: store.importer).frame(maxWidth: .infinity, alignment: .leading) }.scrollIndicators(.never)
+            ScrollView { ImportView(store: store, browser: browser, manager: store.importer).frame(maxWidth: .infinity, alignment: .leading) }.scrollIndicators(.never)
         case 2:
             VStack(alignment: .leading, spacing: Space.normal) {
                 LayoutPreview(store: store, browser: browser).frame(height: 150)
                 SettingsGroup {
-                    SettingRow(title: store.text("вкладки", "Вкладки")) { LayoutPicker(store: store, browser: browser, width: 300) }
-                    Toggle(store.text("свернуть боковую панель до иконок", "Свернуть боковую панель до иконок"), isOn: Binding(get: { browser.prefs.sidebarCollapsed }, set: { value in withMotion(Motion.panel) { browser.prefs.sidebarCollapsed = value } })).toggleStyle(MToggleStyle()).modifier(RowInset(divider: false)).disabled(browser.prefs.layout.horizontal)
+                    SettingRow(title: browser.text("вкладки", "Вкладки")) { LayoutPicker(store: store, browser: browser, width: 300) }
+                    Toggle(browser.text("свернуть боковую панель до иконок", "Свернуть боковую панель до иконок"), isOn: Binding(get: { browser.prefs.sidebarCollapsed }, set: { value in withMotion(Motion.panel) { browser.prefs.sidebarCollapsed = value } })).toggleStyle(MToggleStyle()).modifier(RowInset(divider: false)).disabled(browser.prefs.layout.horizontal)
                 }
             }
         case 3:
@@ -143,39 +143,39 @@ struct Onboarding: View {
                     LayoutPreview(store: store, browser: browser).frame(height: 120)
                     ThemeGroup(store: store, browser: browser)
                     SettingsGroup {
-                        Toggle(store.text("матовое стекло оболочки", "Матовое стекло оболочки"), isOn: $browser.prefs.frosted).toggleStyle(MToggleStyle()).modifier(RowInset(divider: false))
+                        Toggle(browser.text("матовое стекло оболочки", "Матовое стекло оболочки"), isOn: $browser.prefs.frosted).toggleStyle(MToggleStyle()).modifier(RowInset(divider: false))
                     }
-                    SettingsGroup(title: store.text("иконка приложения", "Иконка приложения")) { IconPicker(store: store).padding(14) }
+                    SettingsGroup(title: browser.text("иконка приложения", "Иконка приложения")) { IconPicker(store: store, browser: browser).padding(14) }
                 }
             }
             .scrollIndicators(.never)
         case 4:
             VStack(alignment: .leading, spacing: Space.normal) {
                 SettingsGroup {
-                    VStack(alignment: .leading, spacing: 8) { Text(store.text("поисковик", "Поисковик")).font(.system(size: 13)).foregroundStyle(Palette.ink); SearchPicker(store: store) }.padding(.horizontal, 14).padding(.vertical, 10)
+                    VStack(alignment: .leading, spacing: 8) { Text(browser.text("поисковик", "Поисковик")).font(.system(size: 13)).foregroundStyle(Palette.ink); SearchPicker(store: store, browser: browser) }.padding(.horizontal, 14).padding(.vertical, 10)
                     Hairline().padding(.leading, 14)
                     Toggle(isOn: $store.preferences.blocking) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(store.text("блокировать рекламу и трекеры", "Блокировать рекламу и трекеры"))
-                            Text(store.text("локальные правила WebKit для известных сторонних доменов", "Локальные правила WebKit для известных сторонних доменов")).font(.system(size: 11.5)).foregroundStyle(Palette.text3)
+                            Text(browser.text("блокировать рекламу и трекеры", "Блокировать рекламу и трекеры"))
+                            Text(browser.text("локальные правила WebKit для известных сторонних доменов", "Локальные правила WebKit для известных сторонних доменов")).font(.system(size: 11.5)).foregroundStyle(Palette.text3)
                         }
                     }.toggleStyle(MToggleStyle()).modifier(RowInset(divider: false))
                 }
-                note("hand.raised", store.text("камера и микрофон запрашиваются только по запросу сайта, с его адресом в вопросе", "Камера и микрофон запрашиваются только по запросу сайта, с его адресом в вопросе"))
-                note(Glyph.incognito, store.text("окна инкогнито не сохраняют историю, cookie и сессию", "Окна инкогнито не сохраняют историю, cookie и сессию"))
-                note("arrow.down.circle", store.text("список блокировки обновляется только вручную в настройках", "Список блокировки обновляется только вручную в настройках"))
+                note("hand.raised", browser.text("камера и микрофон запрашиваются только по запросу сайта, с его адресом в вопросе", "Камера и микрофон запрашиваются только по запросу сайта, с его адресом в вопросе"))
+                note(Glyph.incognito, browser.text("окна инкогнито не сохраняют историю, cookie и сессию", "Окна инкогнито не сохраняют историю, cookie и сессию"))
+                note("arrow.down.circle", browser.text("список блокировки обновляется только вручную в настройках", "Список блокировки обновляется только вручную в настройках"))
             }
         default:
             VStack(alignment: .leading, spacing: Space.normal) {
-                SettingsGroup(footnote: store.text("после открытия вкладки остаются живыми, mica не выгружает страницы по таймеру. после сбоя восстановятся адреса, но не несохранённые формы.", "После открытия вкладки остаются живыми, mica не выгружает страницы по таймеру. После сбоя восстановятся адреса, но не несохранённые формы.")) {
-                    Toggle(store.text("восстанавливать окна и вкладки", "Восстанавливать окна и вкладки"), isOn: $store.preferences.restore).toggleStyle(MToggleStyle()).modifier(RowInset(divider: true))
-                    Toggle(store.text("загружать сохранённые вкладки при выборе", "Загружать сохранённые вкладки при выборе"), isOn: $store.preferences.lazyRestore).toggleStyle(MToggleStyle()).modifier(RowInset(divider: false)).disabled(!store.preferences.restore)
+                SettingsGroup(footnote: browser.text("после открытия вкладки остаются живыми, mica не выгружает страницы по таймеру. после сбоя восстановятся адреса, но не несохранённые формы.", "После открытия вкладки остаются живыми, mica не выгружает страницы по таймеру. После сбоя восстановятся адреса, но не несохранённые формы.")) {
+                    Toggle(browser.text("восстанавливать окна и вкладки", "Восстанавливать окна и вкладки"), isOn: $store.preferences.restore).toggleStyle(MToggleStyle()).modifier(RowInset(divider: true))
+                    Toggle(browser.text("загружать сохранённые вкладки при выборе", "Загружать сохранённые вкладки при выборе"), isOn: $store.preferences.lazyRestore).toggleStyle(MToggleStyle()).modifier(RowInset(divider: false)).disabled(!store.preferences.restore)
                 }
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], alignment: .leading, spacing: Space.normal) {
-                    shortcut("⌘L", store.text("адрес и поиск", "Адрес и поиск"))
-                    shortcut("⌘T", store.text("новая вкладка", "Новая вкладка"))
-                    shortcut("⌘⇧N", store.text("окно инкогнито", "Окно инкогнито"))
-                    shortcut("⌃⌘S", store.text("боковая панель", "Боковая панель"))
+                    shortcut("⌘L", browser.text("адрес и поиск", "Адрес и поиск"))
+                    shortcut("⌘T", browser.text("новая вкладка", "Новая вкладка"))
+                    shortcut("⌘⇧N", browser.text("окно инкогнито", "Окно инкогнито"))
+                    shortcut("⌃⌘S", browser.text("боковая панель", "Боковая панель"))
                 }
                 .padding(.top, Space.small)
             }

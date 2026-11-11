@@ -18,11 +18,13 @@ struct MenuEntry: Identifiable {
     /// Profile mark drawn in place of the symbol.
     var profile: Profile?
     var action: () -> Void = {}
+    /// Entries shown on a right click of this row, in place of the menu; they win over the row's own action.
+    var secondary: [MenuEntry] = []
     static func item(_ title: String, symbol: String? = nil, enabled: Bool = true, checked: Bool = false, destructive: Bool = false, action: @escaping () -> Void) -> MenuEntry {
         MenuEntry(title: title, symbol: symbol, enabled: enabled, checked: checked, destructive: destructive, action: action)
     }
-    static func profile(_ title: String, profile: Profile, checked: Bool = false, action: @escaping () -> Void) -> MenuEntry {
-        MenuEntry(title: title, checked: checked, profile: profile, action: action)
+    static func profile(_ title: String, profile: Profile, checked: Bool = false, secondary: [MenuEntry] = [], action: @escaping () -> Void) -> MenuEntry {
+        MenuEntry(title: title, checked: checked, profile: profile, action: action, secondary: secondary)
     }
     static var divider: MenuEntry { MenuEntry(kind: .divider) }
     func with(enabled: Bool) -> MenuEntry { var copy = self; copy.enabled = self.enabled && enabled; return copy }

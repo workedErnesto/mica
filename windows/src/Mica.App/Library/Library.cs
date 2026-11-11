@@ -78,7 +78,7 @@ public sealed partial class SidePanel : Grid
         if (panel == LibraryPanel.History)
             foreach (var (day, group) in HistoryOps.Days(visits.Take(600)))
             {
-                list.Children.Add(DayHeader(day, store));
+                list.Children.Add(DayHeader(day, browser));
                 foreach (var visit in group) list.Children.Add(new VisitRow(visit, panel, browser));
             }
         else foreach (var visit in visits) list.Children.Add(new VisitRow(visit, panel, browser));
@@ -91,7 +91,7 @@ public sealed partial class SidePanel : Grid
         filters.Children.Clear();
         if (panel != LibraryPanel.History || browser.PrivateMode || store.Profiles.Count < 2) return;
         filters.Children.Add(Chip(browser.Text("все", "Все"), null));
-        foreach (var profile in store.Profiles.ToList()) filters.Children.Add(Chip(store.ProfileName(profile), profile));
+        foreach (var profile in store.Profiles.ToList()) filters.Children.Add(Chip(browser.ProfileName(profile), profile));
     }
 
     Grid Chip(string title, Profile? profile)
@@ -114,17 +114,17 @@ public sealed partial class SidePanel : Grid
 
     /// <summary>Today, yesterday, then weekday and date in the interface language; authored words follow the case style.
     /// No day means an old download whose date is unknown.</summary>
-    internal static TextBlock DayHeader(DateTime? date, Store store)
+    internal static TextBlock DayHeader(DateTime? date, BrowserModel browser)
     {
         string title;
-        if (date is not { } day) title = store.Text("раньше", "Раньше");
-        else if (day == DateTime.Today) title = store.Text("сегодня", "Сегодня");
-        else if (day == DateTime.Today.AddDays(-1)) title = store.Text("вчера", "Вчера");
+        if (date is not { } day) title = browser.Text("раньше", "Раньше");
+        else if (day == DateTime.Today) title = browser.Text("сегодня", "Сегодня");
+        else if (day == DateTime.Today.AddDays(-1)) title = browser.Text("вчера", "Вчера");
         else
         {
-            var culture = store.Culture;
+            var culture = browser.Culture;
             var text = day.ToString(day.Year == DateTime.Today.Year ? (culture.Name.StartsWith("ru") ? "dddd, d MMMM" : "dddd, MMMM d") : (culture.Name.StartsWith("ru") ? "dddd, d MMMM yyyy" : "dddd, MMMM d, yyyy"), culture);
-            title = store.Preferences.Lowercase ? text.ToLower(culture) : char.ToUpper(text[0], culture) + text[1..];
+            title = browser.TextStyle.Lowercase ? text.ToLower(culture) : char.ToUpper(text[0], culture) + text[1..];
         }
         var header = Ui.Text(title, 11.5, Palette.Text3.Brush(), Ui.Medium);
         header.Margin = new Thickness(8, Space.Small, 8, Space.Micro);
@@ -140,7 +140,7 @@ public sealed partial class VisitRow : Grid
         Background = Palette.Clear; IsTabStop = true;
         var plate = Ui.Rounded(Radius.Row);
         var title = Ui.Text(visit.Title.Length == 0 ? visit.Url : visit.Title, 12.5);
-        var detail = Ui.Text((visit.Host ?? visit.Url) + (panel == LibraryPanel.History ? "  " + visit.Date.LocalDateTime.ToString("t", store.Culture) : ""), 11, Palette.Text3.Brush());
+        var detail = Ui.Text((visit.Host ?? visit.Url) + (panel == LibraryPanel.History ? "  " + visit.Date.LocalDateTime.ToString("t", browser.Culture) : ""), 11, Palette.Text3.Brush());
         var row = new Grid { Padding = new Thickness(8, 6, 32, 6), ColumnSpacing = 10 };
         row.ColumnDefinitions.Add(Ui.Auto()); row.ColumnDefinitions.Add(Ui.Star());
         var icon = new Grid();
@@ -151,7 +151,7 @@ public sealed partial class VisitRow : Grid
             var badge = Ui.Rounded(5, Palette.Surface.Brush(), null, 0, new ProfileMark(owner, 13));
             badge.Padding = new Thickness(1.5); badge.HorizontalAlignment = HorizontalAlignment.Right; badge.VerticalAlignment = VerticalAlignment.Bottom;
             badge.RenderTransform = new TranslateTransform { X = 4, Y = 4 };
-            badge.Tip(store.ProfileName(owner));
+            badge.Tip(browser.ProfileName(owner));
             icon.Children.Add(badge);
         }
         row.Column(icon, 0); row.Column(Ui.V(1, title, detail), 1);
@@ -186,34 +186,34 @@ public sealed partial class ClearDataPanel : StackPanel
     {
         var store = browser.Store;
         Spacing = Space.Section; Padding = new Thickness(28);
-        var title = Ui.Text(store.Text("очистить данные", "Очистить данные"), 20); title.CharacterSpacing = -20;
-        Children.Add(Ui.V(Space.Micro, title, Ui.Text(store.Text("только обычные окна. закладки и открытые вкладки останутся", "Только обычные окна. Закладки и открытые вкладки останутся"), 12.5, Palette.Text2.Brush(), wrap: true)));
+        var title = Ui.Text(browser.Text("очистить данные", "Очистить данные"), 20); title.CharacterSpacing = -20;
+        Children.Add(Ui.V(Space.Micro, title, Ui.Text(browser.Text("только обычные окна. закладки и открытые вкладки останутся", "Только обычные окна. Закладки и открытые вкладки останутся"), 12.5, Palette.Text2.Brush(), wrap: true)));
         var choice = store.Preferences.Clearing.Copy();
-        var period = new Segmented<ClearPeriod>(choice.Period, [(ClearPeriod.Hour, store.Text("час", "Час")), (ClearPeriod.Day, store.Text("сутки", "Сутки")), (ClearPeriod.Week, store.Text("неделя", "Неделя")), (ClearPeriod.Month, store.Text("4 недели", "4 недели")), (ClearPeriod.All, store.Text("всё время", "Всё время"))], minWidth: 424, label: store.Text("период", "Период"));
-        Children.Add(Ui.V(Space.Small, Ui.Text(store.Text("период", "Период"), 12, Palette.Text2.Brush(), Ui.Medium), period));
+        var period = new Segmented<ClearPeriod>(choice.Period, [(ClearPeriod.Hour, browser.Text("час", "Час")), (ClearPeriod.Day, browser.Text("сутки", "Сутки")), (ClearPeriod.Week, browser.Text("неделя", "Неделя")), (ClearPeriod.Month, browser.Text("4 недели", "4 недели")), (ClearPeriod.All, browser.Text("всё время", "Всё время"))], minWidth: 424, label: browser.Text("период", "Период"));
+        Children.Add(Ui.V(Space.Small, Ui.Text(browser.Text("период", "Период"), 12, Palette.Text2.Brush(), Ui.Medium), period));
         var group = new SettingsGroup();
         ToggleRow? historyRow = null;
         MButton run = null!;
         void Save() => store.Change(p => p.Clearing = choice.Copy());
         string Count(int n)
         {
-            if (store.Preferences.Language == Mica.Core.Language.En) return n + " " + (n == 1 ? "entry" : "entries");
+            if (browser.TextStyle.Language == Mica.Core.Language.En) return n + " " + (n == 1 ? "entry" : "entries");
             int ten = n % 10, hundred = n % 100;
             return n + " " + (ten == 1 && hundred != 11 ? "запись" : ten is >= 2 and <= 4 && hundred is not (>= 12 and <= 14) ? "записи" : "записей");
         }
-        string HistoryDetail() { var visits = HistoryOps.Count(store.History, choice.Period.Start(DateTimeOffset.Now)); return visits == 0 ? store.Text("за этот период записей нет", "За этот период записей нет") : Count(visits); }
-        historyRow = new ToggleRow(store.Text("история посещений", "История посещений"), choice.History, v => { choice.History = v; Save(); Refresh(); }, detail: HistoryDetail());
+        string HistoryDetail() { var visits = HistoryOps.Count(store.History, choice.Period.Start(DateTimeOffset.Now)); return visits == 0 ? browser.Text("за этот период записей нет", "За этот период записей нет") : Count(visits); }
+        historyRow = new ToggleRow(browser.Text("история посещений", "История посещений"), choice.History, v => { choice.History = v; Save(); Refresh(); }, detail: HistoryDetail());
         group.Add(historyRow);
-        group.Add(new ToggleRow(store.Text("cookie и данные сайтов", "Cookie и данные сайтов"), choice.SiteData, v => { choice.SiteData = v; Save(); Refresh(); }, detail: store.Text("вы выйдете из аккаунтов на сайтах, открытых за этот период", "Вы выйдете из аккаунтов на сайтах, открытых за этот период")));
-        group.Add(new ToggleRow(store.Text("кэш", "Кэш"), choice.Cache, v => { choice.Cache = v; Save(); Refresh(); }, detail: store.Text("страницы загрузятся заново, это безопасно", "Страницы загрузятся заново, это безопасно")));
-        group.Add(new ToggleRow(store.Text("разрешения сайтов", "Разрешения сайтов"), choice.Permissions, v => { choice.Permissions = v; Save(); Refresh(); }, divider: false, detail: store.Text("камера, микрофон, уведомления и геолокация, за всё время: у решений нет даты", "Камера, микрофон, уведомления и геолокация, за всё время: у решений нет даты")));
+        group.Add(new ToggleRow(browser.Text("cookie и данные сайтов", "Cookie и данные сайтов"), choice.SiteData, v => { choice.SiteData = v; Save(); Refresh(); }, detail: browser.Text("вы выйдете из аккаунтов на сайтах, открытых за этот период", "Вы выйдете из аккаунтов на сайтах, открытых за этот период")));
+        group.Add(new ToggleRow(browser.Text("кэш", "Кэш"), choice.Cache, v => { choice.Cache = v; Save(); Refresh(); }, detail: browser.Text("страницы загрузятся заново, это безопасно", "Страницы загрузятся заново, это безопасно")));
+        group.Add(new ToggleRow(browser.Text("разрешения сайтов", "Разрешения сайтов"), choice.Permissions, v => { choice.Permissions = v; Save(); Refresh(); }, divider: false, detail: browser.Text("камера, микрофон, уведомления и геолокация, за всё время: у решений нет даты", "Камера, микрофон, уведомления и геолокация, за всё время: у решений нет даты")));
         Children.Add(group);
-        var cancel = new MButton(store.Text("отмена", "Отмена"), ButtonKind.Ghost);
+        var cancel = new MButton(browser.Text("отмена", "Отмена"), ButtonKind.Ghost);
         cancel.Click += () => browser.ShowClearData = false;
-        run = new MButton(store.Text("очистить", "Очистить"), ButtonKind.Destructive) { IsEnabled = !choice.IsEmpty };
+        run = new MButton(browser.Text("очистить", "Очистить"), ButtonKind.Destructive) { IsEnabled = !choice.IsEmpty };
         run.Click += async () =>
         {
-            run.IsEnabled = false; run.Title = store.Text("очищаем…", "Очищаем…");
+            run.IsEnabled = false; run.Title = browser.Text("очищаем…", "Очищаем…");
             await store.ClearAsync(choice.Copy());
             browser.ShowClearData = false;
         };

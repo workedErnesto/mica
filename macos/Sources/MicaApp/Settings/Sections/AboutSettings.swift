@@ -11,20 +11,20 @@ struct AboutSettings: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.section) {
             VStack(alignment: .leading, spacing: Space.normal) {
-                Text(store.text("mica — браузер, в котором вкладки не перезагружаются, когда вы к ним возвращаетесь: страница остаётся такой, какой вы её оставили.", "mica — браузер, в котором вкладки не перезагружаются, когда вы к ним возвращаетесь: страница остаётся такой, какой вы её оставили."))
-                Text(store.text("реклама и трекеры блокируются сразу, расширения ставятся из Chrome Web Store и Firefox Add-ons. собственной телеметрии нет.", "Реклама и трекеры блокируются сразу, расширения ставятся из Chrome Web Store и Firefox Add-ons. Собственной телеметрии нет."))
+                Text(browser.text("mica — браузер, в котором вкладки не перезагружаются, когда вы к ним возвращаетесь: страница остаётся такой, какой вы её оставили.", "mica — браузер, в котором вкладки не перезагружаются, когда вы к ним возвращаетесь: страница остаётся такой, какой вы её оставили."))
+                Text(browser.text("реклама и трекеры блокируются сразу, расширения ставятся из Chrome Web Store и Firefox Add-ons. собственной телеметрии нет.", "Реклама и трекеры блокируются сразу, расширения ставятся из Chrome Web Store и Firefox Add-ons. Собственной телеметрии нет."))
             }
             .font(.system(size: 13.5)).foregroundStyle(Palette.text2).lineSpacing(3)
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: 520, alignment: .leading)
             SettingsGroup {
-                SettingRow(title: store.text("версия", "Версия")) {
+                SettingRow(title: browser.text("версия", "Версия")) {
                     Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—").font(.system(size: 12).monospacedDigit()).foregroundStyle(Palette.text2)
                 }
-                Toggle(store.text("проверять обновления каждый день", "Проверять обновления каждый день"), isOn: Binding(get: { store.preferences.updateChecks }, set: { store.updater.enableChecks($0) }))
+                Toggle(browser.text("проверять обновления каждый день", "Проверять обновления каждый день"), isOn: Binding(get: { store.preferences.updateChecks }, set: { store.updater.enableChecks($0) }))
                     .toggleStyle(MToggleStyle()).modifier(RowInset(divider: false))
             }
-            Button(store.text("пройти знакомство ещё раз", "Пройти знакомство ещё раз")) {
+            Button(browser.text("пройти знакомство ещё раз", "Пройти знакомство ещё раз")) {
                 dismiss(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { browser.onboardingStep = 0; browser.showOnboarding = true }
             }
             .buttonStyle(MButtonStyle(kind: .secondary))
