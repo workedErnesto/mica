@@ -355,8 +355,8 @@ Cookie, кэш и локальное хранилище обычных окон�
 Приветствие или знак mica⟩greeting or mica wordmark⟩Greeting or mica wordmark
 Выше⟩up⟩Up
 Ниже⟩down⟩Down
-Сайтов в разделе⟩sites per section⟩Sites per section
-Во всех разделах, по столько же в ряд⟩in every section, as many to a row⟩In every section, as many to a row
+Сайтов в ряду⟩sites per row⟩Sites per row
+В каждом разделе, остальные переходят на следующий ряд⟩in every section, the rest move to the next row⟩In every section, the rest move to the next row
 Свои сайты⟩your sites⟩Your Sites
 На начальной странице плитки можно перетаскивать, контекстное меню изменяет и удаляет их.⟩on the start page you can drag tiles; the context menu edits and removes them.⟩On the start page you can drag tiles; the context menu edits and removes them.
 Скрытые из частых⟩hidden from frequent⟩Hidden from Frequent

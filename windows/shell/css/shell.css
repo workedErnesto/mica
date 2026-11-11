@@ -224,12 +224,13 @@
 /* Start page */
 .start { position: absolute; inset: 0; }
 .start-scroll { position: absolute; inset: 0; }
-/* Wide enough for a row of --columns tiles (the user's "sites in a section"), never narrower than the 600 px field. */
+/* Wide enough for a row of --columns tiles (the user's "sites per row"), never narrower than the 600 px field. */
 .start-column { display: flex; flex-direction: column; gap: 28px; max-width: calc(max(600px, var(--columns, 6) * 88px + (var(--columns, 6) - 1) * 4px) + 64px); margin: 0 auto; padding: 96px 32px 64px; transition: max-width var(--spring-snappy-ms) var(--spring-snappy); }
 .start.editing .start-column { padding-bottom: 128px; }
 .start-head { display: flex; align-items: baseline; justify-content: center; gap: 10px; }
-.mark-block { display: flex; flex-direction: column; gap: 12px; align-items: stretch; flex: 1 1 auto; }
-.start-head .mark-block:not(.editing) { flex: 0 1 auto; }
+.mark-block { display: flex; flex-direction: column; gap: 12px; align-items: stretch; flex: 0 1 auto; min-width: 0; }
+/* The greeting line keeps its own leading above the letters, so it sits as close to the header as tiles do in a section. */
+.start-head .mark-block { align-self: auto; gap: 2px; }
 .mark-holder { display: flex; justify-content: center; transition: opacity var(--spring-snappy-ms) var(--spring-snappy); }
 .mark-holder.dimmed { opacity: 0.4; }
 .assembling { text-align: center; font-family: var(--font-display); font-weight: 300; color: var(--ink); }
@@ -250,16 +251,40 @@
 .start-search-row { display: flex; align-items: center; gap: 12px; height: 54px; padding: 0 18px; }
 .start-hints { display: flex; justify-content: center; gap: 20px; }
 .start-hint { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text3); }
-.start-block { position: relative; display: flex; flex-direction: column; gap: 12px; border-radius: 24px; transition: padding var(--spring-panel-ms) var(--spring-panel); }
-.start-block.editing { padding: 12px 0; }
+/* A block is as wide as its own content (title and controls, a row of tiles, the greeting), never wider than the
+   column, so it and its customizing outline do not stretch to the widest block on the page. Padding and the gap are
+   11 px: the letters keep about 3 px of their line above the caps and below the baseline, so the visible distances
+   come to the 14 px inset of the sides. The outline radius is concentric with the title capsule in its corner:
+   the capsule's 12 px radius plus its 6 px distance from the outline. */
+.start-block { position: relative; display: flex; flex-direction: column; gap: 11px; width: fit-content; max-width: 100%; align-self: center; border-radius: 18px; transition: padding var(--spring-panel-ms) var(--spring-panel); }
+.start-block.editing { padding: 11px 0; }
 .start-block.editing::before { content: ""; position: absolute; inset: 0; border-radius: inherit; border: 1px dashed var(--hairline-strong); pointer-events: none; animation: fade-in var(--hover-duration) ease-out; }
 @keyframes fade-in { from { opacity: 0; } }
-.block-header { display: flex; align-items: center; gap: 8px; min-height: 24px; padding: 0 14px; }
-.block-title { font-size: 12px; font-weight: 500; color: var(--text3); }
+/* The title row is as tall as its 12 px text; the 24 px controls in it overhang the row. */
+.block-header { display: flex; align-items: center; gap: 8px; height: 15px; padding: 0 14px; }
+.block-header > * { margin: -4.5px 0; }
+.block-title { font-size: 12px; line-height: 15px; font-weight: 500; color: var(--text3); transition: color var(--ease-hover); }
+.block-toggle { display: inline-flex; align-items: center; gap: 4px; height: 24px; margin-left: -8px; padding: 0 4px 0 8px; border-radius: 12px; pointer-events: none; transition: background-color var(--ease-hover), transform var(--spring-press-ms) var(--spring-press); }
+.block-toggle.editing { pointer-events: auto; }
+.block-toggle.editing:hover { background: var(--hover); }
+.block-toggle.editing:hover .block-title { color: var(--text2); }
+.block-eye { display: grid; place-items: center; width: 20px; height: 20px; color: var(--text2); transition: color var(--ease-hover); }
+.block-eye.off { color: var(--text3); }
+.block-toggle:hover .block-eye { color: var(--ink); }
+.block-eye .eye-slash { transform-origin: 4.5px 3.5px; transform: scale(0); transition: transform var(--spring-panel-ms) var(--spring-panel); }
+.block-eye.off .eye-slash { transform: scale(1); }
+.block-eye .eye-lid { transform-origin: 12px 12px; transition: transform var(--spring-panel-ms) var(--spring-panel); }
+.block-eye.off .eye-lid { transform: scaleY(0.82); }
+.block-eye .eye-pupil { transform-origin: 12px 12px; transition: transform var(--spring-panel-ms) var(--spring-panel), opacity var(--spring-panel-ms) var(--spring-panel); }
+.block-eye.off .eye-pupil { transform: scale(0.4); opacity: 0; }
+:root[data-reduced-motion] .block-eye .eye-slash { transform: none; opacity: 0; transition: opacity var(--hover-duration) ease-out; }
+:root[data-reduced-motion] .block-eye.off .eye-slash { opacity: 1; }
+:root[data-reduced-motion] .block-eye.off .eye-lid, :root[data-reduced-motion] .block-eye.off .eye-pupil { transform: none; }
 .block-content { transition: opacity var(--spring-snappy-ms) var(--spring-snappy); }
 .block-content.dimmed { opacity: 0.4; }
 .block-placeholder { margin: 0 14px; min-height: 60px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 0 12px; border-radius: 10px; border: 1px dashed var(--hairline); font-size: 12px; color: var(--text3); }
-.tile-grid { display: grid; grid-template-columns: repeat(auto-fill, 88px); column-gap: 4px; row-gap: 12px; }
+/* --row tiles in a row (the user's "sites per row", no more than the section has); a narrow page wraps sooner. */
+.tile-grid { display: grid; grid-template-columns: repeat(auto-fill, 88px); column-gap: 4px; row-gap: 12px; width: calc(var(--row, 8) * 88px + (var(--row, 8) - 1) * 4px); max-width: 100%; }
 .site-tile { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 88px; --press: 0.95; transition: transform var(--spring-press-ms) var(--spring-press); }
 .site-tile:active { transform: scale(0.95); }
 .tile-box {

@@ -28,11 +28,16 @@ struct StartSectionView: View {
     @ObservedObject var browser: BrowserModel
     @ObservedObject var store: Store
     var editing = false
+    /// Tiles in a row (StartLayout.columns).
+    var columns = 8
     @State private var editingSite: StartSite?
     var body: some View {
         let start = browser.prefs.start
         let visible = start.sections.contains(section)
-        VStack(alignment: .leading, spacing: Space.normal) {
+        // A row never holds more columns than the section has tiles, so the block keeps to its own content.
+        let tiles = sites.count + (section == .custom ? 1 : 0)
+        let grid = Array(repeating: GridItem(.fixed(StartLayout.column), spacing: Space.micro), count: max(1, min(columns, tiles)))
+        StartBlockStack {
             StartBlockHeader(title: section.title(browser), editing: editing, shown: Binding(get: { visible }, set: { browser.prefs.start.setVisible(section, $0) }), store: store, browser: browser) {
                 HStack(spacing: 0) {
                     IconButton(symbol: "chevron.up", label: browser.text("выше", "Выше") + ": " + section.title(browser), size: 24) { withMotion(Motion.quick) { browser.prefs.start.shift(section, by: -1) } }
@@ -49,7 +54,7 @@ struct StartSectionView: View {
                         .background(RoundedRectangle(cornerRadius: Radius.row, style: .continuous).strokeBorder(Palette.hairline, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
                         .padding(.horizontal, StartLayout.inset)
                 } else {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: StartLayout.column, maximum: StartLayout.column), spacing: Space.micro)], alignment: .leading, spacing: Space.normal) {
+                    LazyVGrid(columns: grid, alignment: .leading, spacing: Space.normal) {
                         ForEach(sites) { site in
                             SiteTile(title: site.title, host: site.host, url: site.url, favicons: browser.favicons) { open(site.url) }
                                 .micaContextMenu { menu(site) }

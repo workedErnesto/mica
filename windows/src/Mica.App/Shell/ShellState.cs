@@ -149,18 +149,18 @@ public static class ShellState
             switch (section)
             {
                 case StartSection.Custom:
-                    foreach (var s in options.Shortcuts.Take(options.FrequentCount)) sites.Push(Site(s.Id.ToString(), s.Title, s.Url, s.Id));
+                    foreach (var s in options.Shortcuts) sites.Push(Site(s.Id.ToString(), s.Title, s.Url, s.Id));
                     break;
                 case StartSection.Frequent:
                     if (!browser.PrivateMode)
                     {
                         var excluded = options.Shortcuts.Select(s => AddressParser.Host(s.Url)?.ToLowerInvariant()).OfType<string>().ToHashSet();
                         excluded.UnionWith(options.HiddenHosts);
-                        foreach (var v in Mica.Core.StartPage.Frequent(store.History, excluded, options.FrequentCount)) sites.Push(Site("f-" + v.Host, "", v.Url, null));
+                        foreach (var v in Mica.Core.StartPage.Frequent(store.History, excluded, Mica.Core.StartPage.FrequentLimit)) sites.Push(Site("f-" + v.Host, "", v.Url, null));
                     }
                     break;
                 default:
-                    foreach (var v in store.Bookmarks.Take(options.FrequentCount)) sites.Push(Site("b-" + v.Id, v.Title, v.Url, null));
+                    foreach (var v in store.Bookmarks) sites.Push(Site("b-" + v.Id, v.Title, v.Url, null));
                     break;
             }
             sections.Push(new JsonObject { ["section"] = Raw(section), ["sites"] = sites });

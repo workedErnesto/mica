@@ -37,7 +37,9 @@ struct StartScreen: View {
                         if options.wordmark || browser.privateMode || editing {
                             HStack(alignment: .firstTextBaseline, spacing: 10) {
                                 if options.wordmark || editing {
-                                    VStack(spacing: Space.normal) {
+                                    // The 34 pt line keeps about 8 pt of its own line above the letters, so with 2 pt
+                                    // the greeting sits as far from the title as the tiles do in a section.
+                                    StartBlockStack(spacing: 2) {
                                         if editing {
                                             StartBlockHeader(title: greeting == nil ? browser.text("знак mica", "Знак mica") : browser.text("приветствие", "Приветствие"), editing: true, shown: $browser.prefs.start.wordmark, store: store, browser: browser)
                                                 .transition(.opacity)
@@ -54,6 +56,7 @@ struct StartScreen: View {
                                         }
                                         .opacity(editing && !options.wordmark ? 0.4 : 1)
                                         .padding(.horizontal, editing ? StartLayout.inset : 0)
+                                        .frame(maxWidth: .infinity)
                                     }
                                     .modifier(StartEditFrame(editing: editing))
                                     .transition(.opacity)
@@ -77,7 +80,8 @@ struct StartScreen: View {
                         if text.isEmpty || editing {
                             if sections.isEmpty { hints.entrance(shown, delay: Entrance.step(4)) }
                             ForEach(Array(sections.enumerated()), id: \.element.section) { index, entry in
-                                StartSectionView(section: entry.section, sites: entry.sites, browser: browser, store: store, editing: editing)
+                                StartSectionView(section: entry.section, sites: entry.sites, browser: browser, store: store, editing: editing,
+                                                 columns: StartLayout.columns(options.frequentCount, fitting: proxy.size.width - 2 * Space.large))
                                     .entrance(shown, delay: Entrance.step(4 + index))
                                     .transition(.opacity)
                             }
@@ -133,7 +137,7 @@ struct StartScreen: View {
         shown = true
     }
 
-    /// Sections in the user's order, each at most `frequentCount` sites. Frequent sites never come from history in a private window;
+    /// Sections in the user's order with all their sites; frequent sites stop at `StartPage.frequentLimit` and never come from history in a private window;
     /// empty sections are skipped, except custom sites, which always offer the add tile.
     /// While customizing, every section is listed, hidden ones after the visible ones, empty ones too.
     private func visibleSections(_ options: StartPage, editing: Bool) -> [(section: StartSection, sites: [StartSite])] {
@@ -142,15 +146,15 @@ struct StartScreen: View {
             let sites: [StartSite]
             switch section {
             case .custom:
-                sites = options.shortcuts.prefix(options.frequentCount).map { StartSite(id: $0.id.uuidString, title: $0.title, url: $0.url, shortcut: $0.id) }
+                sites = options.shortcuts.map { StartSite(id: $0.id.uuidString, title: $0.title, url: $0.url, shortcut: $0.id) }
                 return (section, sites)
             case .frequent:
                 if browser.privateMode { sites = [] } else {
                     let pinned = Set(options.shortcuts.compactMap { $0.url.host?.lowercased() })
-                    sites = StartPage.frequent(store.history, excluding: Set(options.hiddenHosts).union(pinned), limit: options.frequentCount).map { StartSite(id: "f-" + ($0.url.host ?? ""), title: "", url: $0.url) }
+                    sites = StartPage.frequent(store.history, excluding: Set(options.hiddenHosts).union(pinned), limit: StartPage.frequentLimit).map { StartSite(id: "f-" + ($0.url.host ?? ""), title: "", url: $0.url) }
                 }
             case .bookmarks:
-                sites = store.bookmarks.prefix(options.frequentCount).map { StartSite(id: "b-" + $0.id.uuidString, title: $0.title, url: $0.url) }
+                sites = store.bookmarks.map { StartSite(id: "b-" + $0.id.uuidString, title: $0.title, url: $0.url) }
             }
             return sites.isEmpty && !editing ? nil : (section, sites)
         }
