@@ -52,6 +52,14 @@ final class SharedVectorTests: XCTestCase {
             // Quieter parts are marked with a leading ~.
             let style = AddressStyle(full: c["full"] as? Bool ?? false, dimSubdomain: c["dimSubdomain"] as? Bool ?? false, dimPath: c["dimPath"] as? Bool ?? false)
             return AddressDisplay.parts(c["url"] as! String, style: style).map { ($0.dim ? "~" : "") + $0.text }
+        case "faviconTone":
+            // "ink" when the glyph is redrawn in the shell's ink, "keep" when its own colour reads, "image" for icons that are not a glyph.
+            let pixels = (c["pixels"] as! String).split(separator: " ").flatMap { token -> [UInt8] in
+                let value = UInt32(token, radix: 16)!
+                return [UInt8(value >> 24), UInt8((value >> 16) & 0xff), UInt8((value >> 8) & 0xff), UInt8(value & 0xff)]
+            }
+            guard let glyph = FaviconTone.glyph(rgba: pixels) else { return "image" }
+            return FaviconTone.needsInk(glyph: glyph, background: HexColor.luminance(c["background"] as! String)!) ? "ink" : "keep"
         case "profileGlyph": return Profiles.lightGlyph(on: c["hex"] as! String, glyph: ProfileGlyph(rawValue: c["glyph"] as? String ?? "auto") ?? .auto) ? "light" : "dark"
         default: XCTFail("unknown section \(section)"); return NSNull()
         }

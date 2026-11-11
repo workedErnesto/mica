@@ -1,4 +1,6 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text.Json;
 using Mica.Core;
 using Microsoft.UI.Xaml;
@@ -425,6 +427,14 @@ public sealed class Favicons
     readonly string? directory;
     readonly Dictionary<string, ImageSource> icons = [];
     readonly HashSet<string> probed = [];
+    /// <summary>Neutral one-colour glyphs among the decoded icons (FaviconTone), with their alpha kept for redrawing in ink.</summary>
+    readonly ConditionalWeakTable<ImageSource, Glyph> glyphs = new();
+    sealed class Glyph(double luminance, byte[] alpha, int width, int height)
+    {
+        public double Luminance => luminance;
+        public byte[] Alpha => alpha; public int Width => width; public int Height => height;
+        public uint InkColor; public ImageSource? Inked;
+    }
     int generation;
     /// <summary>Raised after an icon arrives or the store is cleared, never while a caller is rendering.</summary>
     public event Action? Changed;
@@ -492,7 +502,7 @@ public sealed class Favicons
         return Path.Combine(directory, name + ".png");
     }
 
-    static async Task<ImageSource> Decode(byte[] bytes)
+    async Task<ImageSource> Decode(byte[] bytes)
     {
         var memory = new Windows.Storage.Streams.InMemoryRandomAccessStream();
         using (var writer = new Windows.Storage.Streams.DataWriter(memory.GetOutputStreamAt(0)))
@@ -502,6 +512,46 @@ public sealed class Favicons
         memory.Seek(0);
         var image = new BitmapImage();
         await image.SetSourceAsync(memory);
+        try { if (await Measure(memory) is { } glyph) glyphs.AddOrUpdate(image, glyph); }
+        catch (Exception e) { Diagnostics.Log.Error(e); }
         return image;
+    }
+
+    /// <summary>Reads the icon as straight-alpha RGBA at no more than 64 px, the form FaviconTone expects.</summary>
+    static async Task<Glyph?> Measure(Windows.Storage.Streams.IRandomAccessStream stream)
+    {
+        stream.Seek(0);
+        var decoder = await Windows.Graphics.Imaging.BitmapDecoder.CreateAsync(stream);
+        var scale = Math.Min(1, 64.0 / Math.Max(decoder.PixelWidth, decoder.PixelHeight));
+        var width = (uint)Math.Max(1, Math.Round(decoder.PixelWidth * scale)); var height = (uint)Math.Max(1, Math.Round(decoder.PixelHeight * scale));
+        var transform = new Windows.Graphics.Imaging.BitmapTransform { ScaledWidth = width, ScaledHeight = height, InterpolationMode = Windows.Graphics.Imaging.BitmapInterpolationMode.Fant };
+        var data = await decoder.GetPixelDataAsync(Windows.Graphics.Imaging.BitmapPixelFormat.Rgba8, Windows.Graphics.Imaging.BitmapAlphaMode.Straight, transform,
+            Windows.Graphics.Imaging.ExifOrientationMode.IgnoreExifOrientation, Windows.Graphics.Imaging.ColorManagementMode.DoNotColorManage);
+        var pixels = data.DetachPixelData();
+        if (FaviconTone.Glyph(pixels) is not { } luminance) return null;
+        var alpha = new byte[pixels.Length / 4];
+        for (var i = 0; i < alpha.Length; i++) alpha[i] = pixels[i * 4 + 3];
+        return new Glyph(luminance, alpha, (int)width, (int)height);
+    }
+
+    /// <summary>The image to draw on a background of this luminance: a neutral one-colour glyph that would fall under
+    /// 3:1 contrast comes back redrawn in <c>ink</c>, anything else unchanged. The ink copy is kept until the ink changes.</summary>
+    public ImageSource Adapted(ImageSource image, double background, Windows.UI.Color ink)
+    {
+        if (!glyphs.TryGetValue(image, out var glyph) || !FaviconTone.NeedsInk(glyph.Luminance, background)) return image;
+        var argb = (uint)ink.A << 24 | (uint)ink.R << 16 | (uint)ink.G << 8 | ink.B;
+        if (glyph.Inked is { } cached && glyph.InkColor == argb) return cached;
+        var bitmap = new WriteableBitmap(glyph.Width, glyph.Height);
+        var bgra = new byte[glyph.Alpha.Length * 4];
+        for (var i = 0; i < glyph.Alpha.Length; i++)
+        {
+            // WriteableBitmap holds premultiplied BGRA.
+            var a = glyph.Alpha[i] * ink.A / 255;
+            bgra[i * 4] = (byte)(ink.B * a / 255); bgra[i * 4 + 1] = (byte)(ink.G * a / 255); bgra[i * 4 + 2] = (byte)(ink.R * a / 255); bgra[i * 4 + 3] = (byte)a;
+        }
+        using (var stream = bitmap.PixelBuffer.AsStream()) stream.Write(bgra, 0, bgra.Length);
+        bitmap.Invalidate();
+        glyph.InkColor = argb; glyph.Inked = bitmap;
+        return bitmap;
     }
 }
