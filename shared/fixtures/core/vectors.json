@@ -529,8 +529,8 @@
   "faviconDiscovery" : [
     {
       "expect" : [
-        "https://example.com/brand.png",
         "https://example.com/touch.png",
+        "https://example.com/brand.png",
         "https://example.com/favicon.ico"
       ],
       "html" : "<link href=\"/brand.png\" sizes=\"32x32\" rel=\"shortcut ICON\"><link rel=\"apple-touch-icon\" href=\"/touch.png\">",
@@ -571,9 +571,9 @@
     },
     {
       "expect" : [
-        "https://example.com/best.png",
         "https://example.com/large.png",
         "https://example.com/vector.svg?x=1",
+        "https://example.com/best.png",
         "https://example.com/small.ico",
         "https://example.com/favicon.ico"
       ],
@@ -601,6 +601,28 @@
       ],
       "html" : "",
       "page" : "https://user:secret@example.com:8443/path?token=x"
+    },
+    {
+      "expect" : [
+        "https://example.com/128.png",
+        "https://example.com/512.png",
+        "https://example.com/mark.svg",
+        "https://example.com/touch.png",
+        "https://example.com/favicon.ico"
+      ],
+      "html" : "<link rel=icon href=\"/48.png\" sizes=\"48x48\"><link rel=apple-touch-icon href=\"/touch.png\" sizes=\"180x180\"><link rel=icon href=\"/mark.svg\" type=\"image/svg+xml\"><link rel=icon href=\"/512.png\" sizes=\"512x512\"><link rel=icon href=\"/128.png\" sizes=\"128x128\">",
+      "page" : "https://example.com/"
+    },
+    {
+      "expect" : [
+        "https://example.com/64.png",
+        "https://example.com/touch-60.png",
+        "https://example.com/plain.png",
+        "https://example.com/16.ico",
+        "https://example.com/favicon.ico"
+      ],
+      "html" : "<link rel=icon href=\"/16.ico\" sizes=\"16x16\"><link rel=icon href=\"/64.png\" sizes=\"64x64\"><link rel=apple-touch-icon href=\"/touch-60.png\" sizes=\"60x60\"><link rel=icon href=\"/plain.png\">",
+      "page" : "https://example.com/"
     }
   ],
   "faviconRemote" : [

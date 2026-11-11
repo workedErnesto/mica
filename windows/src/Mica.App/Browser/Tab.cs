@@ -273,8 +273,8 @@ public sealed partial class Tab : Observable
         Notify();
     }
 
-    /// <summary>WebView2 picks the page's icon itself and reports every change; mica keeps it for this tab and copies it as
-    /// PNG into the window's icon store, keyed by host and port.</summary>
+    /// <summary>WebView2 picks the page's icon itself and reports every change; mica copies it as PNG into the window's icon
+    /// store, keyed by host and port, unless the store already holds a larger one (Favicons.SetFromTabAsync).</summary>
     async void OnFaviconChanged(CoreWebView2 sender, object args)
     {
         var page = sender.Source;
@@ -291,7 +291,7 @@ public sealed partial class Tab : Observable
                 await reader.LoadAsync((uint)stream.Size);
                 reader.ReadBytes(bytes);
             }
-            if (await store.SetAsync(page, bytes) && sender.Source == page) Notify();
+            if (await store.SetFromTabAsync(page, bytes) && sender.Source == page) Notify();
         }
         catch (Exception e) { Diagnostics.Log.Error(e); }
     }
@@ -414,7 +414,7 @@ public sealed partial class Tab : Observable
 }
 
 /// <summary>Site icons keyed by host without "www." plus a non-default port, so apps on different ports of localhost keep
-/// their own (macOS Favicons). The normal profile keeps a PNG per key in %LOCALAPPDATA%\mica\Favicons and reads it
+/// their own (macOS Favicons). The normal profile keeps a PNG of at most FaviconCatalog.Pixels per key in %LOCALAPPDATA%\mica\Favicons and reads it
 /// lazily for restored tabs; incognito windows own a separate instance that stays in memory. The shell shows an icon
 /// through https://mica.icons/&lt;key&gt;, which ShellView answers from here.</summary>
 public sealed partial class Favicons
@@ -424,6 +424,9 @@ public sealed partial class Favicons
     readonly Dictionary<string, Entry> icons = [];
     readonly HashSet<string> probed = [];
     readonly Dictionary<string, Task> diskReads = [];
+    /// <summary>Keys shown from a copy an earlier build stored at a smaller size: it stays on screen while discovery looks
+    /// for the icon at FaviconCatalog.Pixels and is replaced only when that succeeds (macOS Favicons).</summary>
+    readonly HashSet<string> stale = [];
     readonly SemaphoreSlim diskIO = new(1);
     /// <summary>PNG bytes, a version that changes with them, and for a neutral one-colour glyph (FaviconTone) its luminance.</summary>
     public sealed record Entry(byte[] Png, int Version, double? Glyph);
@@ -446,31 +449,40 @@ public sealed partial class Favicons
     /// <summary>The stored icon of the page's origin. A missing icon schedules a disk read and raises Changed later.</summary>
     public Entry? Icon(string? url)
     {
-        var icon = Key(url) is { } key ? IconFor(key) : null;
-        if (icon is null) Prefetch(url);
+        var key = Key(url);
+        var icon = key is not null ? IconFor(key) : null;
+        if (icon is null || (key is not null && stale.Contains(key))) Prefetch(url);
         return icon;
     }
 
     public Entry? IconFor(string key)
     {
         if (icons.TryGetValue(key, out var entry)) return entry;
-        if (File(key) is { } file && probed.Add(key)) diskReads[key] = LoadAsync(key, file, generation);
+        if (File(key) is { } file && File(key, legacy: true) is { } legacy && probed.Add(key)) diskReads[key] = LoadAsync(key, file, legacy, generation);
         return null;
     }
 
-    async Task LoadAsync(string key, string file, int expected)
+    /// <summary>No icon yet, or only one stored by an earlier build at a smaller size.</summary>
+    bool Missing(string key) => !icons.ContainsKey(key) || stale.Contains(key);
+
+    async Task LoadAsync(string key, string file, string legacy, int expected)
     {
         try
         {
-            byte[]? bytes;
+            byte[]? bytes; var current = true;
             await diskIO.WaitAsync();
-            try { bytes = await Task.Run(() => System.IO.File.Exists(file) ? System.IO.File.ReadAllBytes(file) : null); }
+            try
+            {
+                bytes = await Task.Run(() => System.IO.File.Exists(file) ? System.IO.File.ReadAllBytes(file) : null);
+                if (bytes is null) { current = false; bytes = await Task.Run(() => System.IO.File.Exists(legacy) ? System.IO.File.ReadAllBytes(legacy) : null); }
+            }
             finally { diskIO.Release(); }
             if (bytes is null || expected != generation || icons.ContainsKey(key)) return;
             bytes = await Normalize(bytes);
             var glyph = await Measure(bytes);
             if (expected != generation || icons.ContainsKey(key)) return;
             icons[key] = new Entry(bytes, ++version, glyph);
+            if (!current) stale.Add(key);
             Changed?.Invoke();
         }
         catch (Exception e) { Diagnostics.Log.Error(e); }
@@ -484,19 +496,44 @@ public sealed partial class Favicons
         double? glyph = null;
         try { glyph = await Measure(png); } catch (Exception e) { Diagnostics.Log.Error(e); }
         if (expected != generation) return false;
-        icons[key] = new Entry(png, ++version, glyph); probed.Add(key);
+        icons[key] = new Entry(png, ++version, glyph); probed.Add(key); stale.Remove(key);
         Changed?.Invoke();
-        if (File(key) is { } file && directory is { } folder)
+        if (File(key) is { } file && File(key, legacy: true) is { } legacy && directory is { } folder)
         {
             await diskIO.WaitAsync();
             try
             {
                 if (expected == generation)
-                    await Task.Run(() => { try { Directory.CreateDirectory(folder); System.IO.File.WriteAllBytes(file, png); } catch (IOException) { } catch (UnauthorizedAccessException) { } });
+                    await Task.Run(() => { try { Directory.CreateDirectory(folder); System.IO.File.WriteAllBytes(file, png); System.IO.File.Delete(legacy); } catch (IOException) { } catch (UnauthorizedAccessException) { } });
             }
             finally { diskIO.Release(); }
         }
         return true;
+    }
+
+    /// <summary>WebView2 hands over the icon at tab size, often 16 or 32 px. It never replaces a larger stored icon (the
+    /// bundled catalog or one found by discovery); a smaller one is stored and marked stale, so discovery looks once per
+    /// session for the size start page tiles need.</summary>
+    public async Task<bool> SetFromTabAsync(string url, byte[] png)
+    {
+        if (Key(url) is not { } key) return false;
+        if (diskReads.TryGetValue(key, out var read)) await read;
+        var side = await Side(png);
+        if (side < FaviconCatalog.Pixels && icons.TryGetValue(key, out var known) && await Side(known.Png) > side) return false;
+        if (!await SetAsync(url, png)) return false;
+        if (side < FaviconCatalog.Pixels) { stale.Add(key); Prefetch(url); }
+        return true;
+    }
+
+    static async Task<uint> Side(byte[] png)
+    {
+        try
+        {
+            using var input = new MemoryStream(png).AsRandomAccessStream();
+            var decoder = await Windows.Graphics.Imaging.BitmapDecoder.CreateAsync(input);
+            return Math.Max(decoder.PixelWidth, decoder.PixelHeight);
+        }
+        catch { return 0; }
     }
 
     /// <summary>Clearing history or cache forgets every icon, in memory and on disk.</summary>
@@ -505,7 +542,7 @@ public sealed partial class Favicons
         generation++;
         cancellation.Cancel(); cancellation.Dispose(); cancellation = new();
         loadingIcons.Clear(); attempted.Clear(); diskReads.Clear();
-        icons.Clear(); probed.Clear();
+        icons.Clear(); probed.Clear(); stale.Clear();
         _ = ClearDiskAsync();
         Changed?.Invoke();
     }
@@ -517,14 +554,16 @@ public sealed partial class Favicons
         finally { diskIO.Release(); }
     }
 
-    string? File(string key)
+    /// <summary>"github.com@96.png": the size is part of the name, so a copy stored at another size is never read as current.
+    /// legacy is the name builds before sized icons used ("github.com.png", 64 px).</summary>
+    string? File(string key, bool legacy = false)
     {
         if (directory is null) return null;
         var name = new string(key.Select(c => (c is (>= 'a' and <= 'z') or (>= '0' and <= '9') or '.' or '-') ? c : '_').Take(200).ToArray());
-        return Path.Combine(directory, name + ".png");
+        return Path.Combine(directory, name + (legacy ? "" : "@" + FaviconCatalog.Pixels) + ".png");
     }
 
-    /// <summary>Reads the icon as straight-alpha RGBA at no more than 64 px, the form FaviconTone expects, and returns the
+    /// <summary>Reads the icon as straight-alpha RGBA at no more than FaviconCatalog.Pixels, the form FaviconTone expects, and returns the
     /// luminance of a neutral one-colour glyph, or null for any other icon.</summary>
     static async Task<double?> Measure(byte[] bytes)
     {
@@ -535,7 +574,7 @@ public sealed partial class Favicons
         }
         stream.Seek(0);
         var decoder = await Windows.Graphics.Imaging.BitmapDecoder.CreateAsync(stream);
-        var scale = Math.Min(1, 64.0 / Math.Max(decoder.PixelWidth, decoder.PixelHeight));
+        var scale = Math.Min(1, (double)FaviconCatalog.Pixels / Math.Max(decoder.PixelWidth, decoder.PixelHeight));
         var width = (uint)Math.Max(1, Math.Round(decoder.PixelWidth * scale)); var height = (uint)Math.Max(1, Math.Round(decoder.PixelHeight * scale));
         var transform = new Windows.Graphics.Imaging.BitmapTransform { ScaledWidth = width, ScaledHeight = height, InterpolationMode = Windows.Graphics.Imaging.BitmapInterpolationMode.Fant };
         var data = await decoder.GetPixelDataAsync(Windows.Graphics.Imaging.BitmapPixelFormat.Rgba8, Windows.Graphics.Imaging.BitmapAlphaMode.Straight, transform,

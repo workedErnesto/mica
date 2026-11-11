@@ -55,14 +55,19 @@ public static class FaviconDiscovery
         return links;
     }
 
+    /// <summary>Ranked against FaviconCatalog.Pixels, the size an icon is stored and shown at (macOS FaviconDiscovery):
+    /// a raster rel=icon at least that large first, then SVG, then a large apple-touch-icon, then smaller files, largest first.</summary>
     public static List<string> Candidates(IEnumerable<FaviconLink> links, string page, bool fallback = true)
     {
+        const int target = FaviconCatalog.Pixels;
         int Penalty(FaviconLink link)
         {
             var sizes = link.Sizes.ToLowerInvariant();
-            var edge = sizes.Contains("any") ? 256 : sizes.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Select(x => int.TryParse(x.Split('x')[0], out var n) ? (int?)n : null).Max() ?? (link.Touch ? 180 : 32);
             var vector = link.Type.Contains("svg") || link.Href.ToLowerInvariant().Split('?')[0].EndsWith(".svg") || link.Href.StartsWith("data:image/svg", StringComparison.OrdinalIgnoreCase);
-            return (edge >= 32 ? edge - 32 : 1000 + 32 - edge) + (vector ? 60 : 0) + (link.Touch ? 20 : 0);
+            if (vector) return 2000;
+            var edge = sizes.Contains("any") ? 256 : sizes.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Select(x => int.TryParse(x.Split('x')[0], out var n) ? (int?)n : null).Max() ?? (link.Touch ? 180 : 32);
+            if (edge < target) return 5000 + (target - edge) * 2 + (link.Touch ? 1 : 0);
+            return (link.Touch ? 3000 : 0) + Math.Min(edge - target, 999);
         }
         var result = links.OrderBy(Penalty).Where(l => Uri.TryCreate(l.Href, UriKind.Absolute, out var u) && u.Scheme is "http" or "https" or "data").Select(l => l.Href).Distinct(StringComparer.Ordinal).Take(4).ToList();
         if (fallback && WebAddress.Resolve("/favicon.ico", page) is { } resolved)

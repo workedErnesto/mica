@@ -3,6 +3,8 @@ namespace Mica.Core;
 
 public static class FaviconCatalog
 {
+    /// <summary>Side of a stored site icon in pixels and the size icon links are ranked against: a 36 pt start page tile needs 72 px on a 2x display, 78 px while it grows on hover.</summary>
+    public const int Pixels = 96;
     public static readonly IReadOnlyDictionary<string, string> Files = new Dictionary<string, string>
     {
         ["apple.com"] = "apple.com.png",
