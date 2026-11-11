@@ -1,4 +1,6 @@
 {
+  "pixels": 96,
+  "pixelsDoc": "Side of a stored site icon in pixels and the size icon links are ranked against: a 36 pt start page tile needs 72 px on a 2x display, 78 px while it grows on hover.",
   "sites": {
     "claude.ai": {
       "file": "claude.ai.png",
@@ -6,39 +8,39 @@
     },
     "chatgpt.com": {
       "file": "chatgpt.com.png",
-      "source": "https://icons.duckduckgo.com/ip3/chatgpt.com.ico"
+      "source": "https://chatgpt.com/cdn/assets/favicon-180x180.9e0103ce69.png"
     },
     "github.com": {
       "file": "github.com.png",
-      "source": "https://icons.duckduckgo.com/ip3/github.com.ico"
+      "source": "https://github.githubassets.com/favicons/favicon.svg"
     },
     "gemini.google.com": {
       "file": "gemini.google.com.png",
-      "source": "https://icons.duckduckgo.com/ip3/gemini.google.com.ico"
+      "source": "https://www.gstatic.com/lamda/images/gemini_sparkle_4g_512_lt_f94943af3be039176192d.png"
     },
     "notebooklm.google.com": {
       "file": "notebooklm.google.com.png",
-      "source": "https://icons.duckduckgo.com/ip3/notebooklm.google.com.ico"
+      "source": "https://www.gstatic.com/tailwind/_/static/branding/v6/light_mode/favicon/favicon.svg"
     },
     "mail.google.com": {
       "file": "mail.google.com.png",
-      "source": "https://ssl.gstatic.com/ui/v1/icons/mail/rfr/gmail.ico"
+      "source": "https://www.gstatic.com/images/branding/product/2x/gmail_2020q4_48dp.png"
     },
     "figma.com": {
       "file": "figma.com.png",
-      "source": "https://icons.duckduckgo.com/ip3/figma.com.ico"
+      "source": "https://static.figma.com/app/icon/2/icon-128.png"
     },
     "pinterest.com": {
       "file": "pinterest.com.png",
-      "source": "https://icons.duckduckgo.com/ip3/pinterest.com.ico"
+      "source": "https://s.pinimg.com/webapp/logo_transparent_144x144-3da7a67b.png"
     },
     "youtube.com": {
       "file": "youtube.com.png",
-      "source": "https://icons.duckduckgo.com/ip3/youtube.com.ico"
+      "source": "https://www.youtube.com/s/desktop/cb518cf3/img/favicon_96x96.png"
     },
     "tracker.yandex.ru": {
       "file": "tracker.yandex.ru.png",
-      "source": "https://icons.duckduckgo.com/ip3/tracker.yandex.ru.ico"
+      "source": "https://yastatic.net/s3/psf/ps-tuning/a128d6c206b66fcf3154.png"
     },
     "my.firstvds.ru": {
       "file": "my.firstvds.ru.png",
@@ -46,75 +48,75 @@
     },
     "footrue.com": {
       "file": "footrue.com.png",
-      "source": "https://icons.duckduckgo.com/ip3/footrue.com.ico"
+      "source": "https://footrue.com/favicon-96.png"
     },
     "google.com": {
       "file": "google.com.png",
-      "source": "https://icons.duckduckgo.com/ip3/google.com.ico"
+      "source": "https://www.gstatic.com/images/branding/googleg/1x/googleg_standard_color_128dp.png"
     },
     "duckduckgo.com": {
       "file": "duckduckgo.com.png",
-      "source": "https://icons.duckduckgo.com/ip3/duckduckgo.com.ico"
+      "source": "https://duckduckgo.com/static-assets/favicons/DDG-iOS-icon_120x120.png"
     },
     "wikipedia.org": {
       "file": "wikipedia.org.png",
-      "source": "https://icons.duckduckgo.com/ip3/wikipedia.org.ico"
+      "source": "https://www.wikipedia.org/static/apple-touch/wikipedia.png"
     },
     "apple.com": {
       "file": "apple.com.png",
-      "source": "https://icons.duckduckgo.com/ip3/apple.com.ico"
+      "source": "https://www.apple.com/favicon.ico"
     },
     "reddit.com": {
       "file": "reddit.com.png",
-      "source": "https://icons.duckduckgo.com/ip3/reddit.com.ico"
+      "source": "https://www.redditstatic.com/shreddit/assets/favicon/192x192.png"
     },
     "notion.so": {
       "file": "notion.so.png",
-      "source": "https://icons.duckduckgo.com/ip3/notion.so.ico"
+      "source": "https://www.notion.com/front-static/logo-ios.png"
     },
     "x.com": {
       "file": "x.com.png",
-      "source": "https://icons.duckduckgo.com/ip3/x.com.ico"
+      "source": "https://x.com/apple-touch-icon.png"
     },
     "stackoverflow.com": {
       "file": "stackoverflow.com.png",
-      "source": "https://icons.duckduckgo.com/ip3/stackoverflow.com.ico"
+      "source": "https://cdn.sstatic.net/Sites/stackoverflow/Img/apple-touch-icon.png"
     },
     "outlook.live.com": {
       "file": "outlook.live.com.png",
-      "source": "https://icons.duckduckgo.com/ip3/outlook.live.com.ico"
+      "source": "https://res.public.onecdn.static.microsoft/assets/mail/pwa/v1/pngs/apple-touch-icon.png"
     },
     "proton.me": {
       "file": "proton.me.png",
-      "source": "https://icons.duckduckgo.com/ip3/proton.me.ico"
+      "source": "https://proton.me/favicons/apple-touch-icon.png"
     },
     "www.figma.com": {
       "file": "figma.com.png",
-      "source": "https://icons.duckduckgo.com/ip3/figma.com.ico"
+      "source": "https://static.figma.com/app/icon/2/icon-128.png"
     },
     "www.youtube.com": {
       "file": "youtube.com.png",
-      "source": "https://icons.duckduckgo.com/ip3/youtube.com.ico"
+      "source": "https://www.youtube.com/s/desktop/cb518cf3/img/favicon_96x96.png"
     },
     "www.github.com": {
       "file": "github.com.png",
-      "source": "https://icons.duckduckgo.com/ip3/github.com.ico"
+      "source": "https://github.githubassets.com/favicons/favicon.svg"
     },
     "www.pinterest.com": {
       "file": "pinterest.com.png",
-      "source": "https://icons.duckduckgo.com/ip3/pinterest.com.ico"
+      "source": "https://s.pinimg.com/webapp/logo_transparent_144x144-3da7a67b.png"
     },
     "ru.pinterest.com": {
       "file": "pinterest.com.png",
-      "source": "https://icons.duckduckgo.com/ip3/pinterest.com.ico"
+      "source": "https://s.pinimg.com/webapp/logo_transparent_144x144-3da7a67b.png"
     },
     "en.wikipedia.org": {
       "file": "wikipedia.org.png",
-      "source": "https://icons.duckduckgo.com/ip3/wikipedia.org.ico"
+      "source": "https://www.wikipedia.org/static/apple-touch/wikipedia.png"
     },
     "ru.wikipedia.org": {
       "file": "wikipedia.org.png",
-      "source": "https://icons.duckduckgo.com/ip3/wikipedia.org.ico"
+      "source": "https://www.wikipedia.org/static/apple-touch/wikipedia.png"
     }
   }
 }

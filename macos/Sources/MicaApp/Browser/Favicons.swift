@@ -4,7 +4,7 @@ import SwiftUI
 import WebKit
 
 /// Site icons, keyed by host without `www.` plus a non-default port, so apps on different ports of localhost keep
-/// their own. A normal profile keeps a 64 px PNG per key in Caches and reads it lazily; an incognito window owns a
+/// their own. A normal profile keeps a PNG of `FaviconCatalog.pixels` per key in Caches and reads it lazily; an incognito window owns a
 /// separate instance that lives in memory only. The stored copy only fills the gap until a page loads: every finished
 /// main-frame load reads the page's own `<link rel=icon>` candidates again in an isolated script world. Same-origin
 /// requests use WebKit's session; other requests stay anonymous. Missing icons are discovered in the background.
@@ -15,6 +15,9 @@ final class Favicons: ObservableObject {
     private let directory: URL?
     /// Keys whose disk copy was already looked up.
     private var probed = Set<String>()
+    /// Keys shown from a copy an earlier build stored at a smaller size: it stays on screen while discovery looks for
+    /// the icon at the current size, and is replaced only when that succeeds.
+    private var stale = Set<String>()
     private var generation = 0
     private var refreshes: [String: UUID] = [:]
     private let diskQueue = DispatchQueue(label: "app.mica.favicons.disk", qos: .utility)
@@ -32,15 +35,16 @@ final class Favicons: ObservableObject {
         config.httpMaximumConnectionsPerHost = 2
         return URLSession(configuration: config)
     }()
-    static let pixels = 64
+    static let pixels = FaviconCatalog.pixels
     static let byteLimit = 1_000_000
     private let glyphs = NSCache<NSImage, Glyph>()
     private final class Glyph { let luminance: Double?; init(_ luminance: Double?) { self.luminance = luminance } }
 
-    init(persistent: Bool, session: URLSession? = nil) {
+    /// `cache` replaces the Caches location in tests.
+    init(persistent: Bool, session: URLSession? = nil, cache: URL? = nil) {
         self.persistent = persistent
         suppliedSession = session
-        if persistent {
+        if persistent, let cache { directory = cache } else if persistent {
             let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
                 .appendingPathComponent(Bundle.main.bundleIdentifier ?? "mica", isDirectory: true)
             let qa = ProcessInfo.processInfo.arguments.contains("--qa")
@@ -97,16 +101,17 @@ final class Favicons: ObservableObject {
                     self.probed.insert(key)
                     for storedKey in [key, key + Self.darkSuffix] {
                         guard let file = self.file(for: storedKey) else { continue }
-                        let data = await self.read(file)
+                        var data = await self.read(file), current = true
+                        if data == nil, storedKey == key, let legacy = self.file(for: key, legacy: true) { data = await self.read(legacy); current = false }
                         guard self.generation == generation, !Task.isCancelled else { return }
-                        if self.icons[storedKey] == nil, let data, let image = NSImage(data: data), let normalized = Self.normalize(image) { self.icons[storedKey] = normalized.image }
+                        if self.icons[storedKey] == nil, let data, let image = NSImage(data: data), let normalized = Self.normalize(image) {
+                            self.icons[storedKey] = normalized.image
+                            if !current { self.stale.insert(key) }
+                        }
                     }
                 }
-                guard self.icons[key] == nil else { return }
-                if let name = FaviconDiscovery.bundledFile(page: page.absoluteString),
-                   let file = Bundle.main.url(forResource: name, withExtension: nil, subdirectory: "Favicons"),
-                   let data = await self.read(file), let image = NSImage(data: data), let normalized = Self.normalize(image),
-                   self.generation == generation, !Task.isCancelled, self.icons[key] == nil {
+                guard self.missing(key) else { return }
+                if let normalized = await self.bundled(page), self.generation == generation, !Task.isCancelled, self.missing(key) {
                     self.store(normalized, as: key)
                     return
                 }
@@ -116,12 +121,12 @@ final class Favicons: ObservableObject {
                 guard let root = parts.url else { return }
                 for delay in [0, 2, 8] {
                     if delay > 0 { try? await Task.sleep(for: .seconds(delay)) }
-                    guard self.generation == generation, !Task.isCancelled, self.icons[key] == nil else { return }
+                    guard self.generation == generation, !Task.isCancelled, self.missing(key) else { return }
                     let document = await self.fetch(root, userAgent: nil, html: true)
                     let links = document.map { FaviconDiscovery.links(html: String(decoding: $0.data, as: UTF8.self), page: $0.url.absoluteString) } ?? []
                     let resolved = document?.url ?? root
                     if let image = await self.download(Self.candidates(links.filter { !$0.dark }, page: resolved), userAgent: nil),
-                       self.generation == generation, !Task.isCancelled, self.icons[key] == nil, let normalized = Self.normalize(image) {
+                       self.generation == generation, !Task.isCancelled, self.missing(key), let normalized = Self.normalize(image) {
                         self.store(normalized, as: key)
                         if let dark = await self.download(Self.candidates(links.filter(\.dark), page: resolved, fallback: false), userAgent: nil),
                            self.generation == generation, !Task.isCancelled, self.icons[key] === normalized.image,
@@ -130,7 +135,7 @@ final class Favicons: ObservableObject {
                     }
                     if let remote = FaviconDiscovery.remoteURL(page: page.absoluteString).flatMap(URL.init(string:)),
                        let image = await self.download([remote], userAgent: nil), let normalized = Self.normalize(image),
-                       self.generation == generation, !Task.isCancelled, self.icons[key] == nil {
+                       self.generation == generation, !Task.isCancelled, self.missing(key) {
                         self.store(normalized, as: key)
                         return
                     }
@@ -153,7 +158,13 @@ final class Favicons: ObservableObject {
         let candidates = Self.candidates(found.links.filter { !$0.dark }, page: page)
         guard let image = await download(candidates, userAgent: found.userAgent, webView: webView, page: page) else { return nil }
         guard self.generation == generation, refreshes[key] == revision, webView.url == page, let normalized = Self.normalize(image) else { return nil }
-        store(normalized, as: key)
+        // Google declares only a 32 px icon: the tab keeps it, the origin keeps the sharper bundled copy for tiles.
+        var kept = normalized
+        if (Self.sourceEdge(image) ?? Self.pixels) < Self.pixels, let bundled = await bundled(page) {
+            guard self.generation == generation, refreshes[key] == revision, webView.url == page else { return nil }
+            kept = bundled
+        }
+        store(kept, as: key)
         let darkLinks = found.links.filter(\.dark)
         if !darkLinks.isEmpty, let dark = await download(Self.candidates(darkLinks, page: page, fallback: false), userAgent: found.userAgent, webView: webView, page: page),
            self.generation == generation, refreshes[key] == revision, webView.url == page, let normalizedDark = Self.normalize(dark) {
@@ -164,6 +175,20 @@ final class Favicons: ObservableObject {
 
     static let darkSuffix = "~dark"
 
+    /// The offline catalog's copy for this page's host (FaviconCatalog), already at `pixels`.
+    private func bundled(_ page: URL) async -> (image: NSImage, png: Data)? {
+        guard let name = FaviconDiscovery.bundledFile(page: page.absoluteString),
+              let file = Bundle.main.url(forResource: name, withExtension: nil, subdirectory: "Favicons"),
+              let data = await read(file), let image = NSImage(data: data) else { return nil }
+        return Self.normalize(image)
+    }
+
+    /// Longest bitmap edge of a downloaded icon, the largest frame of an ICO; nil for SVG and PDF, sharp at any size.
+    static func sourceEdge(_ image: NSImage) -> Int? {
+        let bitmaps = image.representations.filter { $0 is NSBitmapImageRep }
+        return bitmaps.isEmpty ? nil : bitmaps.map { max($0.pixelsWide, $0.pixelsHigh) }.max()
+    }
+
     /// Luminance of a neutral one-colour glyph on transparency (FaviconTone), measured once per image; nil for icons
     /// with colours, several tones or their own backdrop.
     func glyph(_ image: NSImage) -> Double? {
@@ -173,7 +198,7 @@ final class Favicons: ObservableObject {
         return luminance
     }
 
-    /// Reads the icon at the stored 64 px as straight-alpha sRGB, the form FaviconTone expects.
+    /// Reads the icon at the stored size as straight-alpha sRGB, the form FaviconTone expects.
     static func measure(_ image: NSImage) -> Double? {
         guard let cg = image.cgImage(forProposedRect: nil, context: nil, hints: nil), let space = CGColorSpace(name: CGColorSpace.sRGB) else { return nil }
         let side = pixels
@@ -194,14 +219,19 @@ final class Favicons: ObservableObject {
         return FaviconTone.glyph(rgba: data)
     }
 
+    /// No icon yet, or only one stored by an earlier build at a smaller size.
+    private func missing(_ key: String) -> Bool { icons[key] == nil || stale.contains(key) }
+
     private func store(_ normalized: (image: NSImage, png: Data), as key: String) {
         icons[key] = normalized.image
         probed.insert(key)
+        stale.remove(key)
         if let file = file(for: key), let directory {
-            let png = normalized.png
+            let png = normalized.png, legacy = self.file(for: key, legacy: true)
             diskQueue.async {
                 try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
                 try? png.write(to: file, options: .atomic)
+                if let legacy { try? FileManager.default.removeItem(at: legacy) }
             }
         }
     }
@@ -210,14 +240,15 @@ final class Favicons: ObservableObject {
     private func forget(_ key: String) {
         icons[key] = nil
         probed.insert(key)
-        if let file = file(for: key) { diskQueue.async { try? FileManager.default.removeItem(at: file) } }
+        stale.remove(key)
+        for file in [file(for: key), file(for: key, legacy: true)].compactMap({ $0 }) { diskQueue.async { try? FileManager.default.removeItem(at: file) } }
     }
 
     /// Clearing history or cache forgets every icon, in memory and on disk; open pages fetch theirs again on the next load.
     func clear() {
         generation += 1
         requests.values.forEach { $0.cancel() }; requests = [:]; pending = []; attempted = [:]
-        icons = [:]; probed = []; refreshes = [:]
+        icons = [:]; probed = []; stale = []; refreshes = [:]
         if let directory { diskQueue.async { try? FileManager.default.removeItem(at: directory) } }
     }
 
@@ -227,12 +258,14 @@ final class Favicons: ObservableObject {
         }
     }
 
-    private func file(for key: String) -> URL? {
+    /// `github.com@96.png`: the size is part of the name, so a copy stored at another size is never read as current.
+    /// `legacy` is the name builds before sized icons used (`github.com.png`, 64 px).
+    private func file(for key: String, legacy: Bool = false) -> URL? {
         guard let directory else { return nil }
         let allowed = Set("abcdefghijklmnopqrstuvwxyz0123456789.-")
-        // The port separator becomes "_" like any other character outside the set: localhost_8501.png.
+        // The port separator becomes "_" like any other character outside the set: localhost_8501@96.png.
         let name = String(key.map { allowed.contains($0) ? $0 : "_" }.prefix(200))
-        return directory.appendingPathComponent(name + ".png")
+        return directory.appendingPathComponent(name + (legacy ? "" : "@" + String(Self.pixels)) + ".png")
     }
 
     // MARK: Candidates
@@ -262,8 +295,8 @@ final class Favicons: ObservableObject {
         return (links, object["ua"] as? String)
     }
 
-    /// Best first: the smallest declared size of at least 32 px, PNG and ICO before SVG, then smaller sizes;
-    /// `<origin>/favicon.ico` closes the list unless `fallback` is false. Only http, https and data URLs are kept.
+    /// Best first by FaviconDiscovery's ranking against `pixels`; `<origin>/favicon.ico` closes the list unless
+    /// `fallback` is false. Only http, https and data URLs are kept.
     static func candidates(_ links: [Link], page: URL, fallback: Bool = true) -> [URL] {
         FaviconDiscovery.candidates(links, page: page.absoluteString, fallback: fallback).compactMap(URL.init(string:))
     }
@@ -341,7 +374,7 @@ final class Favicons: ObservableObject {
         return (payload.removingPercentEncoding ?? payload).data(using: .utf8)
     }
 
-    /// Draws the icon into a 64 px square (aspect kept), so memory and the disk copy stay small whatever the source.
+    /// Draws the icon into a square of `pixels` (aspect kept), so memory and the disk copy stay small whatever the source.
     static func normalize(_ image: NSImage) -> (image: NSImage, png: Data)? {
         let side = pixels
         guard let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: side, pixelsHigh: side, bitsPerSample: 8, samplesPerPixel: 4,

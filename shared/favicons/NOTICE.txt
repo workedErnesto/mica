@@ -1,8 +1,9 @@
 Site icons identify their respective websites in mica's shortcuts, history and tabs.
 The artwork and trademarks belong to their respective owners. No affiliation or endorsement is implied.
 
-Retrieved 2026-11-11 from DuckDuckGo's public favicon cache and the websites' public assets. Exact source URLs and host aliases are recorded in catalog.json.
-Images are normalized to 64 px PNG, with their original colors and proportions preserved.
+Retrieved 2026-11-11 and 2026-11-12 from DuckDuckGo's public favicon cache and the websites' public assets. Exact source URLs and host aliases are recorded in catalog.json.
+Images are normalized to 96 px PNG, with their original colors and proportions preserved. claude.ai and my.firstvds.ru
+remain 64 px copies: their sites offered no larger icon to an anonymous request.
 
 The small bundled catalog is an offline fallback. Icons reported by a visited page replace it.
 For other public hosts, mica tries the website directly and then https://icons.duckduckgo.com/ip3/<host>.ico.

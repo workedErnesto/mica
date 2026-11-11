@@ -59,12 +59,19 @@ public enum FaviconDiscovery {
         return links
     }
 
+    /// Ranked against `FaviconCatalog.pixels`, the size an icon is stored and shown at, so a tile is not filled by a
+    /// stretched 32 px file. Best first: a raster `rel=icon` at least that large (closest size first), then SVG, then a
+    /// large apple-touch-icon (an opaque square, so only ahead of icons that would have to be stretched), then smaller
+    /// files, largest first. An icon without `sizes` counts as 32 px, a touch icon as 180 px.
     public static func candidates(_ links: [FaviconLink], page: String, fallback: Bool = true) -> [String] {
+        let target = FaviconCatalog.pixels
         func penalty(_ link: FaviconLink) -> Int {
             let sizes = link.sizes.lowercased()
-            let edge = sizes.contains("any") ? 256 : sizes.split(whereSeparator: \.isWhitespace).compactMap { Int($0.split(separator: "x").first ?? "") }.max() ?? (link.touch ? 180 : 32)
             let vector = link.type.contains("svg") || link.href.lowercased().split(separator: "?").first?.hasSuffix(".svg") == true || link.href.lowercased().hasPrefix("data:image/svg")
-            return (edge >= 32 ? edge - 32 : 1000 + 32 - edge) + (vector ? 60 : 0) + (link.touch ? 20 : 0)
+            if vector { return 2000 }
+            let edge = sizes.contains("any") ? 256 : sizes.split(whereSeparator: \.isWhitespace).compactMap { Int($0.split(separator: "x").first ?? "") }.max() ?? (link.touch ? 180 : 32)
+            if edge < target { return 5000 + (target - edge) * 2 + (link.touch ? 1 : 0) }
+            return (link.touch ? 3000 : 0) + min(edge - target, 999)
         }
         var result: [String] = []
         for link in links.enumerated().sorted(by: { (penalty($0.element), $0.offset) < (penalty($1.element), $1.offset) }).map(\.element) {

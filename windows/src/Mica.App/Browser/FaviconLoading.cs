@@ -13,8 +13,9 @@ public sealed partial class Favicons
 
     void Prefetch(string? url)
     {
-        if (Key(url) is not { } key || icons.ContainsKey(key) || !Uri.TryCreate(url, UriKind.Absolute, out var page) || page.Scheme is not ("http" or "https") ||
-            (attempted.TryGetValue(key, out var last) && DateTimeOffset.UtcNow - last < TimeSpan.FromMinutes(1)) || !loadingIcons.Add(key)) return;
+        if (Key(url) is not { } key || !Missing(key) || !Uri.TryCreate(url, UriKind.Absolute, out var page) || page.Scheme is not ("http" or "https") ||
+            // An older copy on screen is looked up once per session; a missing icon again after a minute.
+            (attempted.TryGetValue(key, out var last) && (stale.Contains(key) || DateTimeOffset.UtcNow - last < TimeSpan.FromMinutes(1))) || !loadingIcons.Add(key)) return;
         _ = DiscoverAsync(key, page, generation, cancellation.Token);
     }
 
@@ -26,14 +27,14 @@ public sealed partial class Favicons
         {
             await downloads.WaitAsync(token); entered = true;
             if (diskReads.TryGetValue(key, out var read)) await read;
-            if (expected != generation || icons.ContainsKey(key)) return;
+            if (expected != generation || !Missing(key)) return;
             if (FaviconDiscovery.BundledFile(page.AbsoluteUri) is { } bundled)
             {
                 var file = Path.Combine(AppContext.BaseDirectory, "Assets", "Favicons", bundled);
                 if (System.IO.File.Exists(file))
                 {
                     var png = await System.IO.File.ReadAllBytesAsync(file, token);
-                    if (expected != generation || icons.ContainsKey(key)) return;
+                    if (expected != generation || !Missing(key)) return;
                     await SetAsync(page.AbsoluteUri, png);
                     return;
                 }
@@ -42,7 +43,7 @@ public sealed partial class Favicons
             foreach (var delay in new[] { 0, 2, 8 })
             {
                 if (delay > 0) await Task.Delay(TimeSpan.FromSeconds(delay), token);
-                if (expected != generation || icons.ContainsKey(key)) return;
+                if (expected != generation || !Missing(key)) return;
                 var document = await Fetch(root, html: true, token);
                 var resolved = document?.Url ?? root;
                 var links = document is { } doc ? FaviconDiscovery.Links(System.Text.Encoding.UTF8.GetString(doc.Bytes), resolved.AbsoluteUri) : [];
@@ -54,7 +55,7 @@ public sealed partial class Favicons
                     if (data is null) continue;
                     try
                     {
-                        if (expected != generation || icons.ContainsKey(key)) return;
+                        if (expected != generation || !Missing(key)) return;
                         await SetAsync(page.AbsoluteUri, data.Value.Bytes);
                         return;
                     }
@@ -109,10 +110,11 @@ public sealed partial class Favicons
     {
         using var input = new MemoryStream(bytes).AsRandomAccessStream();
         var decoder = await Windows.Graphics.Imaging.BitmapDecoder.CreateAsync(input);
-        var scale = Math.Min(1, 64.0 / Math.Max(decoder.PixelWidth, decoder.PixelHeight));
+        // Larger icons are reduced to the stored size with Fant filtering; the default nearest-neighbour filter left them jagged.
+        var scale = Math.Min(1, (double)FaviconCatalog.Pixels / Math.Max(decoder.PixelWidth, decoder.PixelHeight));
         using var bitmap = await decoder.GetSoftwareBitmapAsync(Windows.Graphics.Imaging.BitmapPixelFormat.Bgra8,
             Windows.Graphics.Imaging.BitmapAlphaMode.Premultiplied,
-            new Windows.Graphics.Imaging.BitmapTransform { ScaledWidth = Math.Max(1, (uint)(decoder.PixelWidth * scale)), ScaledHeight = Math.Max(1, (uint)(decoder.PixelHeight * scale)) },
+            new Windows.Graphics.Imaging.BitmapTransform { ScaledWidth = Math.Max(1, (uint)(decoder.PixelWidth * scale)), ScaledHeight = Math.Max(1, (uint)(decoder.PixelHeight * scale)), InterpolationMode = Windows.Graphics.Imaging.BitmapInterpolationMode.Fant },
             Windows.Graphics.Imaging.ExifOrientationMode.IgnoreExifOrientation, Windows.Graphics.Imaging.ColorManagementMode.ColorManageToSRgb);
         var pixels = new byte[bitmap.PixelWidth * bitmap.PixelHeight * 4];
         bitmap.CopyToBuffer(pixels.AsBuffer());

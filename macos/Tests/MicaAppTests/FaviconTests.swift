@@ -52,7 +52,7 @@ private final class IconProtocol: URLProtocol {
         XCTAssertTrue(ready)
         XCTAssertEqual(IconProtocol.requests.map { $0.url!.path }, ["/", "/assets/logo.png"])
         XCTAssertTrue(IconProtocol.requests.allSatisfy { $0.url?.query == nil && $0.value(forHTTPHeaderField: "Cookie") == nil && !$0.httpShouldHandleCookies })
-        XCTAssertEqual(icons.image(for: page)?.size, NSSize(width: 64, height: 64))
+        XCTAssertEqual(icons.image(for: page)?.size, NSSize(width: Favicons.pixels, height: Favicons.pixels))
         icons.clear()
     }
     func testRejectedHtmlIconFallsBackToOriginICO() async {
@@ -115,6 +115,39 @@ private final class IconProtocol: URLProtocol {
         XCTAssertTrue(ready)
         XCTAssertEqual(IconProtocol.requests.map { $0.url!.path }, ["/", "/empty.png", "/visible.png"])
         icons.clear()
+    }
+
+    func testLegacyCopyStaysUntilSizedIconReplacesIt() async throws {
+        let png = png()
+        IconProtocol.lock.lock(); IconProtocol.requests = []; IconProtocol.handler = { request in
+            request.url!.path == "/" ? (200, "text/html", Data("<link rel=icon href='/large.png' sizes='192x192'>".utf8)) : (200, "image/png", png)
+        }; IconProtocol.lock.unlock()
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [IconProtocol.self]
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let legacy = directory.appendingPathComponent("legacy.example.png"), sized = directory.appendingPathComponent("legacy.example@\(Favicons.pixels).png")
+        try png.write(to: legacy)
+        try png.write(to: directory.appendingPathComponent("current.example@\(Favicons.pixels).png"))
+        let icons = Favicons(persistent: true, session: URLSession(configuration: config), cache: directory)
+
+        // A copy at the current size is used as is: no request leaves.
+        let current = await loaded(icons, URL(string: "https://current.example/")!)
+        XCTAssertTrue(current)
+        try? await Task.sleep(for: .milliseconds(200))
+        XCTAssertTrue(IconProtocol.requests.isEmpty)
+
+        // An older 64 px copy shows at once and is replaced by the page's larger icon.
+        let page = URL(string: "https://legacy.example/")!
+        let shown = await loaded(icons, page)
+        XCTAssertTrue(shown)
+        let until = Date().addingTimeInterval(4)
+        while Date() < until, FileManager.default.fileExists(atPath: legacy.path) { try? await Task.sleep(for: .milliseconds(20)) }
+        XCTAssertEqual(IconProtocol.requests.map { $0.url!.path }, ["/", "/large.png"])
+        XCTAssertTrue(FileManager.default.fileExists(atPath: sized.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: legacy.path))
+        XCTAssertNotNil(icons.image(for: page))
     }
 
     func testClearCancelsQueuedLookups() async {
