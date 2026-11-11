@@ -6,7 +6,10 @@ namespace Mica.App;
 public abstract class Observable
 {
     public event Action? Changed;
-    protected void Notify() => Changed?.Invoke();
+    /// <summary>Any model of the app changed; each window's shell then sends one fresh snapshot (ShellView).</summary>
+    public static event Action? Touched;
+    protected void Notify() { Changed?.Invoke(); Touched?.Invoke(); }
+    public static void TouchAll() => Touched?.Invoke();
 }
 
 public static class Bindings

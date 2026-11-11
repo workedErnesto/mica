@@ -29,6 +29,8 @@
     <Content Include="$(SharedDir)icons/app/*.png" Link="Assets/AppIcons/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="$(SharedDir)icons/app/NOTICE.txt" Link="Assets/AppIcons/NOTICE.txt" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="$(SharedDir)blocklist/BLOCKLIST-NOTICE.txt" Link="Assets/BLOCKLIST-NOTICE.txt" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The interface: mica's shell, loaded by ShellView from https://mica.shell. dev/ is the preview stand-in for the host. -->
+    <Content Include="../../shell/**" Exclude="../../shell/dev/**" Link="shell/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="$(SharedDir)fixtures/extension-check/**" Link="Assets/QA/extension-check/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

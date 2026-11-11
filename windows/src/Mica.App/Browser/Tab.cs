@@ -30,11 +30,6 @@ public sealed partial class Tab : Observable
     public string? Error { get; set; }
     public CoreWebView2WebErrorStatus? Failure { get; private set; }
     public double Zoom { get; private set; } = 1;
-    /// <summary>Site icon for the current host from this window's icon store, or null until one is known.</summary>
-    /// <summary>The icon the current page reported (FaviconChanged), else the stored icon of the page's origin.</summary>
-    public ImageSource? Favicon => pageFavicon is not null && pageFaviconKey == Favicons.Key(Url) ? pageFavicon : Owner?.Favicons.Image(Url);
-    ImageSource? pageFavicon;
-    string? pageFaviconKey;
     public WebView2? WebView { get; private set; }
     /// <summary>The start page of this tab already played its entrance; going back to the tab shows it at rest.</summary>
     public bool Introduced { get; set; }
@@ -291,11 +286,7 @@ public sealed partial class Tab : Observable
                 await reader.LoadAsync((uint)stream.Size);
                 reader.ReadBytes(bytes);
             }
-            if (await store.SetAsync(page, bytes) is { } image && sender.Source == page)
-            {
-                pageFavicon = image; pageFaviconKey = Favicons.Key(page);
-                Notify();
-            }
+            if (await store.SetAsync(page, bytes) && sender.Source == page) Notify();
         }
         catch (Exception e) { Diagnostics.Log.Error(e); }
     }
@@ -418,25 +409,19 @@ public sealed partial class Tab : Observable
 }
 
 /// <summary>Site icons keyed by host without "www." plus a non-default port, so apps on different ports of localhost keep
-/// their own (macOS Favicons). The normal profile keeps a PNG per key in
-/// %LOCALAPPDATA%\mica\Favicons and reads it lazily for restored tabs; incognito windows own a separate instance
-/// that stays in memory.</summary>
+/// their own (macOS Favicons). The normal profile keeps a PNG per key in %LOCALAPPDATA%\mica\Favicons and reads it
+/// lazily for restored tabs; incognito windows own a separate instance that stays in memory. The shell shows an icon
+/// through https://mica.icons/&lt;key&gt;, which ShellView answers from here.</summary>
 public sealed class Favicons
 {
     public const int ByteLimit = 1_000_000;
     readonly string? directory;
-    readonly Dictionary<string, ImageSource> icons = [];
+    readonly Dictionary<string, Entry> icons = [];
     readonly HashSet<string> probed = [];
-    /// <summary>Neutral one-colour glyphs among the decoded icons (FaviconTone), with their alpha kept for redrawing in ink.</summary>
-    readonly ConditionalWeakTable<ImageSource, Glyph> glyphs = new();
-    sealed class Glyph(double luminance, byte[] alpha, int width, int height)
-    {
-        public double Luminance => luminance;
-        public byte[] Alpha => alpha; public int Width => width; public int Height => height;
-        public uint InkColor; public ImageSource? Inked;
-    }
-    int generation;
-    /// <summary>Raised after an icon arrives or the store is cleared, never while a caller is rendering.</summary>
+    /// <summary>PNG bytes, a version that changes with them, and for a neutral one-colour glyph (FaviconTone) its luminance.</summary>
+    public sealed record Entry(byte[] Png, int Version, double? Glyph);
+    int generation, version;
+    /// <summary>Raised after an icon arrives or the store is cleared.</summary>
     public event Action? Changed;
 
     public Favicons(string? directory) { this.directory = directory; }
@@ -451,12 +436,12 @@ public sealed class Favicons
         return uri.IsDefaultPort ? key : key + ":" + uri.Port;
     }
 
-    /// <summary>The stored icon of the page's origin. Safe to call while rendering: a missing icon schedules a disk read
-    /// and raises Changed later.</summary>
-    public ImageSource? Image(string? url)
+    /// <summary>The stored icon of the page's origin. A missing icon schedules a disk read and raises Changed later.</summary>
+    public Entry? Icon(string? url) => Key(url) is { } key ? IconFor(key) : null;
+
+    public Entry? IconFor(string key)
     {
-        if (Key(url) is not { } key) return null;
-        if (icons.TryGetValue(key, out var image)) return image;
+        if (icons.TryGetValue(key, out var entry)) return entry;
         if (File(key) is { } file && probed.Add(key)) _ = LoadAsync(key, file, generation);
         return null;
     }
@@ -467,23 +452,24 @@ public sealed class Favicons
         {
             var bytes = await Task.Run(() => System.IO.File.Exists(file) ? System.IO.File.ReadAllBytes(file) : null);
             if (bytes is null || expected != generation || icons.ContainsKey(key)) return;
-            icons[key] = await Decode(bytes);
+            icons[key] = new Entry(bytes, ++version, await Measure(bytes));
             Changed?.Invoke();
         }
-        catch { }
+        catch (Exception e) { Diagnostics.Log.Error(e); }
     }
 
-    public async Task<ImageSource?> SetAsync(string? url, byte[] png)
+    public async Task<bool> SetAsync(string? url, byte[] png)
     {
-        if (Key(url) is not { } key) return null;
+        if (Key(url) is not { } key) return false;
         var expected = generation;
-        var image = await Decode(png);
-        if (expected != generation) return null;
-        icons[key] = image; probed.Add(key);
+        double? glyph = null;
+        try { glyph = await Measure(png); } catch (Exception e) { Diagnostics.Log.Error(e); }
+        if (expected != generation) return false;
+        icons[key] = new Entry(png, ++version, glyph); probed.Add(key);
         Changed?.Invoke();
         if (File(key) is { } file && directory is { } folder)
-            await Task.Run(() => { try { Directory.CreateDirectory(folder); System.IO.File.WriteAllBytes(file, png); } catch { } });
-        return image;
+            await Task.Run(() => { try { Directory.CreateDirectory(folder); System.IO.File.WriteAllBytes(file, png); } catch (IOException) { } catch (UnauthorizedAccessException) { } });
+        return true;
     }
 
     /// <summary>Clearing history or cache forgets every icon, in memory and on disk.</summary>
@@ -491,7 +477,7 @@ public sealed class Favicons
     {
         generation++;
         icons.Clear(); probed.Clear();
-        if (directory is not null) try { Directory.Delete(directory, true); } catch { }
+        if (directory is not null) try { Directory.Delete(directory, true); } catch (IOException) { } catch (UnauthorizedAccessException) { }
         Changed?.Invoke();
     }
 
@@ -502,24 +488,15 @@ public sealed class Favicons
         return Path.Combine(directory, name + ".png");
     }
 
-    async Task<ImageSource> Decode(byte[] bytes)
+    /// <summary>Reads the icon as straight-alpha RGBA at no more than 64 px, the form FaviconTone expects, and returns the
+    /// luminance of a neutral one-colour glyph, or null for any other icon.</summary>
+    static async Task<double?> Measure(byte[] bytes)
     {
-        var memory = new Windows.Storage.Streams.InMemoryRandomAccessStream();
-        using (var writer = new Windows.Storage.Streams.DataWriter(memory.GetOutputStreamAt(0)))
+        using var stream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
+        using (var writer = new Windows.Storage.Streams.DataWriter(stream.GetOutputStreamAt(0)))
         {
             writer.WriteBytes(bytes); await writer.StoreAsync(); writer.DetachStream();
         }
-        memory.Seek(0);
-        var image = new BitmapImage();
-        await image.SetSourceAsync(memory);
-        try { if (await Measure(memory) is { } glyph) glyphs.AddOrUpdate(image, glyph); }
-        catch (Exception e) { Diagnostics.Log.Error(e); }
-        return image;
-    }
-
-    /// <summary>Reads the icon as straight-alpha RGBA at no more than 64 px, the form FaviconTone expects.</summary>
-    static async Task<Glyph?> Measure(Windows.Storage.Streams.IRandomAccessStream stream)
-    {
         stream.Seek(0);
         var decoder = await Windows.Graphics.Imaging.BitmapDecoder.CreateAsync(stream);
         var scale = Math.Min(1, 64.0 / Math.Max(decoder.PixelWidth, decoder.PixelHeight));
@@ -527,31 +504,6 @@ public sealed class Favicons
         var transform = new Windows.Graphics.Imaging.BitmapTransform { ScaledWidth = width, ScaledHeight = height, InterpolationMode = Windows.Graphics.Imaging.BitmapInterpolationMode.Fant };
         var data = await decoder.GetPixelDataAsync(Windows.Graphics.Imaging.BitmapPixelFormat.Rgba8, Windows.Graphics.Imaging.BitmapAlphaMode.Straight, transform,
             Windows.Graphics.Imaging.ExifOrientationMode.IgnoreExifOrientation, Windows.Graphics.Imaging.ColorManagementMode.DoNotColorManage);
-        var pixels = data.DetachPixelData();
-        if (FaviconTone.Glyph(pixels) is not { } luminance) return null;
-        var alpha = new byte[pixels.Length / 4];
-        for (var i = 0; i < alpha.Length; i++) alpha[i] = pixels[i * 4 + 3];
-        return new Glyph(luminance, alpha, (int)width, (int)height);
-    }
-
-    /// <summary>The image to draw on a background of this luminance: a neutral one-colour glyph that would fall under
-    /// 3:1 contrast comes back redrawn in <c>ink</c>, anything else unchanged. The ink copy is kept until the ink changes.</summary>
-    public ImageSource Adapted(ImageSource image, double background, Windows.UI.Color ink)
-    {
-        if (!glyphs.TryGetValue(image, out var glyph) || !FaviconTone.NeedsInk(glyph.Luminance, background)) return image;
-        var argb = (uint)ink.A << 24 | (uint)ink.R << 16 | (uint)ink.G << 8 | ink.B;
-        if (glyph.Inked is { } cached && glyph.InkColor == argb) return cached;
-        var bitmap = new WriteableBitmap(glyph.Width, glyph.Height);
-        var bgra = new byte[glyph.Alpha.Length * 4];
-        for (var i = 0; i < glyph.Alpha.Length; i++)
-        {
-            // WriteableBitmap holds premultiplied BGRA.
-            var a = glyph.Alpha[i] * ink.A / 255;
-            bgra[i * 4] = (byte)(ink.B * a / 255); bgra[i * 4 + 1] = (byte)(ink.G * a / 255); bgra[i * 4 + 2] = (byte)(ink.R * a / 255); bgra[i * 4 + 3] = (byte)a;
-        }
-        using (var stream = bitmap.PixelBuffer.AsStream()) stream.Write(bgra, 0, bgra.Length);
-        bitmap.Invalidate();
-        glyph.InkColor = argb; glyph.Inked = bitmap;
-        return bitmap;
+        return FaviconTone.Glyph(data.DetachPixelData());
     }
 }

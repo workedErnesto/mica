@@ -199,6 +199,52 @@ public enum English {
     }()
     static let source = """
 ''' + body + '\n"""\n}\n'
+    # Web shell of the Windows app (windows/shell): the same tokens as CSS custom properties and ES modules.
+    def css_color(value):
+        rgb, alpha = color(value)
+        r, g, b = (rgb >> 16) & 255, (rgb >> 8) & 255, rgb & 255
+        return f'#{rgb:06X}' if alpha == 1 else f'rgb({r} {g} {b} / {num(alpha)})'
+    def css_name(name):
+        return re.sub(r'([A-Z])', lambda match: '-' + match.group(1).lower(), name)
+    def block(selector, pick):
+        rows = [f'  --{css_name(name)}: {css_color(pick(e))};' for name, e in tokens['palette'].items()]
+        return selector + ' {\n' + '\n'.join(rows) + '\n}\n'
+    css = ['/* ' + HEADER.format(src='tokens.json') + ' */',
+           block(':root', lambda e: e['light']),
+           block(':root[data-theme="dark"]', lambda e: e['dark']),
+           block(':root[data-contrast="more"]', lambda e: e.get('contrastLight', e['light'])),
+           block(':root[data-theme="dark"][data-contrast="more"]', lambda e: e.get('contrastDark', e['dark'])),
+           ':root {']
+    for group in ('chrome', 'space', 'radius'):
+        for key, entry in tokens[group].items():
+            value, _ = value_doc(entry)
+            css.append(f'  --{group}-{css_name(key)}: {num(value)}px;')
+    for key, value in tokens['typography']['sizes'].items():
+        css.append(f'  --type-{css_name(key)}: {num(value)}px;')
+    css.append(f'  --hover-duration: {num(m["hover"]["duration"])}s;')
+    css.append('}\n')
+    out['windows/shell/css/tokens.g.css'] = '\n'.join(css)
+    plain = {group: {key: value_doc(entry)[0] for key, entry in tokens[group].items()} for group in ('chrome', 'space', 'radius')}
+    motion = {key: ({k: v for k, v in value.items() if k != 'doc'} if isinstance(value, dict) else value) for key, value in m.items()}
+    keymap = json.loads((shared / 'keymap.json').read_text())['commands']
+    glyph_names = sorted(json.loads((shared / 'glyphs.json').read_text())['glyphs'])
+    js = '// ' + HEADER.format(src='tokens.json, keymap.json, profiles.json, glyphs.json and version.txt') + '\n'
+    js += 'export const version = ' + json.dumps(version) + ';\n'
+    js += 'export const geometry = ' + json.dumps(plain, indent=2) + ';\n'
+    js += 'export const motion = ' + json.dumps(motion, indent=2) + ';\n'
+    js += 'export const palette = ' + json.dumps({name: {k: v for k, v in e.items() if k != 'doc'} for name, e in tokens['palette'].items()}, indent=2) + ';\n'
+    js += 'export const keymap = ' + json.dumps({command: keys['windows'] for command, keys in keymap.items()}, indent=2) + ';\n'
+    js += 'export const profileCatalog = ' + json.dumps({'icons': profiles['icons'], 'backgrounds': profiles['backgrounds'], 'standard': profiles['standard']}, indent=2) + ';\n'
+    js += 'export const glyphNames = ' + json.dumps(glyph_names) + ';\n'
+    out['windows/shell/js/gen/tokens.g.js'] = js
+    table = {}
+    for row in rows:
+        if not row: continue
+        key, low, regular = row.split('⟩')
+        table[key] = [low, regular]
+    out['windows/shell/js/gen/strings.g.js'] = ('// ' + HEADER.format(src='strings/en.txt') + '\n'
+        '// English interface text keyed by the regular Russian variant: [lowercase style, regular].\n'
+        'export const english = ' + json.dumps(table, ensure_ascii=False, indent=0) + ';\n')
     return out
 
 def main():

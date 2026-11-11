@@ -57,8 +57,8 @@ public sealed partial class Updater(Store store)
             if (release is null || !UpdatePolicy.Offer(release, current, store.Preferences, Arch) || release.Version is not { } version) return;
             MicaApplication.Current?.Dispatcher.TryEnqueue(async () =>
             {
-                var answer = await Dialogs.AskWith(store.Active?.Window, store.Text("доступна mica ", "Доступна mica ") + version,
-                    Mica.Design.Ui.Text(store.Text("установщик будет проверен по SHA-256 и запущен. mica закроется и обновится, вкладки восстановятся.", "Установщик будет проверен по SHA-256 и запущен. mica закроется и обновится, вкладки восстановятся."), 13, Mica.Design.Palette.Text2.Brush(), wrap: true),
+                var answer = await Dialogs.Ask(store.Active?.Window, store.Text("доступна mica ", "Доступна mica ") + version,
+                    store.Text("установщик будет проверен по SHA-256 и запущен. mica закроется и обновится, вкладки восстановятся.", "Установщик будет проверен по SHA-256 и запущен. mica закроется и обновится, вкладки восстановятся."),
                     [store.Text("позже", "Позже"), store.Text("не предлагать эту версию", "Не предлагать эту версию"), store.Text("установить", "Установить")]);
                 if (answer == 2) await InstallAsync(release);
                 else if (answer == 1) store.Change(p => p.SkippedVersion = version.ToString());

@@ -238,10 +238,11 @@ public sealed partial class Store
     {
         var contrast = new global::Windows.UI.ViewManagement.AccessibilitySettings().HighContrast;
         Palette.Apply(DarkMode, contrast);
-        // The palette is shared by every window, so theme and colours follow the profile of the window in front.
+        // Each window's shell takes the look of its own profile (ShellState.LookOf); this palette serves only
+        // what mica still draws natively, the dialogs of setup and uninstall.
         var p = ActivePrefs;
         Look.Apply(p.Theme == Theme.Custom, p.Accent, p.CustomTint);
-        foreach (var window in Windows) window.ApplyAppearance();
+        Observable.TouchAll();
     }
 
     /// <summary>Opacity of the shell tint over the backdrop: 0.92 at zero transparency, 0.2 at full.</summary>
