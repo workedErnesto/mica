@@ -51,7 +51,7 @@ struct StartSectionView: View {
                 } else {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: StartLayout.column, maximum: StartLayout.column), spacing: Space.micro)], alignment: .leading, spacing: Space.normal) {
                         ForEach(sites) { site in
-                            SiteTile(title: site.title, host: site.host, url: site.url, favicons: browser.favicons) { browser.selected?.load(site.url) }
+                            SiteTile(title: site.title, host: site.host, url: site.url, favicons: browser.favicons) { open(site.url) }
                                 .micaContextMenu { menu(site) }
                                 .modifier(ShortcutDrag(site: site, store: store, browser: browser))
                                 .stickyPopover(isPresented: Binding(get: { editingSite == site }, set: { if !$0 { editingSite = nil } })) {
@@ -76,8 +76,16 @@ struct StartSectionView: View {
         case .custom: return ""
         }
     }
+    /// A click opens the site in this tab; with ⌘ held it opens in a new window of the same profile and mode.
+    private func open(_ url: URL) {
+        if NSEvent.modifierFlags.contains(.command) { openInWindow(url) } else { browser.selected?.load(url) }
+    }
+    private func openInWindow(_ url: URL) {
+        browser.store.newWindow(privateMode: browser.privateMode, profile: browser.profileID).selected?.load(url)
+    }
     @MenuBuilder private func menu(_ site: StartSite) -> [MenuEntry] {
         MenuEntry.item(browser.text("открыть в новой вкладке", "Открыть в новой вкладке"), symbol: "plus.square") { browser.open(site.url) }
+        MenuEntry.item(browser.text("открыть в новом окне", "Открыть в новом окне"), symbol: "macwindow") { openInWindow(site.url) }
         MenuEntry.divider
         if let id = site.shortcut {
             MenuEntry.item(browser.text("изменить…", "Изменить…"), symbol: "pencil") { editingSite = site }

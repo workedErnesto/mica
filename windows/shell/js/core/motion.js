@@ -34,6 +34,8 @@ export const springs = {
   press: spring(tokens.press.response, tokens.press.damping),
   snappy: spring(tokens.snappy.response, tokens.snappy.damping),
   panel: spring(tokens.panel.response, tokens.panel.damping),
+  /// Icon of a start page site tile on hover.
+  bouncy: spring(tokens.bouncy.response, tokens.bouncy.damping),
   /// Shell menus (MicaMenu) and form popovers (StickyPopover) on macOS.
   menu: spring(0.2, 0.9),
   popover: spring(0.24, 0.88),
@@ -56,6 +58,8 @@ export function installMotion() {
     style.setProperty('--spring-' + name, springs[name].easing);
     style.setProperty('--spring-' + name + '-ms', springs[name].ms + 'ms');
   }
+  // Start tile glow (motion.aura) as unitless numbers: --aura-blur, --aura-icon-scale and so on.
+  for (const key in tokens.aura) style.setProperty('--aura-' + key.replace(/[A-Z]/g, c => '-' + c.toLowerCase()), tokens.aura[key]);
   setTransitionHooks(enter, exit);
 }
 

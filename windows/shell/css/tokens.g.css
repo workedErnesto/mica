@@ -34,6 +34,11 @@
   --secondary-hover: rgb(17 17 19 / 0.08);
   --secondary-pressed: rgb(17 17 19 / 0.12);
   --focus-ring: rgb(17 17 19 / 0.5);
+  --tone: rgb(17 17 19 / 0.04);
+  --tone-hover: rgb(17 17 19 / 0.075);
+  --search-field: rgb(17 17 19 / 0.04);
+  --search-field-hover: rgb(17 17 19 / 0.065);
+  --search-field-ring: rgb(17 17 19 / 0.1);
 }
 
 :root[data-theme="dark"] {
@@ -71,6 +76,11 @@
   --secondary-hover: rgb(255 255 255 / 0.12);
   --secondary-pressed: rgb(255 255 255 / 0.16);
   --focus-ring: rgb(255 255 255 / 0.5);
+  --tone: rgb(255 255 255 / 0.05);
+  --tone-hover: rgb(255 255 255 / 0.09);
+  --search-field: rgb(255 255 255 / 0.045);
+  --search-field-hover: rgb(255 255 255 / 0.065);
+  --search-field-ring: rgb(255 255 255 / 0.08);
 }
 
 :root[data-contrast="more"] {
@@ -108,6 +118,11 @@
   --secondary-hover: rgb(17 17 19 / 0.2);
   --secondary-pressed: rgb(17 17 19 / 0.12);
   --focus-ring: #111113;
+  --tone: rgb(17 17 19 / 0.1);
+  --tone-hover: rgb(17 17 19 / 0.16);
+  --search-field: rgb(17 17 19 / 0.1);
+  --search-field-hover: rgb(17 17 19 / 0.16);
+  --search-field-ring: rgb(17 17 19 / 0.6);
 }
 
 :root[data-theme="dark"][data-contrast="more"] {
@@ -145,6 +160,11 @@
   --secondary-hover: rgb(255 255 255 / 0.24);
   --secondary-pressed: rgb(255 255 255 / 0.16);
   --focus-ring: #FFFFFF;
+  --tone: rgb(255 255 255 / 0.12);
+  --tone-hover: rgb(255 255 255 / 0.2);
+  --search-field: rgb(255 255 255 / 0.12);
+  --search-field-hover: rgb(255 255 255 / 0.2);
+  --search-field-ring: rgb(255 255 255 / 0.6);
 }
 
 :root {

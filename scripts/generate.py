@@ -75,6 +75,10 @@ enum MotionTokens {{
     static let press = (response: {num(m['press']['response'])}, damping: {num(m['press']['damping'])})
     static let snappy = (response: {num(m['snappy']['response'])}, damping: {num(m['snappy']['damping'])})
     static let panel = (response: {num(m['panel']['response'])}, damping: {num(m['panel']['damping'])})
+    /// {m['bouncy']['doc']}
+    static let bouncy = (response: {num(m['bouncy']['response'])}, damping: {num(m['bouncy']['damping'])})
+    /// {m['aura']['doc']}
+    static let aura = (icon: {float(m['aura']['icon'])}, lightOpacity: {float(m['aura']['lightOpacity'])}, darkOpacity: {float(m['aura']['darkOpacity'])}, blur: {float(m['aura']['blur'])}, saturation: {float(m['aura']['saturation'])}, restScale: {float(m['aura']['restScale'])}, scale: {float(m['aura']['scale'])}, iconScale: {float(m['aura']['iconScale'])}, iconRise: {float(m['aura']['iconRise'])})
     static let popScale = {num(m['popScale'])}
     /// {m['hoverIntent']['doc']}
     static let hoverIntent = {num(m['hoverIntent']['delay'])}
@@ -114,6 +118,21 @@ public static class MotionTokens
     public static readonly Spring Press = new({num(m['press']['response'])}, {num(m['press']['damping'])});
     public static readonly Spring Snappy = new({num(m['snappy']['response'])}, {num(m['snappy']['damping'])});
     public static readonly Spring Panel = new({num(m['panel']['response'])}, {num(m['panel']['damping'])});
+    /// <summary>{m['bouncy']['doc']}</summary>
+    public static readonly Spring Bouncy = new({num(m['bouncy']['response'])}, {num(m['bouncy']['damping'])});
+    /// <summary>{m['aura']['doc']}</summary>
+    public static class Aura
+    {{
+        public const double Icon = {num(m['aura']['icon'])};
+        public const double LightOpacity = {num(m['aura']['lightOpacity'])};
+        public const double DarkOpacity = {num(m['aura']['darkOpacity'])};
+        public const double Blur = {num(m['aura']['blur'])};
+        public const double Saturation = {num(m['aura']['saturation'])};
+        public const double RestScale = {num(m['aura']['restScale'])};
+        public const double Scale = {num(m['aura']['scale'])};
+        public const double IconScale = {num(m['aura']['iconScale'])};
+        public const double IconRise = {num(m['aura']['iconRise'])};
+    }}
     public const double PopScale = {num(m['popScale'])};
     /// <summary>{m['hoverIntent']['doc']}</summary>
     public const double HoverIntent = {num(m['hoverIntent']['delay'])};

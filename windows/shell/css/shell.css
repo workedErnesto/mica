@@ -224,7 +224,8 @@
 /* Start page */
 .start { position: absolute; inset: 0; }
 .start-scroll { position: absolute; inset: 0; }
-.start-column { display: flex; flex-direction: column; gap: 28px; max-width: 664px; margin: 0 auto; padding: 96px 32px 64px; }
+/* Wide enough for a row of --columns tiles (the user's "sites in a section"), never narrower than the 600 px field. */
+.start-column { display: flex; flex-direction: column; gap: 28px; max-width: calc(max(600px, var(--columns, 6) * 88px + (var(--columns, 6) - 1) * 4px) + 64px); margin: 0 auto; padding: 96px 32px 64px; transition: max-width var(--spring-snappy-ms) var(--spring-snappy); }
 .start.editing .start-column { padding-bottom: 128px; }
 .start-head { display: flex; align-items: baseline; justify-content: center; gap: 10px; }
 .mark-block { display: flex; flex-direction: column; gap: 12px; align-items: stretch; flex: 1 1 auto; }
@@ -238,10 +239,13 @@
 .assembling .letter { display: inline-block; white-space: pre; }
 .private-capsule { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 12px; background: var(--track); color: var(--text2); font-size: 11.5px; font-weight: 500; flex: none; }
 .start-search {
-  border-radius: 16px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--hairline), 0 2px 12px var(--shadow);
-  transition: box-shadow var(--spring-snappy-ms) var(--spring-snappy), opacity var(--spring-snappy-ms) var(--spring-snappy);
+  width: 100%; max-width: 600px; align-self: center;
+  /* Tonal, so a frosted start page shows through it; focus adds a quiet ring (palette.searchField). */
+  border-radius: 16px; background: var(--search-field); box-shadow: inset 0 0 0 1px transparent;
+  transition: background-color var(--ease-hover), box-shadow var(--ease-hover), opacity var(--spring-snappy-ms) var(--spring-snappy);
 }
-.start-search.focused { box-shadow: inset 0 0 0 1px var(--hairline-strong), 0 6px 32px var(--shadow-strong); }
+.start-search:hover { background: var(--search-field-hover); }
+.start-search.focused { box-shadow: inset 0 0 0 1px var(--search-field-ring); }
 .start-search.dimmed { opacity: 0.5; pointer-events: none; }
 .start-search-row { display: flex; align-items: center; gap: 12px; height: 54px; padding: 0 18px; }
 .start-hints { display: flex; justify-content: center; gap: 20px; }
@@ -259,18 +263,30 @@
 .site-tile { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 88px; --press: 0.95; transition: transform var(--spring-press-ms) var(--spring-press); }
 .site-tile:active { transform: scale(0.95); }
 .tile-box {
+  /* Tonal plate without a shadow, so a frosted start page shows through it; it clips the hover glow. */
+  position: relative; overflow: hidden; isolation: isolate;
   width: 60px; height: 60px; border-radius: 16px; display: flex; align-items: center; justify-content: center; color: var(--text2);
-  background: var(--surface); box-shadow: inset 0 0 0 1px var(--hairline), 0 1px 6px var(--shadow);
-  transition: transform var(--spring-snappy-ms) var(--spring-snappy), box-shadow var(--spring-snappy-ms) var(--spring-snappy), background-color var(--ease-hover), color var(--ease-hover);
+  background: var(--tone);
+  transition: background-color var(--ease-hover), color var(--ease-hover);
 }
-.site-tile:hover .tile-box { transform: translateY(-2px); box-shadow: inset 0 0 0 1px var(--hairline), 0 4px 20px var(--shadow-strong); }
-.tile-box.dashed { background: transparent; box-shadow: none; border: 1px dashed var(--hairline-strong); }
-.site-tile.add:hover .tile-box { background: var(--hover); color: var(--ink); box-shadow: none; }
+.site-tile:hover .tile-box { background: var(--tone-hover); }
+.tile-icon { position: relative; z-index: 1; display: flex; transition: transform var(--spring-bouncy-ms) var(--spring-bouncy); }
+.site-tile:hover .tile-icon { transform: translateY(calc(var(--aura-icon-rise) * -1px)) scale(var(--aura-icon-scale)); }
+.tile-aura {
+  position: absolute; display: flex; opacity: 0; pointer-events: none;
+  filter: blur(calc(var(--aura-blur) * 1px)) saturate(var(--aura-saturation)); transform: scale(var(--aura-rest-scale));
+  transition: transform var(--spring-snappy-ms) var(--spring-snappy), opacity var(--spring-snappy-ms) var(--spring-snappy);
+}
+.site-tile:hover .tile-aura { opacity: var(--aura-light-opacity); transform: scale(var(--aura-scale)); }
+:root[data-theme="dark"] .site-tile:hover .tile-aura { opacity: var(--aura-dark-opacity); }
+:root[data-reduced-motion] .tile-aura { transform: scale(var(--aura-scale)); }
+:root[data-reduced-motion] .site-tile:hover .tile-icon { transform: none; }
+.tile-box.dashed { background: transparent; border: 1px dashed var(--hairline-strong); }
+.site-tile.add:hover .tile-box { background: var(--hover); color: var(--ink); }
 .tile-label { font-size: 11.5px; color: var(--text2); max-width: 84px; transition: color var(--ease-hover); }
 .site-tile.add .tile-label { color: var(--text3); }
 .site-tile:hover .tile-label { color: var(--ink); }
 .site-tile[data-drop-over] .tile-box { box-shadow: 0 0 0 2px var(--focus); }
-:root[data-reduced-motion] .site-tile:hover .tile-box { transform: none; }
 .private-note { text-align: center; font-size: 12px; color: var(--text3); }
 .start-customize {
   position: absolute; right: 12px; bottom: 12px; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 8px;

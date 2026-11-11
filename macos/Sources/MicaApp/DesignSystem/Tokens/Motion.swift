@@ -8,6 +8,7 @@ enum Motion {
     static let pressSpring = Animation.spring(response: MotionTokens.press.response, dampingFraction: MotionTokens.press.damping)
     static let snappySpring = Animation.spring(response: MotionTokens.snappy.response, dampingFraction: MotionTokens.snappy.damping)
     static let panelSpring = Animation.spring(response: MotionTokens.panel.response, dampingFraction: MotionTokens.panel.damping)
+    static let bouncySpring = Animation.spring(response: MotionTokens.bouncy.response, dampingFraction: MotionTokens.bouncy.damping)
     /// Spatial animations; nil means an immediate change when the system asks for less motion.
     static var quick: Animation? { reduced ? nil : snappySpring }
     static var panel: Animation? { reduced ? nil : panelSpring }
