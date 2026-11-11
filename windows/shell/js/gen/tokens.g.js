@@ -48,6 +48,21 @@ export const motion = {
     "response": 0.36,
     "damping": 0.9
   },
+  "bouncy": {
+    "response": 0.38,
+    "damping": 0.6
+  },
+  "aura": {
+    "icon": 36,
+    "lightOpacity": 0.175,
+    "darkOpacity": 0.1875,
+    "blur": 12,
+    "saturation": 1.8,
+    "restScale": 0.6,
+    "scale": 2.3,
+    "iconScale": 1.08,
+    "iconRise": 1
+  },
   "popScale": 0.96,
   "hoverIntent": {
     "delay": 0.5
@@ -239,6 +254,36 @@ export const palette = {
     "dark": "#FFFFFF/0.5",
     "contrastLight": "#111113",
     "contrastDark": "#FFFFFF"
+  },
+  "tone": {
+    "light": "#111113/0.04",
+    "dark": "#FFFFFF/0.05",
+    "contrastLight": "#111113/0.1",
+    "contrastDark": "#FFFFFF/0.12"
+  },
+  "toneHover": {
+    "light": "#111113/0.075",
+    "dark": "#FFFFFF/0.09",
+    "contrastLight": "#111113/0.16",
+    "contrastDark": "#FFFFFF/0.2"
+  },
+  "searchField": {
+    "light": "#111113/0.04",
+    "dark": "#FFFFFF/0.045",
+    "contrastLight": "#111113/0.1",
+    "contrastDark": "#FFFFFF/0.12"
+  },
+  "searchFieldHover": {
+    "light": "#111113/0.065",
+    "dark": "#FFFFFF/0.065",
+    "contrastLight": "#111113/0.16",
+    "contrastDark": "#FFFFFF/0.2"
+  },
+  "searchFieldRing": {
+    "light": "#111113/0.1",
+    "dark": "#FFFFFF/0.08",
+    "contrastLight": "#111113/0.6",
+    "contrastDark": "#FFFFFF/0.6"
   }
 };
 export const keymap = {

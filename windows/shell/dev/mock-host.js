@@ -78,7 +78,7 @@ export class MockHost {
     const s = this.state, start = s.prefs.start;
     s.start.greeting = s.prefs.userName && s.prefs.greetByName ? (s.text.lowercase ? 'добрый день, ' : 'Добрый день, ') + s.prefs.userName : null;
     s.start.sections = [
-      { section: 'custom', sites: start.shortcuts.map(sc => ({ id: sc.id, title: sc.title, url: sc.url, host: sc.host, shortcut: sc.id })) },
+      { section: 'custom', sites: start.shortcuts.slice(0, start.frequentCount).map(sc => ({ id: sc.id, title: sc.title, url: sc.url, host: sc.host, shortcut: sc.id })) },
       { section: 'frequent', sites: s.window.isPrivate ? [] : ['wikipedia.org', 'youtube.com', 'mail.google.com', 'apple.com', 'vercel.com'].filter(h => !start.hiddenHosts.includes(h)).slice(0, start.frequentCount).map(h => ({ id: 'f-' + h, title: '', url: 'https://' + h + '/', host: h })) },
       { section: 'bookmarks', sites: [] },
     ];

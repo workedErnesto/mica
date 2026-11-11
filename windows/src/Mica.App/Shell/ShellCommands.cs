@@ -51,7 +51,12 @@ public static class ShellCommands
 
             // Navigation and the command bar
             case "open":
-                if (Str(a, "url") is { } openUrl) { if (Bool(a, "newTab")) b.Open(openUrl); else b.Selected?.Load(openUrl); }
+                if (Str(a, "url") is { } openUrl)
+                {
+                    if (Bool(a, "newWindow")) store.NewWindow(b.PrivateMode, profile: b.ProfileId).Selected?.Load(openUrl);
+                    else if (Bool(a, "newTab")) b.Open(openUrl);
+                    else b.Selected?.Load(openUrl);
+                }
                 break;
             case "navigate": if (Str(a, "text") is { Length: > 0 } text) { b.Navigate(text); b.CommandBar = false; } break;
             case "suggestion.open":

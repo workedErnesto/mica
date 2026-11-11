@@ -149,7 +149,7 @@ public static class ShellState
             switch (section)
             {
                 case StartSection.Custom:
-                    foreach (var s in options.Shortcuts) sites.Push(Site(s.Id.ToString(), s.Title, s.Url, s.Id));
+                    foreach (var s in options.Shortcuts.Take(options.FrequentCount)) sites.Push(Site(s.Id.ToString(), s.Title, s.Url, s.Id));
                     break;
                 case StartSection.Frequent:
                     if (!browser.PrivateMode)

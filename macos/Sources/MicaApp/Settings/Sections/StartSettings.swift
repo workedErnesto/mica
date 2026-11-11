@@ -30,7 +30,7 @@ struct StartSettings: View {
                         Rectangle().fill(Palette.hairline).frame(height: 1).padding(.leading, 14)
                     }
                 }
-                SettingRow(title: browser.text("сайтов в разделе", "Сайтов в разделе"), detail: browser.text("для частых сайтов и закладок", "Для частых сайтов и закладок"), divider: false) {
+                SettingRow(title: browser.text("сайтов в разделе", "Сайтов в разделе"), detail: browser.text("во всех разделах, по столько же в ряд", "Во всех разделах, по столько же в ряд"), divider: false) {
                     Segmented(selection: $browser.prefs.start.frequentCount, options: StartPage.frequentChoices.map { ($0, String($0)) }, compact: true, width: 180, label: browser.text("сайтов в разделе", "Сайтов в разделе"))
                 }
             }

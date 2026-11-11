@@ -1369,9 +1369,9 @@ export const english = {
 "sites per section",
 "Sites per section"
 ],
-"Для частых сайтов и закладок": [
-"for frequent sites and bookmarks",
-"For frequent sites and bookmarks"
+"Во всех разделах, по столько же в ряд": [
+"in every section, as many to a row",
+"In every section, as many to a row"
 ],
 "Свои сайты": [
 "your sites",

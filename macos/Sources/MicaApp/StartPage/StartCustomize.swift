@@ -10,6 +10,10 @@ import UniformTypeIdentifiers
 enum StartLayout {
     static let column: CGFloat = 88
     static let inset: CGFloat = (column - 60) / 2
+    /// Width of the search field, and of the page column while a row of tiles fits in it.
+    static let field: CGFloat = 600
+    /// Page column: wide enough for a row of `count` tiles (the user's "sites in a section"), never narrower than the field.
+    static func width(_ count: Int) -> CGFloat { max(field, CGFloat(count) * column + CGFloat(count - 1) * Space.micro) }
 }
 
 /// A block of the start page while customizing: a dashed outline. Its radius is concentric with the 20 pt switch

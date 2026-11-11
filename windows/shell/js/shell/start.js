@@ -65,6 +65,7 @@ function siteMenu(site, section, shortcuts) {
     const first = shortcuts.length && shortcuts[0].id === site.shortcut, last = shortcuts.length && shortcuts[shortcuts.length - 1].id === site.shortcut;
     return [
       item(T("открыть в новой вкладке", "Открыть в новой вкладке"), () => send('open', { url: site.url, newTab: true }), { symbol: 'plus.square' }),
+      item(T("открыть в новом окне", "Открыть в новом окне"), () => send('open', { url: site.url, newWindow: true }), { symbol: 'macwindow' }),
       divider,
       site.shortcut ? [
         item(T("изменить…", "Изменить…"), () => { const el = document.querySelector(`[data-site="${site.id}"]`); if (el) openPopover('shortcut', el, () => ShortcutEditor({ editing: site, done: () => closePopover('shortcut') }), { sticky: true }); }, { symbol: 'pencil' }),
@@ -88,8 +89,13 @@ function SiteTile(site, section, shortcuts) {
     class: 'site-tile', type: 'button', key: site.id, flip: true, enter: 'pop', exit: 'pop', title: site.host, 'aria-label': label(site), 'data-site': site.id,
     'data-drop': draggable ? 'shortcut' : null, 'data-drop-id': draggable ? site.shortcut : null,
     onPointerDown: draggable ? dragSource('shortcut', site.shortcut) : null,
-    onClick: () => send('open', { url: site.url }), onContextMenu: contextMenu(siteMenu(site, section, shortcuts)),
-  }, h('span', { class: 'tile-box' }, SiteIcon(site, 30)), h('span', { class: 'tile-label clip' }, label(site)));
+    // Ctrl+click opens the site in a new window of this profile, as ⌘-click does on macOS.
+    onClick: event => send('open', { url: site.url, newWindow: event.ctrlKey || event.metaKey }), onContextMenu: contextMenu(siteMenu(site, section, shortcuts)),
+  }, h('span', { class: 'tile-box' },
+    // The site's own colour lighting the tile from inside on hover (motion.aura), clipped by the plate.
+    h('span', { class: 'tile-aura', 'aria-hidden': 'true' }, SiteIcon(site, tokens.aura.icon, true)),
+    h('span', { class: 'tile-icon' }, SiteIcon(site, tokens.aura.icon, true))),
+  h('span', { class: 'tile-label clip' }, label(site)));
 }
 
 function AddTile() {
@@ -225,7 +231,7 @@ export function StartScreen(tab) {
   const markTotal = letterTotal(Array.from(greeting || 'mica').filter(glyph => glyph.trim()).length);
   return h('div', { class: cx('start', { editing }), key: 'start-' + tab.id, enter: 'fade', exit: 'fade', onKeyDown: event => { if (event.key === 'Escape' && editing) send('customize.start', { on: false }); } },
     h('div', { class: 'start-scroll scroll' },
-      h('div', { class: 'start-column' },
+      h('div', { class: 'start-column', style: { '--columns': options.frequentCount } },
         showMark || isPrivate ? h('div', { class: 'start-head', key: 'head', flip: true },
           showMark ? h('div', { class: cx('start-block mark-block', { editing }), key: 'mark' },
             editing ? BlockHeader(greeting ? T("приветствие", "Приветствие") : T("знак mica", "Знак mica"), true, options.wordmark, value => send('start.wordmark', { on: value })) : null,

@@ -42,4 +42,12 @@ public static partial class Palette
     public static readonly Swatch SecondaryHover = new(0x14111113, 0x1FFFFFFF, 0x33111113, 0x3DFFFFFF);
     public static readonly Swatch SecondaryPressed = new(0x1F111113, 0x29FFFFFF, 0x1F111113, 0x29FFFFFF);
     public static readonly Swatch FocusRing = new(0x80111113, 0x80FFFFFF, 0xFF111113, 0xFFFFFFFF);
+    /// <summary>Plate of a start page site tile: a quiet tonal fill without a shadow, so the frosted start page shows through it like through the page itself.</summary>
+    public static readonly Swatch Tone = new(0x0A111113, 0x0DFFFFFF, 0x1A111113, 0x1FFFFFFF);
+    public static readonly Swatch ToneHover = new(0x13111113, 0x17FFFFFF, 0x29111113, 0x33FFFFFF);
+    /// <summary>Start page search field. In dark mode quieter than a tile: the field is wide and keeps focus from the moment the page opens, so at tile strength with a ring it glared on the frosted page, and an opaque surface fill read as a hole in it.</summary>
+    public static readonly Swatch SearchField = new(0x0A111113, 0x0BFFFFFF, 0x1A111113, 0x1FFFFFFF);
+    public static readonly Swatch SearchFieldHover = new(0x11111113, 0x11FFFFFF, 0x29111113, 0x33FFFFFF);
+    /// <summary>Focus ring of the start page search field: marks focus without outlining the field in light.</summary>
+    public static readonly Swatch SearchFieldRing = new(0x1A111113, 0x14FFFFFF, 0x99111113, 0x99FFFFFF);
 }

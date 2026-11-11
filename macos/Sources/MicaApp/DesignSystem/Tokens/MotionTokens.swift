@@ -8,6 +8,10 @@ enum MotionTokens {
     static let press = (response: 0.22, damping: 0.72)
     static let snappy = (response: 0.3, damping: 0.86)
     static let panel = (response: 0.36, damping: 0.9)
+    /// Icon of a start page site tile on hover: a livelier spring with a small overshoot.
+    static let bouncy = (response: 0.38, damping: 0.6)
+    /// Start page site tile on hover: a blurred copy of the icon grows from restScale to scale inside the plate and tints it with the site's own colour at the theme's opacity; the icon rises and grows on the bouncy spring. With Reduce Motion only the glow fades in.
+    static let aura = (icon: 36.0, lightOpacity: 0.175, darkOpacity: 0.1875, blur: 12.0, saturation: 1.8, restScale: 0.6, scale: 2.3, iconScale: 1.08, iconRise: 1.0)
     static let popScale = 0.96
     /// Pointer rest before a tab tile shows its close badge, so passing over the rail does not light up crosses.
     static let hoverIntent = 0.5

@@ -9,6 +9,21 @@ public static class MotionTokens
     public static readonly Spring Press = new(0.22, 0.72);
     public static readonly Spring Snappy = new(0.3, 0.86);
     public static readonly Spring Panel = new(0.36, 0.9);
+    /// <summary>Icon of a start page site tile on hover: a livelier spring with a small overshoot.</summary>
+    public static readonly Spring Bouncy = new(0.38, 0.6);
+    /// <summary>Start page site tile on hover: a blurred copy of the icon grows from restScale to scale inside the plate and tints it with the site's own colour at the theme's opacity; the icon rises and grows on the bouncy spring. With Reduce Motion only the glow fades in.</summary>
+    public static class Aura
+    {
+        public const double Icon = 36;
+        public const double LightOpacity = 0.175;
+        public const double DarkOpacity = 0.1875;
+        public const double Blur = 12;
+        public const double Saturation = 1.8;
+        public const double RestScale = 0.6;
+        public const double Scale = 2.3;
+        public const double IconScale = 1.08;
+        public const double IconRise = 1;
+    }
     public const double PopScale = 0.96;
     /// <summary>Pointer rest before a tab tile shows its close badge, so passing over the rail does not light up crosses.</summary>
     public const double HoverIntent = 0.5;

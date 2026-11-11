@@ -43,4 +43,12 @@ enum Palette {
     static let secondaryHover = Color.dynamic(rgb(0x111113, 0.08), rgb(0xFFFFFF, 0.12), contrastLight: rgb(0x111113, 0.2), contrastDark: rgb(0xFFFFFF, 0.24))
     static let secondaryPressed = Color.dynamic(rgb(0x111113, 0.12), rgb(0xFFFFFF, 0.16))
     static let focusRing = Color.dynamic(rgb(0x111113, 0.5), rgb(0xFFFFFF, 0.5), contrastLight: rgb(0x111113), contrastDark: rgb(0xFFFFFF))
+    /// Plate of a start page site tile: a quiet tonal fill without a shadow, so the frosted start page shows through it like through the page itself.
+    static let tone = Color.dynamic(rgb(0x111113, 0.04), rgb(0xFFFFFF, 0.05), contrastLight: rgb(0x111113, 0.1), contrastDark: rgb(0xFFFFFF, 0.12))
+    static let toneHover = Color.dynamic(rgb(0x111113, 0.075), rgb(0xFFFFFF, 0.09), contrastLight: rgb(0x111113, 0.16), contrastDark: rgb(0xFFFFFF, 0.2))
+    /// Start page search field. In dark mode quieter than a tile: the field is wide and keeps focus from the moment the page opens, so at tile strength with a ring it glared on the frosted page, and an opaque surface fill read as a hole in it.
+    static let searchField = Color.dynamic(rgb(0x111113, 0.04), rgb(0xFFFFFF, 0.045), contrastLight: rgb(0x111113, 0.1), contrastDark: rgb(0xFFFFFF, 0.12))
+    static let searchFieldHover = Color.dynamic(rgb(0x111113, 0.065), rgb(0xFFFFFF, 0.065), contrastLight: rgb(0x111113, 0.16), contrastDark: rgb(0xFFFFFF, 0.2))
+    /// Focus ring of the start page search field: marks focus without outlining the field in light.
+    static let searchFieldRing = Color.dynamic(rgb(0x111113, 0.1), rgb(0xFFFFFF, 0.08), contrastLight: rgb(0x111113, 0.6), contrastDark: rgb(0xFFFFFF, 0.6))
 }

@@ -34,10 +34,24 @@ struct SiteTile: View {
     @State private var hover = false
     @Environment(\.accessibilityReduceMotion) private var reduced
     var body: some View {
+        let aura = MotionTokens.aura
         Button(action: action) {
             VStack(spacing: Space.small) {
-                SiteIcon(url: url, favicons: favicons, size: 30)
-                    .modifier(TileBox(hover: hover))
+                ZStack {
+                    // The glow exists only while it shows, so a grid of resting tiles carries no blur layers.
+                    if hover {
+                        SiteIcon(url: url, favicons: favicons, size: aura.icon, plain: true)
+                            .saturation(aura.saturation)
+                            .blur(radius: aura.blur)
+                            .transition(reduced ? .opacity : .modifier(active: AuraGlow(shown: false), identity: AuraGlow(shown: true)))
+                            .accessibilityHidden(true)
+                    }
+                    SiteIcon(url: url, favicons: favicons, size: aura.icon, plain: true)
+                        .scaleEffect(hover && !reduced ? aura.iconScale : 1)
+                        .offset(y: hover && !reduced ? -aura.iconRise : 0)
+                        .animation(reduced ? Motion.hover : Motion.bouncySpring, value: hover)
+                }
+                .modifier(TileBox(hover: hover))
                 Text(label).font(.system(size: 11.5)).foregroundStyle(hover ? Palette.ink : Palette.text2).lineLimit(1)
             }
             .frame(maxWidth: .infinity)
@@ -52,17 +66,31 @@ struct SiteTile: View {
     private var label: String { title.isEmpty ? (host.hasPrefix("www.") ? String(host.dropFirst(4)) : host) : title }
 }
 
-/// 60 pt tile shared by site tiles and the add tile, so both line up in the grid.
+/// The site's own colour lighting its tile from inside: the blurred icon grows from the middle of the plate
+/// and fades in to the theme's opacity (MotionTokens.aura).
+private struct AuraGlow: ViewModifier {
+    let shown: Bool
+    @Environment(\.colorScheme) private var scheme
+    func body(content: Content) -> some View {
+        let aura = MotionTokens.aura
+        content
+            .scaleEffect(shown ? aura.scale : aura.restScale)
+            .opacity(shown ? (scheme == .dark ? aura.darkOpacity : aura.lightOpacity) : 0)
+    }
+}
+
+/// 60 pt tile shared by site tiles and the add tile, so both line up in the grid. A site tile sits on a tonal
+/// plate without a shadow, so a frosted start page shows through it; the plate clips the hover glow.
 struct TileBox: ViewModifier {
     let hover: Bool
     var dashed = false
-    @Environment(\.accessibilityReduceMotion) private var reduced
     func body(content: Content) -> some View {
+        let shape = RoundedRectangle(cornerRadius: Radius.panel, style: .continuous)
         content
             .frame(width: 60, height: 60)
-            .background(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous).fill(dashed ? (hover ? Palette.hover : .clear) : Palette.surface).shadow(color: dashed ? .clear : hover ? Palette.shadowStrong : Palette.shadow, radius: hover ? 10 : 3, y: hover ? 4 : 1))
-            .overlay(RoundedRectangle(cornerRadius: Radius.panel, style: .continuous).strokeBorder(dashed ? Palette.hairlineStrong : Palette.hairline, style: StrokeStyle(lineWidth: 1, dash: dashed ? [4, 3] : [])))
-            .offset(y: hover && !reduced ? -2 : 0)
+            .background(shape.fill(dashed ? (hover ? Palette.hover : .clear) : hover ? Palette.toneHover : Palette.tone))
+            .clipShape(shape)
+            .overlay { if dashed { shape.strokeBorder(Palette.hairlineStrong, style: StrokeStyle(lineWidth: 1, dash: [4, 3])) } }
     }
 }
 
