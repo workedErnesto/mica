@@ -29,6 +29,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if ProcessInfo.processInfo.arguments.contains("--qa") {
                 let seconds = ProcessInfo.processInfo.systemUptime - launchStart
                 try? String(seconds).write(to: store.root.appendingPathComponent("startup-seconds.txt"), atomically: true, encoding: .utf8)
+                // QA only: open a page in the first tab, so a check can start from it without typing.
+                if let argument = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--open=") }), let url = URL(string: String(argument.dropFirst("--open=".count))) { openIncoming([url]) }
                 if let argument = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--benchmark=") }), let count = Int(argument.dropFirst("--benchmark=".count)), [0, 1, 10].contains(count) { await Benchmark.run(store: store, count: count) }
             }
             if ProcessInfo.processInfo.arguments.contains("--ui-tour") && ProcessInfo.processInfo.arguments.contains("--qa") { await UITour.run(store: store) }
@@ -145,7 +147,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case "zoomIn": if let web = browser?.selected?.webView { web.pageZoom = min(3, web.pageZoom + 0.1) }
         case "zoomOut": if let web = browser?.selected?.webView { web.pageZoom = max(0.5, web.pageZoom - 0.1) }
         case "zoomReset": browser?.selected?.webView?.pageZoom = 1
-        case "print": if let web = browser?.selected?.webView { let operation = web.printOperation(with: NSPrintInfo.shared); operation.showsPrintPanel = true; operation.run() }
+        case "print":
+            // WebKit prints only through runModal: a plain run() keeps paginating and never finishes the job.
+            if let web = browser?.selected?.webView, let window = web.window {
+                let operation = web.printOperation(with: NSPrintInfo.shared); operation.showsPrintPanel = true; operation.view?.frame = web.bounds
+                operation.runModal(for: window, delegate: nil, didRun: nil, contextInfo: nil)
+            }
+        case "save":
+            guard let browser, let tab = browser.selected, PageSaver.canSave(tab) else { break }
+            // The menu hangs from the save button; with the button hidden it opens under the address instead.
+            if browser.prefs.toolbar.zone(of: .save) != .hidden { browser.saveMenu += 1 }
+            else if let window = browser.controller?.window {
+                MicaMenu.shared.show(PageSaver.entries(tab, browser: browser), at: NSPoint(x: window.frame.midX - 90, y: window.frame.maxY - Chrome.bar), in: window)
+            }
         default:
             if let command = sender.representedObject as? String, let index = Int(command), let browser, !browser.tabs.isEmpty { browser.select(browser.tabs[min(index, browser.tabs.count - 1)]) }
         }
@@ -185,7 +199,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         app.addItem(.separator()); app.addItem(withTitle: store.text("завершить mica", "Завершить mica"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         let file = menu(store.text("файл", "Файл"))
         item(file, "новая вкладка", "Новая вкладка", "t", "tab"); item(file, "новое окно", "Новое окно", "n", "newWindow"); item(file, "новое окно инкогнито", "Новое окно инкогнито", "n", "private", [.command, .shift]); file.addItem(.separator())
-        item(file, "закрыть вкладку", "Закрыть вкладку", "w", "close"); item(file, "восстановить вкладку", "Восстановить вкладку", "t", "reopen", [.command, .shift]); item(file, "печать…", "Печать…", "p", "print")
+        item(file, "закрыть вкладку", "Закрыть вкладку", "w", "close"); item(file, "восстановить вкладку", "Восстановить вкладку", "t", "reopen", [.command, .shift]); item(file, "сохранить страницу как…", "Сохранить страницу как…", "s", "save"); item(file, "печать…", "Печать…", "p", "print")
         let edit = menu(store.text("правка", "Правка"))
         // Undo and redo share Russian words with cancel and retry elsewhere, so their English is spelled out here.
         let english = store.language == .en

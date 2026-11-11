@@ -52,6 +52,9 @@ public sealed partial class BrowserModel : Observable
         if (ShowFind) FindStepRequested?.Invoke(back); else ShowFind = true;
     }
     public void RequestMenu() => MenuRequested?.Invoke();
+    /// <summary>Ctrl+S: the save button opens its format menu.</summary>
+    public event Action? SaveMenuRequested;
+    public void RequestSaveMenu() => SaveMenuRequested?.Invoke();
     public event Action<Tab>? WebViewCreated;
     public event Action<string>? Message;
 

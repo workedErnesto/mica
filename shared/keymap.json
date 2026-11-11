@@ -6,6 +6,7 @@
     "private":    { "macos": ["Cmd+Shift+N"], "windows": ["Ctrl+Shift+N"] },
     "close":      { "macos": ["Cmd+W"], "windows": ["Ctrl+W", "Ctrl+F4"] },
     "reopen":     { "macos": ["Cmd+Shift+T"], "windows": ["Ctrl+Shift+T"] },
+    "save":       { "macos": ["Cmd+S"], "windows": ["Ctrl+S"] },
     "print":      { "macos": ["Cmd+P"], "windows": ["Ctrl+P"] },
     "find":       { "macos": ["Cmd+F"], "windows": ["Ctrl+F"] },
     "findNext":   { "macos": ["Cmd+G"], "windows": ["F3", "Ctrl+G"] },

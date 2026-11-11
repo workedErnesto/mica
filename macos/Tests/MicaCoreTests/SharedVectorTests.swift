@@ -60,6 +60,19 @@ final class SharedVectorTests: XCTestCase {
             }
             guard let glyph = FaviconTone.glyph(rgba: pixels) else { return "image" }
             return FaviconTone.needsInk(glyph: glyph, background: HexColor.luminance(c["background"] as! String)!) ? "ink" : "keep"
+        case "pageFileName": return PageExport.fileName(title: c["title"] as! String, url: c["url"] as? String, format: PageFormat(rawValue: c["format"] as! String)!)
+        case "pageImage":
+            guard let size = PageExport.imagePixels(width: (c["width"] as! NSNumber).doubleValue, height: (c["height"] as! NSNumber).doubleValue, scale: (c["scale"] as! NSNumber).doubleValue) else { return NSNull() }
+            return [size.width, size.height]
+        case "availableName":
+            let taken = Set(c["taken"] as! [String])
+            return PageExport.availableName(c["name"] as! String, taken: taken.contains)
+        case "webAddress": return WebAddress.resolve(c["ref"] as! String, against: c["base"] as! String) ?? NSNull()
+        case "singleFilePage":
+            let resources = (c["resources"] as! [[String: String]]).map { r in
+                PageResource(url: r["url"]!, mime: r["mime"]!, data: r["text"].map { Data($0.utf8) } ?? Data(base64Encoded: r["base64"]!)!)
+            }
+            return SingleFilePage.build(html: c["html"] as! String, base: c["base"] as! String, resources: resources)
         case "profileGlyph": return Profiles.lightGlyph(on: c["hex"] as! String, glyph: ProfileGlyph(rawValue: c["glyph"] as? String ?? "auto") ?? .auto) ? "light" : "dark"
         default: XCTFail("unknown section \(section)"); return NSNull()
         }

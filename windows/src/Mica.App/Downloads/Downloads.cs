@@ -60,8 +60,40 @@ public sealed partial class DownloadItem : Observable
         Date = DateTimeOffset.Now;
     }
 
+    /// <summary>A page mica writes itself (PageSaver) rather than a WebView2 download (macOS DownloadItem.saving).</summary>
+    public bool Saving { get; }
+    /// <summary>Makes the saved page again into the same file; the retry button calls it.</summary>
+    public Action? SaveAgain { get; set; }
+    public CancellationTokenSource? Work { get; set; }
+    double savingFraction;
+    /// <summary>The tab whose page is being saved; the save button shows progress for it.</summary>
+    public Tab? Page { get; }
+
+    public DownloadItem(DownloadManager manager, string destination, Tab page)
+    {
+        this.manager = manager; Saving = true; Page = page;
+        Destination = destination; Name = System.IO.Path.GetFileName(destination);
+        State = DownloadState.Running; Date = DateTimeOffset.Now; savingFraction = 0.05;
+    }
+
+    public void SavingProgress(double fraction) { savingFraction = fraction; Notify(); }
+    public void SavingStarted() { FailureText = null; savingFraction = 0.05; State = DownloadState.Running; manager.Persist(this); Notify(); manager.Touch(); }
+    public void SavingFinished()
+    {
+        if (State != DownloadState.Running) return;
+        Bytes = Destination is { } path && File.Exists(path) ? new FileInfo(path).Length : 0; Total = Bytes;
+        State = DownloadState.Complete; savingFraction = 1; FailureText = null;
+        Celebrate(); manager.Persist(this); Notify(); manager.Touch();
+    }
+    public void SavingFailed(string reason)
+    {
+        if (State != DownloadState.Running) return;
+        FailureText = reason; State = DownloadState.Failed;
+        manager.Persist(this); Notify(); manager.Touch();
+    }
+
     public DownloadRecord Record => new() { Id = Id, Name = Name, State = State.ToString().ToLowerInvariant(), Destination = Destination, Source = Source, Bytes = Bytes, Total = Total, Date = Date };
-    public double Fraction => Total > 0 ? (double)Bytes / Total : 0;
+    public double Fraction => Saving ? savingFraction : Total > 0 ? (double)Bytes / Total : 0;
     public DownloadKind Kind => DownloadKinds.Of(Name);
     /// <summary>Final size of a finished file; while running, Total is what the server announced.</summary>
     public long Size => Math.Max(Total, Bytes);
@@ -105,10 +137,10 @@ public sealed partial class DownloadItem : Observable
         Notify();
     }
 
-    public void Cancel() { Operation?.Cancel(); State = DownloadState.Cancelled; manager.Persist(this); Notify(); }
+    public void Cancel() { Operation?.Cancel(); Work?.Cancel(); State = DownloadState.Cancelled; manager.Persist(this); Notify(); if (Saving) manager.Touch(); }
     public void Pause() { if (Operation is { } o && o.State == CoreWebView2DownloadState.InProgress) { o.Pause(); State = DownloadState.Paused; Notify(); } }
     public void Resume() { if (Operation is { CanResume: true } o) { o.Resume(); State = DownloadState.Running; Notify(); } }
-    public void Retry() { if (Operation?.CanResume == true) Resume(); else if (Source is { } url) manager.Browser.Selected?.Core?.Navigate(url); }
+    public void Retry() { if (SaveAgain is { } again) again(); else if (Operation?.CanResume == true) Resume(); else if (Source is { } url) manager.Browser.Selected?.Core?.Navigate(url); }
 
     /// <summary>Opening a downloaded file asks first; Windows checks the file itself (SmartScreen, Mark of the Web).</summary>
     public async void Open()
@@ -186,6 +218,13 @@ public sealed partial class DownloadManager : Observable
         finally { deferral.Complete(); Notify(); }
     }
 
+    /// <summary>A page mica saves itself (macOS add(saved:)). The panel opens when the file is ready: opening it at once
+    /// would narrow the page while it is being captured. Until then the save button shows the progress.</summary>
+    public void AddSaved(DownloadItem item) { Items.Insert(0, item); Persist(item); Notify(); }
+
+    /// <summary>Tells listeners (the save button) that a saved page changed state.</summary>
+    public void Touch() => Notify();
+
     /// <summary>Takes a finished, failed or cancelled download off the list. The file itself stays where it was saved.</summary>
     public void Remove(DownloadItem item)
     {
@@ -246,7 +285,8 @@ public sealed partial class DownloadsPanel : Grid
 public sealed partial class DownloadRow : Grid
 {
     readonly DownloadItem item; readonly BrowserModel browser;
-    readonly TextBlock name, detail;
+    readonly TextBlock name, detail, folderText;
+    readonly StackPanel folderLine;
     readonly DownloadBadge badge;
     readonly StackPanel actions = Ui.H(2);
     readonly Grid quick = new();
@@ -260,9 +300,11 @@ public sealed partial class DownloadRow : Grid
         badge = new DownloadBadge(item);
         name = Ui.Text("", 12.5); name.TextTrimming = TextTrimming.CharacterEllipsis;
         detail = Ui.Text("", 11, Palette.Text3.Brush());
+        folderText = Ui.Text("", 11, Palette.Text3.Brush()); folderText.TextTrimming = TextTrimming.CharacterEllipsis;
+        folderLine = Ui.H(4, new Glyph("folder", 9, Palette.Text3.Brush()) { VerticalAlignment = VerticalAlignment.Center }, folderText);
         var row = new Grid { Padding = new Thickness(8, 6, 64, 6), ColumnSpacing = 10 };
         row.ColumnDefinitions.Add(Ui.Auto()); row.ColumnDefinitions.Add(Ui.Star());
-        row.Column(badge, 0); row.Column(Ui.V(1, name, detail), 1);
+        row.Column(badge, 0); row.Column(Ui.V(1, name, detail, folderLine), 1);
         actions.Children.Add(quick);
         actions.Children.Add(new MenuButton(browser.Text("действия", "Действия"), Menu));
         actions.HorizontalAlignment = HorizontalAlignment.Right; actions.VerticalAlignment = VerticalAlignment.Center;
@@ -280,7 +322,11 @@ public sealed partial class DownloadRow : Grid
         name.Text = item.Name.Length == 0 ? browser.Text("выбор файла", "Выбор файла") : item.Name;
         detail.Text = Detail();
         detail.Foreground = item.State == DownloadState.Failed ? Palette.Danger.Brush() : Palette.Text3.Brush();
-        AutomationProperties.SetName(this, item.Name + ", " + detail.Text);
+        // Where the file lies; the folder button on hover shows it in Explorer.
+        var folder = Folder();
+        folderText.Text = folder ?? "";
+        folderLine.Visibility = folder is null ? Visibility.Collapsed : Visibility.Visible;
+        AutomationProperties.SetName(this, item.Name + ", " + detail.Text + (folder is null ? "" : ", " + folder));
         badge.Update();
         if (shownState == item.State) return;
         shownState = item.State;
@@ -315,12 +361,36 @@ public sealed partial class DownloadRow : Grid
 
     static string Size(long bytes) => bytes switch { < 1024 => bytes + " B", < 1024 * 1024 => (bytes / 1024.0).ToString("0") + " KB", < 1024L * 1024 * 1024 => (bytes / 1048576.0).ToString("0.0") + " MB", _ => (bytes / 1073741824.0).ToString("0.00") + " GB" };
 
-    /// <summary>Second line: time and size when finished, progress while running, the reason otherwise.</summary>
+    /// <summary>Kind of file in words with its extension: "картинка PNG", "документ PDF"; English puts the extension first
+    /// (macOS DownloadRow.typeLabel).</summary>
+    string TypeLabel()
+    {
+        var ext = System.IO.Path.GetExtension(item.Name).TrimStart('.').ToUpperInvariant();
+        var word = item.Kind switch
+        {
+            DownloadKind.Image => browser.Text("картинка", "Картинка"), DownloadKind.Video => browser.Text("видео", "Видео"),
+            DownloadKind.Archive => browser.Text("архив", "Архив"), DownloadKind.Document => browser.Text("документ", "Документ"),
+            _ => browser.Text("файл", "Файл"),
+        };
+        if (ext.Length == 0) return word;
+        return browser.TextStyle.Language == Mica.Core.Language.En ? ext + " " + word.ToLowerInvariant() : word + " " + ext;
+    }
+
+    /// <summary>Folder of a finished file: "загрузки" for the Downloads folder, otherwise the folder's own name.</summary>
+    string? Folder()
+    {
+        if (item.State != DownloadState.Complete || item.Destination is not { } path || System.IO.Path.GetDirectoryName(path) is not { } directory) return null;
+        if (string.Equals(System.IO.Path.TrimEndingDirectorySeparator(directory), System.IO.Path.TrimEndingDirectorySeparator(PageSaver.DownloadsFolder), StringComparison.OrdinalIgnoreCase)) return browser.Text("загрузки", "Загрузки");
+        return System.IO.Path.GetFileName(System.IO.Path.TrimEndingDirectorySeparator(directory));
+    }
+
+    /// <summary>Second line: type, size and time when finished, progress while running, the reason otherwise.</summary>
     string Detail() => item.State switch
     {
+        DownloadState.Running when item.Saving => browser.Text("сохраняется", "Сохраняется"),
         DownloadState.Running => item.Total > 0 ? Size(item.Bytes) + " " + browser.Text("из", "из") + " " + Size(item.Total) : Size(item.Bytes),
         DownloadState.Paused => browser.Text("пауза, ", "Пауза, ") + Size(item.Bytes),
-        DownloadState.Complete => string.Join(", ", new[] { item.Date?.LocalDateTime.ToString("t", browser.Store.Culture), item.Size > 0 ? Size(item.Size) : null }.Where(p => p is not null)),
+        DownloadState.Complete => string.Join(", ", new[] { TypeLabel(), item.Size > 0 ? Size(item.Size) : null, item.Date?.LocalDateTime.ToString("t", browser.Store.Culture) }.Where(p => p is not null)),
         DownloadState.Cancelled => browser.Text("отменено", "Отменено"),
         DownloadState.Failed => item.FailureText ?? browser.Text("ошибка загрузки", "Ошибка загрузки"),
         _ => browser.Text("ожидает выбора места", "Ожидает выбора места"),

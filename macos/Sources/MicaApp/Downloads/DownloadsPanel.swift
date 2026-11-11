@@ -54,6 +54,15 @@ struct DownloadRow: View {
                         .font(.system(size: 12.5)).foregroundStyle(Palette.ink).lineLimit(1).truncationMode(.middle)
                     Text(detail).font(.system(size: 11)).foregroundStyle(item.state == .failed ? Palette.danger : Palette.text3).lineLimit(1)
                         .monospacedDigit().contentTransition(.opacity)
+                    if let folder {
+                        // Where the file lies; the folder button on hover shows it in Finder.
+                        HStack(spacing: 4) {
+                            Image(systemName: "folder").font(.system(size: 9))
+                            Text(folder).font(.system(size: 11)).lineLimit(1).truncationMode(.middle)
+                        }
+                        .foregroundStyle(Palette.text3)
+                        .transition(.opacity)
+                    }
                 }
                 Spacer(minLength: hover ? 64 : 24)
             }
@@ -83,7 +92,7 @@ struct DownloadRow: View {
         .animation(Motion.hover, value: item.state)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(item.name)
-        .accessibilityValue(detail)
+        .accessibilityValue([detail, folder].compactMap { $0 }.joined(separator: ", "))
         .accessibilityActions {
             if item.active { Button(browser.text("отменить", "Отменить")) { item.cancel() } }
             if item.state == .complete { Button(browser.text("показать в Finder", "Показать в Finder")) { item.reveal() } }
@@ -110,15 +119,38 @@ struct DownloadRow: View {
 
     private var retryTitle: String { item.resumeData == nil ? browser.text("повторить", "Повторить") : browser.text("возобновить", "Возобновить") }
 
-    /// Second line: time and size when finished, progress while running, the reason otherwise.
+    /// Kind of file in words with its extension: "картинка PNG", "документ PDF"; English puts the extension first.
+    private var typeLabel: String {
+        let ext = (item.name as NSString).pathExtension.uppercased()
+        let word: String
+        switch item.kind {
+        case .image: word = browser.text("картинка", "Картинка")
+        case .video: word = browser.text("видео", "Видео")
+        case .archive: word = browser.text("архив", "Архив")
+        case .document: word = browser.text("документ", "Документ")
+        case .other: word = browser.text("файл", "Файл")
+        }
+        guard !ext.isEmpty else { return word }
+        return browser.textStyle.language == .en ? ext + " " + word.lowercased() : word + " " + ext
+    }
+
+    /// Folder of a finished file: "загрузки" for the Downloads folder, otherwise the folder's own name.
+    private var folder: String? {
+        guard item.state == .complete, let directory = item.destination?.deletingLastPathComponent().resolvingSymlinksInPath() else { return nil }
+        if let downloads = PageSaver.downloadsFolder, directory.standardizedFileURL.path == downloads.standardizedFileURL.path { return browser.text("загрузки", "Загрузки") }
+        return FileManager.default.displayName(atPath: directory.path)
+    }
+
+    /// Second line: type, size and time when finished, progress while running, the reason otherwise.
     private var detail: String {
         func size(_ bytes: Int64) -> String { ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file) }
         switch item.state {
         case .running:
+            if item.saving { return browser.text("сохраняется", "Сохраняется") }
             return item.total > 0 ? size(item.bytes) + " " + browser.text("из", "из") + " " + size(item.total) : size(item.bytes)
         case .complete:
             let time = item.date.map { $0.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(browser.locale)) }
-            return [time, item.size > 0 ? size(item.size) : nil].compactMap { $0 }.joined(separator: ", ")
+            return [typeLabel, item.size > 0 ? size(item.size) : nil, time].compactMap { $0 }.joined(separator: ", ")
         case .cancelled: return browser.text("отменено", "Отменено")
         case .failed: return item.failure ?? browser.text("ошибка загрузки", "Ошибка загрузки")
         case .choosing: return browser.text("ожидает выбора места", "Ожидает выбора места")

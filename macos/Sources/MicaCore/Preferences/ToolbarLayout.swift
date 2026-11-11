@@ -2,7 +2,7 @@ import Foundation
 
 /// Controls the user can place in the top bar or at the bottom of the sidebar.
 public enum ToolbarControl: String, Codable, CaseIterable, Sendable {
-    case sidebar, back, forward, reload, newTab, bookmarks, history, downloads, extensions, incognito, settings, profile
+    case sidebar, back, forward, reload, newTab, bookmarks, history, downloads, extensions, incognito, settings, profile, save
     /// Controls that existed before layouts recorded which items the user has already seen.
     static let legacy: Set<ToolbarControl> = [.sidebar, .back, .forward, .reload, .newTab, .bookmarks, .history, .downloads, .extensions, .settings]
 }
@@ -15,7 +15,8 @@ public enum ToolbarZone: String, Codable, CaseIterable, Sendable { case leading,
 public struct ToolbarLayout: Codable, Equatable, Sendable {
     public var leading: [ToolbarControl] = [.sidebar, .back, .forward, .reload]
     public var leadingInner: [ToolbarControl] = []
-    public var trailingInner: [ToolbarControl] = []
+    /// Saving acts on the page shown, so by default it sits right after the address of that page.
+    public var trailingInner: [ToolbarControl] = [.save]
     public var trailing: [ToolbarControl] = []
     public var sidebar: [ToolbarControl] = [.profile, .bookmarks, .history, .downloads, .extensions, .incognito, .settings]
     public var addressWidth = 560.0

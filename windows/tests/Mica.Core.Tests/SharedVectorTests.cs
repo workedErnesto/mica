@@ -68,6 +68,18 @@ public class SharedVectorTests
                 // "ink" when the glyph is redrawn in the shell's ink, "keep" when its own colour reads, "image" for icons that are not a glyph.
                 var pixels = S("pixels").Split(' ').SelectMany(t => { var v = Convert.ToUInt32(t, 16); return new[] { (byte)(v >> 24), (byte)(v >> 16), (byte)(v >> 8), (byte)v }; }).ToArray();
                 return FaviconTone.Glyph(pixels) is { } glyph ? (FaviconTone.NeedsInk(glyph, HexColor.Luminance(S("background"))!.Value) ? "ink" : "keep") : "image";
+            case "pageFileName": return PageExport.FileName(S("title"), c["url"]?.GetValue<string>(), PageFormats.Parse(S("format"))!.Value);
+            case "pageImage":
+                double D(string key) => c[key]!.GetValue<double>();
+                return PageExport.ImagePixels(D("width"), D("height"), D("scale")) is { } size ? new JsonArray(size.Width, size.Height) : null;
+            case "availableName":
+                var takenNames = c["taken"]!.AsArray().Select(x => x!.GetValue<string>()).ToHashSet();
+                return PageExport.AvailableName(S("name"), takenNames.Contains);
+            case "webAddress": return WebAddress.Resolve(S("ref"), S("base"));
+            case "singleFilePage":
+                var resources = c["resources"]!.AsArray().Select(r => new PageResource(r!["url"]!.GetValue<string>(), r["mime"]!.GetValue<string>(),
+                    r["text"] is { } text ? System.Text.Encoding.UTF8.GetBytes(text.GetValue<string>()) : Convert.FromBase64String(r["base64"]!.GetValue<string>())));
+                return SingleFilePage.Build(S("html"), S("base"), resources);
             case "profileGlyph": return Profiles.LightGlyph(S("hex"), c["glyph"]?.GetValue<string>() switch { "light" => ProfileGlyph.Light, "dark" => ProfileGlyph.Dark, _ => ProfileGlyph.Auto }) ? "light" : "dark";
             default: throw new InvalidOperationException(section);
         }

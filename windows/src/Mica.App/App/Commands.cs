@@ -1,6 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
 using Mica.Core;
+using Mica.Design;
 using Windows.System;
 
 namespace Mica.App;
@@ -74,6 +75,12 @@ public static class Commands
             case "zoomOut": browser.ZoomBy(-0.1); break;
             case "zoomReset": browser.ZoomBy(0); break;
             case "print": tab?.Print(); break;
+            case "save":
+                if (!PageSaver.CanSave(tab)) break;
+                // The menu hangs from the save button; with the button hidden it opens under the address instead.
+                if (browser.Prefs.Toolbar.ZoneOf(ToolbarControl.Save) != ToolbarZone.Hidden) browser.RequestSaveMenu();
+                else if (browser.Window?.Content is FrameworkElement root) MicaMenu.ShowAt(PageSaver.Entries(tab!, browser), root, new Windows.Foundation.Point(root.ActualWidth / 2 - 90, Chrome.Bar));
+                break;
             case "fullscreen": browser.Window?.ToggleFullScreen(); break;
             case "menu": browser.RequestMenu(); break;
             case "quit": _ = Quit(store); break;

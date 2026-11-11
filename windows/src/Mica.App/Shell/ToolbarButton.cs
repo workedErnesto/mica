@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Mica.Core;
+using Mica.App.Downloads;
 using Mica.Design;
 
 namespace Mica.App;
@@ -11,7 +12,7 @@ public static class ToolbarControls
         ToolbarControl.Sidebar => "sidebar.left", ToolbarControl.Back => "chevron.left", ToolbarControl.Forward => "chevron.right",
         ToolbarControl.Reload => "arrow.clockwise", ToolbarControl.NewTab => "plus", ToolbarControl.Bookmarks => "bookmark",
         ToolbarControl.History => "clock", ToolbarControl.Downloads => "arrow.down.circle", ToolbarControl.Extensions => "puzzlepiece.extension",
-        ToolbarControl.Incognito => Glyph.Incognito, ToolbarControl.Profile => "person.crop.circle", _ => "gearshape",
+        ToolbarControl.Incognito => Glyph.Incognito, ToolbarControl.Profile => "person.crop.circle", ToolbarControl.Save => "square.and.arrow.down", _ => "gearshape",
     };
 
     public static string Title(this ToolbarControl item, Store s) => item switch
@@ -21,7 +22,7 @@ public static class ToolbarControls
         ToolbarControl.NewTab => s.Text("новая вкладка", "Новая вкладка"), ToolbarControl.Bookmarks => s.Text("закладки", "Закладки"),
         ToolbarControl.History => s.Text("история", "История"), ToolbarControl.Downloads => s.Text("загрузки", "Загрузки"),
         ToolbarControl.Extensions => s.Text("расширения", "Расширения"), ToolbarControl.Incognito => s.Text("окно инкогнито", "Окно инкогнито"),
-        ToolbarControl.Profile => s.Text("профиль", "Профиль"),
+        ToolbarControl.Profile => s.Text("профиль", "Профиль"), ToolbarControl.Save => s.Text("сохранить страницу", "Сохранить страницу"),
         _ => s.Text("настройки", "Настройки"),
     };
 
@@ -103,6 +104,10 @@ public static class ToolbarButton
             {
                 yield return new ProfileButton(browser); yield break;
             }
+            case ToolbarControl.Save:
+            {
+                yield return new SavePageButton(browser, item.Title(store) + Shortcut("save")); yield break;
+            }
             case ToolbarControl.Settings:
             {
                 var button = new IconButton(item.Symbol(), item.Title(store) + Shortcut("settings"));
@@ -138,5 +143,38 @@ public static class ToolbarButton
         }
         element.Loaded += (_, _) => { browser.Changed += Selection; Selection(); };
         element.Unloaded += (_, _) => { browser.Changed -= Selection; if (current is not null) current.Changed -= TabChanged; current = null; };
+    }
+}
+
+/// <summary>Saves the page of the selected tab (macOS SavePageButton): mica's format menu under the button, Ctrl+S opens
+/// the same menu. While a page of this tab is being written the button shows its progress in place of the glyph.</summary>
+public sealed partial class SavePageButton : Microsoft.UI.Xaml.Controls.Grid
+{
+    readonly BrowserModel browser;
+    readonly IconButton button;
+    readonly ProgressRing ring = new(16) { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+    public SavePageButton(BrowserModel browser, string label)
+    {
+        this.browser = browser;
+        Width = Chrome.Item; Height = Chrome.Item;
+        button = new IconButton(ToolbarControl.Save.Symbol(), label);
+        button.Click += Open;
+        ring.Opacity = 0;
+        Children.Add(button); Children.Add(ring);
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(ring, browser.Text("сохраняется", "Сохраняется"));
+        this.Bind(browser, Render);
+        this.Bind(browser.Downloads, Render);
+        this.Bind(h => browser.SaveMenuRequested += h, h => browser.SaveMenuRequested -= h, Open);
+    }
+    void Open() { if (browser.Selected is { } tab && PageSaver.CanSave(tab)) MicaMenu.ShowBelow(PageSaver.Entries(tab, browser), button); }
+    void Render()
+    {
+        var tab = browser.Selected;
+        var current = browser.Downloads.Items.FirstOrDefault(i => i.Saving && i.State == DownloadState.Running && i.Page == tab);
+        button.IsEnabled = PageSaver.CanSave(tab);
+        if (current is not null) ring.SetProgress(current.Fraction);
+        Motion.Fade(ring, current is null ? 0 : 1);
+        Motion.Fade(button, current is null ? 1 : 0);
+        button.IsHitTestVisible = current is null;
     }
 }

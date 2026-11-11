@@ -94,4 +94,13 @@ final class ProfileTests: XCTestCase {
         XCTAssertEqual(layout.zone(of: .profile), .sidebar)
         XCTAssertEqual(layout.sidebar.first, .profile)
     }
+    func testSavePageAppearsNextToTheAddressOfOldLayouts() throws {
+        let old = #"{"leading":["sidebar","back"],"trailingInner":["downloads"],"sidebar":["bookmarks"],"known":["sidebar","back","forward","reload","newTab","bookmarks","history","downloads","extensions","incognito","settings","profile"]}"#
+        let layout = try JSONDecoder().decode(ToolbarLayout.self, from: Data(old.utf8))
+        XCTAssertEqual(layout.trailingInner, [.downloads, .save])
+        XCTAssertEqual(ToolbarLayout().trailingInner, [.save])
+        // Hidden once by the user, it stays hidden.
+        var hidden = layout; hidden.insert(.save, in: .hidden)
+        XCTAssertEqual(try JSONDecoder().decode(ToolbarLayout.self, from: JSONEncoder().encode(hidden)).zone(of: .save), .hidden)
+    }
 }

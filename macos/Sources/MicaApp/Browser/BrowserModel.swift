@@ -16,6 +16,8 @@ final class BrowserModel: NSObject, ObservableObject, WKWebExtensionWindow {
     @Published var selectedID: UUID?
     @Published var focusAddress = 0
     @Published var panel: Panel?
+    /// ⌘S: the save button opens its format menu when this changes.
+    @Published var saveMenu = 0
     @Published var showFind = false
     /// ⌘G and ⌘⇧G: the find bar steps to the next or previous match; a closed bar opens instead.
     struct FindStep: Equatable { let id = UUID(); let backwards: Bool }
