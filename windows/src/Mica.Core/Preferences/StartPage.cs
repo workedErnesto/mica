@@ -14,10 +14,13 @@ public sealed class StartPage
 {
     public bool Wordmark { get; set; } = true;
     public List<StartSection> Sections { get; set; } = [StartSection.Custom, StartSection.Frequent];
+    /// <summary>Tiles in a row of every start page section. Stored under its first meaning, the number of frequent sites.</summary>
     public int FrequentCount { get; set; } = 8;
     public List<StartShortcut> Shortcuts { get; set; } = [];
     public List<string> HiddenHosts { get; set; } = [];
     public static readonly int[] FrequentChoices = [4, 8, 12, 16];
+    /// <summary>Frequent sites shown at most; custom sites and bookmarks are shown in full.</summary>
+    public const int FrequentLimit = 16;
 
     public StartPage Sanitized()
     {

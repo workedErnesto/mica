@@ -1365,13 +1365,13 @@ export const english = {
 "down",
 "Down"
 ],
-"Сайтов в разделе": [
-"sites per section",
-"Sites per section"
+"Сайтов в ряду": [
+"sites per row",
+"Sites per row"
 ],
-"Во всех разделах, по столько же в ряд": [
-"in every section, as many to a row",
-"In every section, as many to a row"
+"В каждом разделе, остальные переходят на следующий ряд": [
+"in every section, the rest move to the next row",
+"In every section, the rest move to the next row"
 ],
 "Свои сайты": [
 "your sites",

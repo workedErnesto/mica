@@ -7,7 +7,7 @@ import { icon, incognito } from '../core/icons.js';
 import { T, keys } from '../core/text.js';
 import { motion as tokens } from '../gen/tokens.g.js';
 import { springs, settle, isReduced, hover } from '../core/motion.js';
-import { IconButton, KeyHint, SiteIcon, Segmented, Switch, Button, TextField, Hairline } from '../ui/controls.js';
+import { IconButton, KeyHint, SiteIcon, Segmented, Button, TextField, Hairline } from '../ui/controls.js';
 import { contextMenu, openPopover, closePopover, item, divider } from '../ui/menu.js';
 import { dragSource, onDrop } from '../ui/drag.js';
 import { request } from '../core/host.js';
@@ -130,14 +130,31 @@ export function ShortcutEditor({ editing, page, done }) {
 
 const sectionTitle = section => section === 'custom' ? T("свои сайты", "Свои сайты") : section === 'frequent' ? T("часто открываете", "Часто открываете") : T("закладки", "Закладки");
 
-/// Title row of a start page block. While customizing it carries the block's controls on the right: optional
-/// order buttons and a switch that shows or hides the block. The row itself never dims, only the block content.
-function BlockHeader(title, editing, shown, onToggle, order) {
+/// Title row of a start page block. While customizing, the title with an eye after it shows or hides the block,
+/// and optional order buttons stand on the right. The row itself never dims, only the block content.
+function BlockHeader(title, editing, shown, onToggle, order, id) {
   return h('div', { class: 'block-header' },
-    h('span', { class: 'block-title' }, title),
+    BlockTitle(title, editing, shown, onToggle, id),
     h('span', { class: 'spacer' }),
-    editing ? h('span', { class: 'row', style: { gap: '8px' }, key: 'controls', enter: 'fade', exit: 'fade' }, order || null, Switch(shown, onToggle, { label: T("показывать", "Показывать") + ': ' + title })) : null);
+    editing && order ? h('span', { class: 'row', key: 'order', enter: 'fade', exit: 'fade' }, order) : null);
 }
+
+/// While customizing the title becomes the block's visibility toggle: the eye after it fades in, so the title never
+/// moves, and the whole capsule is the target. The outline radius follows from this capsule (.start-block).
+function BlockTitle(title, editing, shown, onToggle, id) {
+  const label = (shown ? T("скрыть", "Скрыть") : T("показать", "Показать")) + ': ' + title;
+  return h('button', {
+    class: cx('block-toggle press', { editing }), type: 'button', role: editing ? 'switch' : null, 'aria-checked': editing ? String(shown) : null,
+    'aria-label': editing ? T("показывать", "Показывать") + ': ' + title : null, title: editing ? label : null, tabIndex: editing ? 0 : -1,
+    onClick: () => { if (editing) onToggle(!shown); },
+  },
+    h('span', { class: 'block-title' }, title),
+    editing ? h('span', { class: cx('block-eye', { off: !shown }), key: 'eye', enter: 'fade', exit: 'fade', html: eyeSVG('eye-' + id) }) : null);
+}
+
+/// An eye that a slash crosses out when its block is hidden: the slash grows from its top end and cuts a gap through
+/// the outline (a mask, so the gap does not depend on the frosted background), the lid narrows and the pupil fades.
+const eyeSVG = id => `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><defs><mask id="${id}" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><rect width="24" height="24" fill="#fff" stroke="none"/><path class="eye-slash" d="M4.5 3.5l16 16" stroke="#000" stroke-width="5"/></mask></defs><g mask="url(#${id})"><path class="eye-lid" d="M2.5 12c2.2-4.2 5.4-6.3 9.5-6.3s7.3 2.1 9.5 6.3c-2.2 4.2-5.4 6.3-9.5 6.3S4.7 16.2 2.5 12Z"/><circle class="eye-pupil" cx="12" cy="12" r="2.8"/></g><path class="eye-slash" d="M4.5 3.5l16 16"/></svg>`;
 
 function Section(entry, editing, play, delay) {
   const start = state.prefs.start, section = entry.section;
@@ -146,10 +163,13 @@ function Section(entry, editing, play, delay) {
   const placeholder = section === 'frequent'
     ? (state.window.isPrivate ? T("в окне инкогнито частые сайты не показываются", "В окне инкогнито частые сайты не показываются") : T("появятся, когда вы начнёте открывать сайты", "Появятся, когда вы начнёте открывать сайты"))
     : T("здесь будут закладки, Ctrl+D добавляет страницу", "Здесь будут закладки, Ctrl+D добавляет страницу");
-  return h('section', { class: cx('start-block', { editing }), key: section, flip: true, enter: 'fade', exit: 'fade', onMount: entrance(play, delay) },
+  // A row never holds more columns than the section has tiles, so the block keeps to its own content.
+  const tiles = entry.sites.length + (section === 'custom' ? 1 : 0);
+  const columns = Math.max(1, Math.min(start.frequentCount, tiles));
+  return h('section', { class: cx('start-block', { editing }), key: section, flip: true, enter: 'fade', exit: 'fade', onMount: entrance(play, delay), style: { '--row': columns } },
     BlockHeader(sectionTitle(section), editing, visible, value => send('start.setVisible', { section, on: value }), h('span', { class: 'row' },
       IconButton('chevron.up', T("выше", "Выше") + ': ' + sectionTitle(section), { size: 24, disabled: !visible || first, onClick: () => send('start.shiftSection', { section, by: -1 }) }),
-      IconButton('chevron.down', T("ниже", "Ниже") + ': ' + sectionTitle(section), { size: 24, disabled: !visible || last, onClick: () => send('start.shiftSection', { section, by: 1 }) }))),
+      IconButton('chevron.down', T("ниже", "Ниже") + ': ' + sectionTitle(section), { size: 24, disabled: !visible || last, onClick: () => send('start.shiftSection', { section, by: 1 }) })), section),
     h('div', { class: cx('block-content', { dimmed: editing && !visible }) },
       editing && !entry.sites.length && section !== 'custom'
         ? h('div', { class: 'block-placeholder', key: 'placeholder' }, placeholder)
@@ -208,8 +228,8 @@ function hints() {
 function CustomizeBar() {
   const start = state.prefs.start;
   return h('div', { class: 'start-bar raised', key: 'bar', enter: 'slide-bottom', exit: { name: 'slide-bottom', float: false } },
-    h('span', { class: 'start-bar-label' }, T("сайтов в разделе", "Сайтов в разделе")),
-    Segmented(start.frequentCount, [4, 8, 12, 16].map(value => ({ value, title: String(value) })), value => send('start.frequentCount', { value }), { compact: true, label: T("сайтов в разделе", "Сайтов в разделе") }),
+    h('span', { class: 'start-bar-label' }, T("сайтов в ряду", "Сайтов в ряду")),
+    Segmented(start.frequentCount, [4, 8, 12, 16].map(value => ({ value, title: String(value) })), value => send('start.frequentCount', { value }), { compact: true, label: T("сайтов в ряду", "Сайтов в ряду") }),
     h('span', { class: 'spacer' }),
     IconButton('arrow.counterclockwise', T("вернуть как было", "Вернуть как было"), { disabled: state.start.isDefault, onClick: () => send('start.reset') }),
     IconButton('gearshape', T("все настройки", "Все настройки"), { onClick: () => { send('customize.start', { on: false }); send('settings.open', { section: 'start' }); } }),
@@ -234,7 +254,7 @@ export function StartScreen(tab) {
       h('div', { class: 'start-column', style: { '--columns': options.frequentCount } },
         showMark || isPrivate ? h('div', { class: 'start-head', key: 'head', flip: true },
           showMark ? h('div', { class: cx('start-block mark-block', { editing }), key: 'mark' },
-            editing ? BlockHeader(greeting ? T("приветствие", "Приветствие") : T("знак mica", "Знак mica"), true, options.wordmark, value => send('start.wordmark', { on: value })) : null,
+            editing ? BlockHeader(greeting ? T("приветствие", "Приветствие") : T("знак mica", "Знак mica"), true, options.wordmark, value => send('start.wordmark', { on: value }), null, 'mark') : null,
             h('div', { class: cx('mark-holder', { dimmed: editing && !options.wordmark }) },
               greeting ? Assembling(greeting, 'greeting', play, step(2)) : Assembling('mica', 'wordmark', play, step(2)))) : null,
           isPrivate && !editing ? h('span', { class: 'private-capsule', key: 'private', onMount: entrance(play, options.wordmark ? step(2) + markTotal * 0.55 : step(2), { rise: 0, dx: -14 }) }, icon(incognito, 11.5), T("инкогнито", "Инкогнито")) : null) : null,

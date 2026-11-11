@@ -30,8 +30,8 @@ struct StartSettings: View {
                         Rectangle().fill(Palette.hairline).frame(height: 1).padding(.leading, 14)
                     }
                 }
-                SettingRow(title: browser.text("сайтов в разделе", "Сайтов в разделе"), detail: browser.text("во всех разделах, по столько же в ряд", "Во всех разделах, по столько же в ряд"), divider: false) {
-                    Segmented(selection: $browser.prefs.start.frequentCount, options: StartPage.frequentChoices.map { ($0, String($0)) }, compact: true, width: 180, label: browser.text("сайтов в разделе", "Сайтов в разделе"))
+                SettingRow(title: browser.text("сайтов в ряду", "Сайтов в ряду"), detail: browser.text("в каждом разделе, остальные переходят на следующий ряд", "В каждом разделе, остальные переходят на следующий ряд"), divider: false) {
+                    Segmented(selection: $browser.prefs.start.frequentCount, options: StartPage.frequentChoices.map { ($0, String($0)) }, compact: true, width: 180, label: browser.text("сайтов в ряду", "Сайтов в ряду"))
                 }
             }
             SettingsGroup(title: browser.text("свои сайты", "Свои сайты"), footnote: browser.text("на начальной странице плитки можно перетаскивать, контекстное меню изменяет и удаляет их.", "На начальной странице плитки можно перетаскивать, контекстное меню изменяет и удаляет их.")) {

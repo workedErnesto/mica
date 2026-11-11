@@ -13,10 +13,13 @@ public enum StartSection: String, Codable, CaseIterable, Sendable { case custom,
 public struct StartPage: Codable, Equatable, Sendable {
     public var wordmark = true
     public var sections: [StartSection] = [.custom, .frequent]
+    /// Tiles in a row of every start page section. Stored under its first meaning, the number of frequent sites.
     public var frequentCount = 8
     public var shortcuts: [StartShortcut] = []
     public var hiddenHosts: [String] = []
     public static let frequentChoices = [4, 8, 12, 16]
+    /// Frequent sites shown at most; custom sites and bookmarks are shown in full.
+    public static let frequentLimit = 16
     public init() {}
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
