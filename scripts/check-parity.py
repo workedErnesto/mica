@@ -2,7 +2,7 @@
 """Checks that macos/ and windows/ have not drifted apart where a machine can tell.
 
   1. Generated files match shared/ (scripts/generate.py --check).
-  2. Every Russian interface string of both platforms has English in shared/strings/en.txt.
+  2. Every Russian interface string of both platforms (Swift, C# and the Windows shell) has English in shared/strings/en.txt.
   3. Every SF Symbol name used on macOS has a Segoe Fluent pair in shared/glyphs.json.
   4. The version in shared/version.txt matches macos/Resources/App/Info.plist.
   5. Every keyboard command in shared/keymap.json has a Windows shortcut or is explicitly empty on both.
@@ -21,9 +21,9 @@ if result.returncode != 0: problems.append(result.stderr.strip() or result.stdou
 table = {line.split('⟩')[0] for line in (root / 'shared/strings/en.txt').read_text().split('\n') if line.count('⟩') == 2}
 pair = re.compile(r'(?:\btext|\bText|\bT)\(\s*"((?:[^"\\]|\\.)*)"\s*,\s*"((?:[^"\\]|\\.)*)"')
 missing = {}
-for folder, pattern in (('macos/Sources/MicaApp', '*.swift'), ('windows/src', '*.cs')):
+for folder, pattern in (('macos/Sources/MicaApp', '*.swift'), ('windows/src', '*.cs'), ('windows/shell/js', '*.js')):
     for path in (root / folder).rglob(pattern):
-        if '/obj/' in str(path) or '/bin/' in str(path): continue
+        if '/obj/' in str(path) or '/bin/' in str(path) or '/gen/' in str(path): continue
         for match in pair.finditer(path.read_text()):
             regular = match.group(2).encode().decode('unicode_escape').encode('latin-1').decode('utf-8') if '\\' in match.group(2) else match.group(2)
             if re.search('[а-яА-ЯёЁ]', regular) and regular not in table:

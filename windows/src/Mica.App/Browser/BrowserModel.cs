@@ -32,7 +32,14 @@ public sealed partial class BrowserModel : Observable
     /// <summary>Set once the window is first shown; the content card and the start page play their entrance from it.</summary>
     public bool Entered { get => entered; set { entered = value; Notify(); } }
     bool entered;
-    public Settings.SettingsSection SettingsSection { get; set; } = Mica.App.Settings.SettingsSection.Space;
+    /// <summary>Section open in settings: space, appearance, start, profiles, search, session, transfer, permissions, passwords, about.</summary>
+    public string SettingsSection { get; set; } = "space";
+    /// <summary>The quit shortcut is being held in this window; the shell shows the plate.</summary>
+    public bool QuitHolding { get => quitHolding; set { quitHolding = value; Notify(); } }
+    bool quitHolding;
+    /// <summary>Questions of this window waiting for an answer in the shell, the first one shown (Dialogs).</summary>
+    public List<Dialogs.Question> Questions { get; } = [];
+    public void Touch() => Notify();
     /// <summary>Profile open in the profile editor of settings.</summary>
     public Guid? EditingProfile { get; set; }
     public int OnboardingStep { get; set; }

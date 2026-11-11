@@ -19,7 +19,7 @@ public static class Commands
                 if (Key(shortcut.Key) is not { } key) continue;
                 var accelerator = new KeyboardAccelerator { Key = key, Modifiers = Modifiers(shortcut), ScopeOwner = null };
                 // Quit waits for the shortcut to be held (QuitHold); the menu item calls Run and quits at once.
-                accelerator.Invoked += (_, e) => { e.Handled = true; if (command == "quit") QuitHold.Begin(browser, shortcut, key); else Run(browser, command); };
+                accelerator.Invoked += (_, e) => { e.Handled = true; if (Fresh(command)) { if (command == "quit") QuitHold.Begin(browser, shortcut, key); else Run(browser, command); } };
                 root.KeyboardAccelerators.Add(accelerator);
             }
         }
@@ -30,6 +30,31 @@ public static class Commands
             if (properties.IsXButton1Pressed) { Run(browser, "back"); e.Handled = true; }
             else if (properties.IsXButton2Pressed) { Run(browser, "forward"); e.Handled = true; }
         };
+    }
+
+    // A shortcut can reach mica twice: as a XAML accelerator and from the shell, which sees the keys while it has focus.
+    // The second report of the same command within a moment is the same key press.
+    static string? lastCommand;
+    static long lastTick;
+    static bool Fresh(string command)
+    {
+        var now = Environment.TickCount64;
+        if (command == lastCommand && now - lastTick < 150) return false;
+        lastCommand = command; lastTick = now;
+        return true;
+    }
+
+    /// <summary>A shortcut the shell saw while it had the keyboard.</summary>
+    public static void FromShell(BrowserModel browser, string command)
+    {
+        if (!Keymap.Windows.ContainsKey(command) || !Fresh(command)) return;
+        if (command == "quit")
+        {
+            var shortcut = Keymap.Windows[command].FirstOrDefault(s => !s.Key.StartsWith("XButton", StringComparison.Ordinal));
+            if (shortcut is not null && Key(shortcut.Key) is { } key) QuitHold.Begin(browser, shortcut, key);
+            return;
+        }
+        Run(browser, command);
     }
 
     static VirtualKeyModifiers Modifiers(Shortcut s) =>
@@ -79,7 +104,7 @@ public static class Commands
                 if (!PageSaver.CanSave(tab)) break;
                 // The menu hangs from the save button; with the button hidden it opens under the address instead.
                 if (browser.Prefs.Toolbar.ZoneOf(ToolbarControl.Save) != ToolbarZone.Hidden) browser.RequestSaveMenu();
-                else if (browser.Window?.Content is FrameworkElement root) MicaMenu.ShowAt(PageSaver.Entries(tab!, browser), root, new Windows.Foundation.Point(root.ActualWidth / 2 - 90, Chrome.Bar));
+                else browser.RequestSaveMenu();
                 break;
             case "fullscreen": browser.Window?.ToggleFullScreen(); break;
             case "menu": browser.RequestMenu(); break;
@@ -95,7 +120,7 @@ public static class Commands
     internal static async Task Quit(Store store)
     {
         var running = store.Windows.Any(w => w.Model.Downloads.Items.Any(d => d.State is DownloadState.Running or DownloadState.Choosing or DownloadState.Paused));
-        if (running && await Dialogs.Ask(store.Active?.Window, store.Text("завершить mica и отменить загрузки?", "Завершить mica и отменить загрузки?"), store.Text("незавершённые загрузки будут отменены", "Незавершённые загрузки будут отменены"), [store.Text("отмена", "Отмена"), store.Text("завершить", "Завершить")]) != 1) return;
+        if (running && await Dialogs.Ask(store.Active?.Window, store.Text("завершить mica и отменить загрузки?", "Завершить mica и отменить загрузки?"), store.Text("незавершённые загрузки будут отменены", "Незавершённые загрузки будут отменены"), [store.Text("отмена", "Отмена"), store.Text("завершить", "Завершить")], destructive: true) != 1) return;
         store.Quit();
     }
 }

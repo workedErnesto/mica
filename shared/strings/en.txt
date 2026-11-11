@@ -685,3 +685,18 @@ www и всё, что стоит перед доменом⟩www and everything 
 Видео⟩video⟩Video
 Архив⟩archive⟩Archive
 Документ⟩document⟩Document
+Браузеры на этом компьютере⟩browsers on this computer⟩Browsers on this computer
+Добавьте закладку через Ctrl+D⟩add a bookmark with Ctrl+D⟩Add a bookmark with Ctrl+D
+Домен, например mail.example.com⟩a domain, like mail.example.com⟩A domain, like mail.example.com
+Другие браузеры не найдены⟩no other browsers found⟩No other browsers found
+Здесь будут закладки, Ctrl+D добавляет страницу⟩bookmarks appear here, Ctrl+D adds a page⟩Bookmarks appear here, Ctrl+D adds a page
+Локальный файл на этом компьютере⟩a local file on this computer⟩A local file on this computer
+Насыщенность и яркость⟩saturation and brightness⟩Saturation and brightness
+Окна профиля перейдут в основной профиль. История и данные сайтов останутся.⟩windows of the profile move to the main profile. history and site data stay.⟩Windows of the profile move to the main profile. History and site data stay.
+Перенесено: история ⟩imported: history ⟩Imported: history 
+, закладки ⟩, bookmarks ⟩, bookmarks 
+Переносим…⟩importing…⟩Importing…
+Переносятся история и закладки. Пароли, cookie и расширения не переносятся.⟩history and bookmarks are imported. passwords, cookies and extensions are not.⟩History and bookmarks are imported. Passwords, cookies and extensions are not.
+Свой цвет⟩custom colour⟩Custom colour
+Удалить профиль⟩delete profile⟩Delete profile
+Удерживайте ⟩hold ⟩Hold 

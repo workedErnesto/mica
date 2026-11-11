@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>mica icons</title>
+<style>
+  body { margin: 0; background: #fff; color: #000; font: 11px system-ui; }
+  #grid { display: grid; grid-template-columns: repeat(10, 48px); }
+  #grid div { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; }
+</style>
+</head>
+<body>
+<!-- Development sheet: every shell icon at the size of a toolbar glyph, for comparison with the macOS symbols.
+     ?names=a,b,c shows those, in that order. Not part of the app. -->
+<div id="grid"></div>
+<script type="module">
+  import { svg, iconNames } from '../js/core/icons.js';
+  const list = new URLSearchParams(location.search).get('names');
+  const names = list ? list.split(',') : iconNames;
+  document.getElementById('grid').innerHTML = names.map(name => `<div title="${name}">${svg(name, 20)}</div>`).join('');
+</script>
+</body>
+</html>

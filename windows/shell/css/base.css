@@ -1,0 +1,99 @@
+/* mica shell: base. Colours, sizes and springs come from tokens.g.css and motion.js (shared/tokens.json). */
+
+:root {
+  color-scheme: light;
+  --font: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "Cascadia Mono", Consolas, ui-monospace, "SF Mono", Menlo, monospace;
+  /* Look of the window's profile (Look.swift): the standard themes keep the neutral palette. */
+  --accent: var(--primary);
+  --accent-hover: color-mix(in srgb, var(--primary) 86%, transparent);
+  --accent-pressed: var(--primary-pressed);
+  --on-accent: var(--on-primary);
+  --focus: var(--focus-ring);
+  --progress: var(--ink);
+  --shell-tint: var(--shell);
+  --shell-alpha: 1;
+  --start-alpha: 1;
+  /* SwiftUI shadow radius r is a blur of about 2r in CSS terms. */
+  --shadow-lift: 0 1px 4px var(--shadow);
+  --shadow-card: 0 2px 12px var(--shadow);
+  --shadow-raised: 0 8px 36px var(--shadow-strong);
+  --shadow-menu: 0 3px 16px var(--menu-shadow);
+  --shadow-popover: 0 4px 20px var(--menu-shadow);
+  --shadow-modal: 0 14px 60px var(--shadow-strong);
+  --ease-hover: var(--hover-duration) ease-out;
+}
+:root[data-theme="dark"] { color-scheme: dark; }
+:root[data-accent] {
+  --accent: var(--accent-raw);
+  --accent-hover: color-mix(in srgb, var(--accent-raw) 88%, transparent);
+  --accent-pressed: color-mix(in srgb, var(--accent-raw) 82%, black);
+  --on-accent: var(--on-accent-raw);
+  --focus: var(--accent-raw);
+  --progress: var(--accent-raw);
+  --shell-tint: color-mix(in oklab, var(--shell), var(--accent-raw) var(--accent-tint, 30%));
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: hidden; background: transparent; }
+body {
+  font: 400 13px/1.25 var(--font);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-synthesis: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+  overscroll-behavior: none;
+}
+button, input, textarea { font: inherit; color: inherit; margin: 0; }
+button { background: none; border: 0; padding: 0; cursor: default; -webkit-app-region: no-drag; }
+input { background: none; border: 0; outline: 0; padding: 0; min-width: 0; caret-color: var(--accent); }
+input::placeholder { color: var(--text3); opacity: 1; }
+input::selection { background: color-mix(in srgb, var(--accent) 24%, transparent); }
+img { -webkit-user-drag: none; }
+a { color: inherit; }
+:focus { outline: none; }
+/* Keyboard focus ring; pointer clicks do not draw it. */
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+input:focus-visible { outline: none; }
+.selectable { user-select: text; -webkit-user-select: text; cursor: text; }
+
+.glyph { display: inline-flex; align-items: center; justify-content: center; flex: none; line-height: 0; }
+.glyph svg { display: block; overflow: visible; }
+
+.row { display: flex; align-items: center; }
+.col { display: flex; flex-direction: column; }
+.grow { flex: 1 1 0; min-width: 0; }
+.spacer { flex: 1 1 0; }
+.clip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.hairline { height: 1px; background: var(--hairline); flex: none; }
+.mono { font-family: var(--font-mono); }
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* Scroll areas never show bars, as on macOS (scrollIndicators(.never)); long lists that need one opt in. */
+.scroll { overflow: auto; scrollbar-width: none; overscroll-behavior: contain; }
+.scroll::-webkit-scrollbar { display: none; }
+.scroll.bars { scrollbar-width: thin; scrollbar-color: var(--hairline-strong) transparent; }
+
+/* With animation effects off in Windows nothing moves; colour and opacity still change. */
+:root[data-reduced-motion] *, :root[data-reduced-motion] *::before, :root[data-reduced-motion] *::after {
+  transition-property: color, background-color, border-color, opacity, box-shadow, fill, stroke, outline-color !important;
+  transition-duration: var(--hover-duration) !important;
+  transition-timing-function: ease-out !important;
+}
+:root[data-reduced-motion] .press:active, :root[data-reduced-motion] .btn:active { transform: none !important; }
+
+/* Press feedback (PressStyle): scale on the press spring. --press is the pressed scale. */
+.press { transition: transform var(--spring-press-ms) var(--spring-press); }
+.press:active:not(:disabled):not([aria-disabled="true"]) { transform: scale(var(--press, 0.97)); }
+
+/* Tooltip drawn by the shell: the WebView2 tooltip window would look like a browser's. */
+.tooltip {
+  position: fixed; z-index: 900; pointer-events: none;
+  padding: 4px 8px; border-radius: 7px; max-width: 320px;
+  background: var(--raised); border: 1px solid var(--hairline-strong); box-shadow: var(--shadow-menu);
+  font-size: 11.5px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
