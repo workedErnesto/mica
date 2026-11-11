@@ -2,6 +2,7 @@
 .build/
 build/
 work/
+macos/signing.local
 .swiftpm/
 *.xcodeproj/
 DerivedData/

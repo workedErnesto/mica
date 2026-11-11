@@ -21,7 +21,14 @@ mkdir -p "$plugin/Contents/MacOS"
 cp Sources/MicaDockTile/Info.plist "$plugin/Contents/Info.plist"
 optimization=$([[ "$configuration" == "release" ]] && echo -O || echo -Onone)
 swiftc $optimization -parse-as-library -module-name MicaDockTile -target "$(uname -m)-apple-macos15.4" -emit-executable -Xlinker -bundle Sources/MicaDockTile/MicaDockTile.swift -o "$plugin/Contents/MacOS/MicaDockTile"
-codesign --force --sign - "$plugin"
+# A stable identity (Apple Development of a Personal Team) keeps the designated requirement and the keychain
+# partition (team ID) the same across builds, so "Always Allow" for the password vault key survives reinstalls.
+# Ad-hoc signing ties both to the build hash: every install asked for the login keychain password again.
+# The identity comes from MICA_SIGN_IDENTITY or the untracked macos/signing.local (name or SHA-1); ad-hoc otherwise.
+identity="${MICA_SIGN_IDENTITY:-}"
+if [[ -z "$identity" && -f signing.local ]]; then identity="$(head -n 1 signing.local | tr -d '\r')"; fi
+identity="${identity:--}"
+codesign --force --sign "$identity" "$plugin"
 rm -rf "$app_path/Contents/Resources/QA"
 entitlements="Resources/App/mica.entitlements"
 if [[ "$configuration" == "debug" ]]; then
@@ -31,6 +38,6 @@ if [[ "$configuration" == "debug" ]]; then
   /usr/libexec/PlistBuddy -c 'Add :com.apple.security.get-task-allow bool true' build/debug.entitlements
   entitlements="build/debug.entitlements"
 fi
-codesign --force --sign - --entitlements "$entitlements" "$app_path"
+codesign --force --sign "$identity" --entitlements "$entitlements" "$app_path"
 codesign --verify --strict "$app_path"
 printf '%s\n' "$app_path"
