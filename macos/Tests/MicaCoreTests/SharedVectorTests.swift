@@ -48,6 +48,10 @@ final class SharedVectorTests: XCTestCase {
             var global = Preferences(); global.language = Language(rawValue: c["language"] as! String)!; global.lowercase = c["lowercase"] as! Bool
             let p = look.applied(to: global)
             return p.language.rawValue + (p.lowercase ? "-low" : "-regular")
+        case "addressDisplay":
+            // Quieter parts are marked with a leading ~.
+            let style = AddressStyle(full: c["full"] as? Bool ?? false, dimSubdomain: c["dimSubdomain"] as? Bool ?? false, dimPath: c["dimPath"] as? Bool ?? false)
+            return AddressDisplay.parts(c["url"] as! String, style: style).map { ($0.dim ? "~" : "") + $0.text }
         case "profileGlyph": return Profiles.lightGlyph(on: c["hex"] as! String, glyph: ProfileGlyph(rawValue: c["glyph"] as? String ?? "auto") ?? .auto) ? "light" : "dark"
         default: XCTFail("unknown section \(section)"); return NSNull()
         }

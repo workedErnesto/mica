@@ -14,6 +14,7 @@ public sealed class ProfileLook
     public string UserName { get; set; } = "";
     public bool GreetByName { get; set; } = true;
     public ToolbarLayout Toolbar { get; set; } = new();
+    public AddressStyle Address { get; set; } = new();
     public StartPage Start { get; set; } = new();
     public bool SidebarCollapsed { get; set; }
     public double SidebarWidth { get; set; } = 248;
@@ -26,7 +27,7 @@ public sealed class ProfileLook
     {
         Layout = p.Layout, Theme = p.Theme, CustomBase = p.CustomBase, Accent = p.Accent, CustomTint = p.CustomTint, Frosted = p.Frosted,
         Transparency = p.Transparency, UserName = p.UserName, GreetByName = p.GreetByName, SidebarCollapsed = p.SidebarCollapsed, SidebarWidth = p.SidebarWidth,
-        Toolbar = p.Toolbar.Clone(), Start = p.Clone().Start, Language = p.Language, Lowercase = p.Lowercase,
+        Toolbar = p.Toolbar.Clone(), Address = p.Address.Copy(), Start = p.Clone().Start, Language = p.Language, Lowercase = p.Lowercase,
     };
 
     /// <summary>A copy of the application-wide preferences with this profile's part laid over them.</summary>
@@ -36,6 +37,7 @@ public sealed class ProfileLook
         p.Layout = Layout; p.Theme = Theme; p.CustomBase = CustomBase; p.Accent = Accent; p.CustomTint = CustomTint; p.Frosted = Frosted;
         p.Transparency = Transparency; p.UserName = UserName; p.GreetByName = GreetByName; p.SidebarCollapsed = SidebarCollapsed; p.SidebarWidth = SidebarWidth;
         p.Toolbar = Toolbar.Clone();
+        p.Address = (Address ?? new()).Copy();
         p.Start = Start;
         p.Language = Language ?? base_.Language; p.Lowercase = Lowercase ?? base_.Lowercase;
         return p.Clone().Sanitized();
@@ -44,7 +46,7 @@ public sealed class ProfileLook
     /// <summary>Clamped and repaired the same way preferences are.</summary>
     public ProfileLook Sanitized()
     {
-        Toolbar ??= new(); Start ??= new(); Accent ??= "#6E56CF"; UserName ??= "";
+        Toolbar ??= new(); Address ??= new(); Start ??= new(); Accent ??= "#6E56CF"; UserName ??= "";
         var repaired = From(AppliedTo(new Preferences()));
         Toolbar = repaired.Toolbar; Start = repaired.Start; Accent = repaired.Accent; CustomTint = repaired.CustomTint; Transparency = repaired.Transparency;
         UserName = repaired.UserName; SidebarWidth = repaired.SidebarWidth; CustomBase = repaired.CustomBase;

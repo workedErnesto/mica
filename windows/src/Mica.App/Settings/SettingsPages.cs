@@ -21,7 +21,59 @@ public static class SettingsPages
         customize.Click += () => { dismiss(); b.CustomizingToolbar = true; };
         var toolbar = new SettingsGroup(s.Text("панель инструментов", "Панель инструментов"), s.Text("кнопки расставляются перетаскиванием прямо в окне: в шапку, вниз боковой панели или обратно в набор. то же меню есть в меню «…» и по правому клику на боковой панели.", "Кнопки расставляются перетаскиванием прямо в окне: в шапку, вниз боковой панели или обратно в набор. То же меню есть в меню «…» и по правому клику на боковой панели."))
             .Add(new SettingRow(s.Text("кнопки и адресная строка", "Кнопки и адресная строка"), customize, s.Text("порядок, сторона и длина строки", "Порядок, сторона и длина строки"), divider: false));
-        return Page(new DefaultBrowserSetting(s), ProfileScope.Make(b), new Appearance.LayoutPreview(s) { Height = 168 }, layout, toolbar);
+        return Page(new DefaultBrowserSetting(s), ProfileScope.Make(b), new Appearance.LayoutPreview(s) { Height = 168 }, layout, toolbar, AddressGroup(s));
+    }
+
+    const string AddressSample = "https://shop.example.com/shoes/running?size=42";
+
+    /// <summary>What the address field shows (macOS AddressSettings). The sample is a copy of the address field, and the field
+    /// in the window changes along with it.</summary>
+    public static UIElement AddressGroup(Store s)
+    {
+        var host = new Grid();
+        var sample = new TextBlock { FontSize = 12.5, TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center };
+        void ShowSample()
+        {
+            sample.Inlines.Clear();
+            foreach (var part in AddressDisplay.Parts(AddressSample, s.ActivePrefs.Address))
+                sample.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = part.Text, Foreground = part.Dim ? Palette.Text2.Brush() : Palette.Ink.Brush() });
+        }
+        void Edit(Action<AddressStyle> change, bool rebuild)
+        {
+            s.Change(p => change(p.Address));
+            ShowSample();
+            if (rebuild) host.DispatcherQueue.TryEnqueue(Render);
+        }
+        void Render()
+        {
+            host.Children.Clear();
+            var style = s.ActivePrefs.Address;
+            var group = new SettingsGroup(s.Text("адресная строка", "Адресная строка"), s.Text("домен сайта всегда остаётся основным цветом, по нему видно, чей это адрес.", "Домен сайта всегда остаётся основным цветом, по нему видно, чей это адрес."));
+            var row = Ui.H(6, new FontIcon { FontFamily = Fonts.Icons, Glyph = Glyphs.For("lock.fill"), FontSize = 10, Foreground = Palette.Text3.Brush(), VerticalAlignment = VerticalAlignment.Center }, sample);
+            row.HorizontalAlignment = HorizontalAlignment.Center;
+            var field = Ui.Rounded(Radius.Icon, Palette.Field.Brush(), Palette.FieldBorder.Brush(), 1, row);
+            field.MinHeight = Chrome.Field; field.Padding = new Thickness(12, 0, 12, 0);
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(field, s.Text("пример адресной строки", "Пример адресной строки"));
+            var sampleRow = Ui.V(10, field); sampleRow.Padding = new Thickness(14, 10, 14, 10);
+            var divider = Ui.Hairline(); divider.Margin = new Thickness(14, 0, 0, 0);
+            group.Add(Ui.V(0, sampleRow, divider));
+            ShowSample();
+            var mode = new Segmented<bool>(style.Full, [(false, s.Text("сайт", "Сайт")), (true, s.Text("полный адрес", "Полный адрес"))], minWidth: 260, label: s.Text("что показывать в адресной строке", "Что показывать в адресной строке"));
+            mode.Changed += v => Edit(a => a.Full = v, rebuild: true);
+            group.Add(new SettingRow(s.Text("показывать", "Показывать"), mode));
+            group.Add(new ToggleRow(s.Text("приглушать поддомен", "Приглушать поддомен"), style.DimSubdomain, v => Edit(a => a.DimSubdomain = v, rebuild: false), divider: style.Full,
+                detail: style.Full ? s.Text("www и всё, что стоит перед доменом", "www и всё, что стоит перед доменом") : s.Text("всё, что стоит перед доменом", "Всё, что стоит перед доменом")));
+            if (style.Full)
+            {
+                var path = new ToggleRow(s.Text("приглушать путь", "Приглушать путь"), style.DimPath, v => Edit(a => a.DimPath = v, rebuild: false), divider: false,
+                    detail: s.Text("всё, что после домена: /shoes, ?size и #", "Всё, что после домена: /shoes, ?size и #"));
+                group.Add(path);
+                path.Opacity = 0; Motion.Fade(path, 1);
+            }
+            host.Children.Add(group);
+        }
+        Render();
+        return host;
     }
 
     public static UIElement ThemeGroup(Store s)

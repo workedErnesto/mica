@@ -75,8 +75,7 @@ public sealed partial class AddressPill : Grid
         var store = browser.Store;
         info.Symbol = browser.PrivateMode ? Glyph.Incognito : tab.Secure ? "lock.fill" : tab.Url is null ? "magnifyingglass" : "exclamationmark.shield";
         info.IsEnabled = tab.Url is not null;
-        text.Text = Display();
-        text.Foreground = tab.Url is null ? Palette.Text3.Brush() : Palette.Ink.Brush();
+        ShowAddress();
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(this, browser.Text("адресная строка: ", "Адресная строка: ") + (tab.Url ?? ""));
         // Only web pages go to the start page; its tiles open in a regular tab.
         var pinnable = tab.Url is { } address && Pinnable(address);
@@ -84,7 +83,8 @@ public sealed partial class AddressPill : Grid
         if (pin.Symbol != (pinned ? "pin.fill" : "pin")) pin.SetLabel(pinned ? browser.Text("удалить с начальной страницы", "Удалить с начальной страницы") : browser.Text("закрепить в своих сайтах", "Закрепить в своих сайтах"));
         pin.Symbol = pinned ? "pin.fill" : "pin";
         pin.IsEnabled = pinnable;
-        Motion.Fade(pin, pinnable && (hover || pinned) ? 1 : 0);
+        // Pinned or not, the pin shows only under the pointer: the filled glyph already says which.
+        Motion.Fade(pin, pinnable && hover ? 1 : 0);
         var bookmarked = store.IsBookmarked(tab.Url);
         bookmark.Symbol = bookmarked ? "bookmark.fill" : "bookmark";
         bookmark.IsEnabled = tab.Url is not null;
@@ -98,10 +98,23 @@ public sealed partial class AddressPill : Grid
 
     static bool Pinnable(string url) => Uri.TryCreate(url, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
 
-    string Display()
+    string? shown;
+
+    /// <summary>The page address in parts (macOS AddressText): the site's own domain in ink, the parts the user chose to
+    /// quiet in text2. Rebuilt only when the address or the style changes.</summary>
+    void ShowAddress()
     {
-        if (tab.Url is not { } url) return browser.Text("адрес или поиск", "Адрес или поиск");
-        if (AddressParser.Host(url) is { } host) return host.StartsWith("www.", StringComparison.Ordinal) ? host[4..] : host;
-        return url;
+        var style = browser.Prefs.Address;
+        var key = tab.Url is null ? "\0" + browser.Text("адрес или поиск", "Адрес или поиск") : $"{style.Full}{style.DimSubdomain}{style.DimPath}{tab.Url}";
+        if (key == shown) return;
+        shown = key;
+        text.Inlines.Clear();
+        if (tab.Url is not { } url)
+        {
+            text.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = browser.Text("адрес или поиск", "Адрес или поиск"), Foreground = Palette.Text3.Brush() });
+            return;
+        }
+        foreach (var part in AddressDisplay.Parts(url, style))
+            text.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = part.Text, Foreground = part.Dim ? Palette.Text2.Brush() : Palette.Ink.Brush() });
     }
 }
