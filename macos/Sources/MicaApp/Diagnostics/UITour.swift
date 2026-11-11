@@ -89,6 +89,14 @@ enum UITour {
         browser.switchProfile(to: work.id); browser.prefs.theme = .dark; browser.prefs.layout = .top
         browser.selected?.load(URL(string: "https://example.org")!)
         try? await Task.sleep(nanoseconds: 2_000_000_000); await step("profile-work")
+        // Each profile keeps its own language and case: two windows side by side, each in its own.
+        browser.prefs.language = .en; browser.prefs.lowercase = false
+        let standardWindow = store.newWindow(profile: Profile.standardID)
+        await settle()
+        log("TEXT work=\(browser.text("новая вкладка", "Новая вкладка")) | \(browser.windowTitle) ; standard=\(standardWindow.text("новая вкладка", "Новая вкладка")) | \(standardWindow.windowTitle) ; menu=\(store.text("новая вкладка", "Новая вкладка"))")
+        await step("profiles-two-languages")
+        standardWindow.controller?.close(); window.makeKeyAndOrderFront(nil)
+        browser.prefs.language = .ru; browser.prefs.lowercase = true
         // The profile menu switches both ways, from the standard profile and from another one.
         for target in [Profile.standardID, work.id, Profile.standardID, work.id] {
             ProfileMenu.entries(browser: browser, store: store).first { $0.profile?.id == target }?.action()
@@ -116,10 +124,10 @@ enum UITour {
         browser.customizingStart = true; await settle(); await step("start-customize")
         browser.prefs.start.setVisible(.bookmarks, false); await settle(); await step("start-customize-hidden")
         browser.customizingStart = false; browser.prefs.start.setVisible(.bookmarks, true)
-        store.preferences.language = .en; await settle(); await step("greeting-en")
+        browser.prefs.language = .en; await settle(); await step("greeting-en")
         browser.showSettings = true; browser.settingsSection = .appearance; await settle(); await step("settings-en")
         browser.settingsSection = .about; await settle(); await step("settings-about-en")
-        browser.showSettings = false; store.preferences.language = .ru; browser.prefs.userName = ""
+        browser.showSettings = false; browser.prefs.language = .ru; browser.prefs.userName = ""
         try? await Task.sleep(nanoseconds: 500_000_000)
         browser.onboardingStep = 0; browser.showOnboarding = true; await settle(); await step("onboarding")
         browser.onboardingStep = 1; await settle(); await step("onboarding-import")

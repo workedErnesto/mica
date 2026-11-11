@@ -106,7 +106,7 @@ struct BrowserRoot: View {
             .alert("mica", isPresented: Binding(get: { browser.message != nil || store.issue != nil }, set: { if !$0 { browser.message = nil; store.issue = nil } })) { Button("OK") { browser.message = nil; store.issue = nil } } message: { Text(browser.message ?? store.issue ?? "") }
         }
         .environment(\.look, browser.look)
-        .environment(\.locale, store.locale)
+        .environment(\.locale, browser.locale)
         .frame(minWidth: 600, minHeight: 420)
     }
 

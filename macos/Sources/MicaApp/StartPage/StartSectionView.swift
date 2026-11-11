@@ -13,11 +13,11 @@ struct StartSite: Identifiable, Equatable {
 }
 
 extension StartSection {
-    @MainActor func title(_ store: Store) -> String {
+    @MainActor func title(_ browser: BrowserModel) -> String {
         switch self {
-        case .custom: return store.text("свои сайты", "Свои сайты")
-        case .frequent: return store.text("часто открываете", "Часто открываете")
-        case .bookmarks: return store.text("закладки", "Закладки")
+        case .custom: return browser.text("свои сайты", "Свои сайты")
+        case .frequent: return browser.text("часто открываете", "Часто открываете")
+        case .bookmarks: return browser.text("закладки", "Закладки")
         }
     }
 }
@@ -33,11 +33,11 @@ struct StartSectionView: View {
         let start = browser.prefs.start
         let visible = start.sections.contains(section)
         VStack(alignment: .leading, spacing: Space.normal) {
-            StartBlockHeader(title: section.title(store), editing: editing, shown: Binding(get: { visible }, set: { browser.prefs.start.setVisible(section, $0) }), store: store) {
+            StartBlockHeader(title: section.title(browser), editing: editing, shown: Binding(get: { visible }, set: { browser.prefs.start.setVisible(section, $0) }), store: store, browser: browser) {
                 HStack(spacing: 0) {
-                    IconButton(symbol: "chevron.up", label: store.text("выше", "Выше") + ": " + section.title(store), size: 24) { withMotion(Motion.quick) { browser.prefs.start.shift(section, by: -1) } }
+                    IconButton(symbol: "chevron.up", label: browser.text("выше", "Выше") + ": " + section.title(browser), size: 24) { withMotion(Motion.quick) { browser.prefs.start.shift(section, by: -1) } }
                         .disabled(!visible || start.sections.first == section)
-                    IconButton(symbol: "chevron.down", label: store.text("ниже", "Ниже") + ": " + section.title(store), size: 24) { withMotion(Motion.quick) { browser.prefs.start.shift(section, by: 1) } }
+                    IconButton(symbol: "chevron.down", label: browser.text("ниже", "Ниже") + ": " + section.title(browser), size: 24) { withMotion(Motion.quick) { browser.prefs.start.shift(section, by: 1) } }
                         .disabled(!visible || start.sections.last == section)
                 }
             }
@@ -54,7 +54,7 @@ struct StartSectionView: View {
                             SiteTile(title: site.title, host: site.host, url: site.url, favicons: browser.favicons) { browser.selected?.load(site.url) }
                                 .micaContextMenu { menu(site) }
                                 .modifier(ShortcutDrag(site: site, store: store, browser: browser))
-                                .popover(isPresented: Binding(get: { editingSite == site }, set: { if !$0 { editingSite = nil } }), arrowEdge: .bottom) {
+                                .stickyPopover(isPresented: Binding(get: { editingSite == site }, set: { if !$0 { editingSite = nil } })) {
                                     ShortcutEditor(store: store, browser: browser, editing: site.shortcut) { editingSite = nil }
                                 }
                                 .transition(Motion.pop)
@@ -71,8 +71,8 @@ struct StartSectionView: View {
     }
     private var placeholder: String {
         switch section {
-        case .frequent: return browser.privateMode ? store.text("в окне инкогнито частые сайты не показываются", "В окне инкогнито частые сайты не показываются") : store.text("появятся, когда вы начнёте открывать сайты", "Появятся, когда вы начнёте открывать сайты")
-        case .bookmarks: return store.text("здесь будут закладки, ⌘D добавляет страницу", "Здесь будут закладки, ⌘D добавляет страницу")
+        case .frequent: return browser.privateMode ? browser.text("в окне инкогнито частые сайты не показываются", "В окне инкогнито частые сайты не показываются") : browser.text("появятся, когда вы начнёте открывать сайты", "Появятся, когда вы начнёте открывать сайты")
+        case .bookmarks: return browser.text("здесь будут закладки, ⌘D добавляет страницу", "Здесь будут закладки, ⌘D добавляет страницу")
         case .custom: return ""
         }
     }

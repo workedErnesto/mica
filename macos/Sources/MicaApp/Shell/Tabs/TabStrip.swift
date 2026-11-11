@@ -36,7 +36,7 @@ struct TabStrip: View {
         MenuEntry.divider
         LayoutMenu.entries(store: store, browser: browser)
         MenuEntry.divider
-        MenuEntry.item(store.text("настроить панель инструментов…", "Настроить панель инструментов…"), symbol: "slider.horizontal.3") { browser.customizingToolbar = true }
+        MenuEntry.item(browser.text("настроить панель инструментов…", "Настроить панель инструментов…"), symbol: "slider.horizontal.3") { browser.customizingToolbar = true }
     }
     private func strip(_ width: CGFloat) -> some View {
         ScrollView(.horizontal) {

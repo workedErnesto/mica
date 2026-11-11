@@ -17,6 +17,9 @@ final class MicaMenu {
     static let shared = MicaMenu()
     let model = MenuModel()
     private var panel: MenuPanel?
+    /// The choices of a row opened by a right click, beside this menu, which stays open under them.
+    private lazy var child = MicaMenu()
+    private weak var parent: MicaMenu?
     private var monitors: [Any] = []
     private var observers: [NSObjectProtocol] = []
     /// Transparent room around the menu in its window for the shadow and the opening scale.
@@ -77,6 +80,7 @@ final class MicaMenu {
     }
 
     func close(animated: Bool = true) {
+        if parent == nil, child.panel != nil { child.close(animated: false) }
         for monitor in monitors { NSEvent.removeMonitor(monitor) }
         monitors = []
         for observer in observers { NotificationCenter.default.removeObserver(observer) }
@@ -94,6 +98,7 @@ final class MicaMenu {
         guard model.entries.indices.contains(index), model.entries[index].kind == .action, model.entries[index].enabled else { return }
         let action = model.entries[index].action
         close()
+        parent?.close()
         action()
     }
 
@@ -107,9 +112,21 @@ final class MicaMenu {
     }
 
     private func watch(_ window: NSWindow?) {
+        // A right click on a row with its own choices swaps the menu for them at the pointer.
+        monitors.append(NSEvent.addLocalMonitorForEvents(matching: [.rightMouseDown]) { [weak self, weak window] event in
+            guard let self, let panel = self.panel, event.window === panel else { return event }
+            if let index = self.model.highlighted, self.model.entries.indices.contains(index), !self.model.entries[index].secondary.isEmpty {
+                self.child.parent = self
+                self.child.show(self.model.entries[index].secondary, at: NSEvent.mouseLocation, in: window)
+            }
+            return nil
+        } as Any)
         monitors.append(NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown]) { [weak self] event in
             guard let self, let panel = self.panel, event.window !== panel else { return event }
+            if self.parent == nil, let open = self.child.panel, event.window === open { return event }
             self.close()
+            // A click in the parent menu only closes these choices and goes on to the parent.
+            if let parent = self.parent, event.window != nil, event.window === parent.panel { return event }
             // A right click elsewhere opens the menu of that place, as in system menus; other clicks only close.
             return event.type == .rightMouseDown ? event : nil
         } as Any)
@@ -122,6 +139,7 @@ final class MicaMenu {
         } as Any)
         monitors.append(NSEvent.addLocalMonitorForEvents(matching: [.keyDown]) { [weak self] event in
             guard let self else { return event }
+            if self.parent == nil, self.child.isOpen { return event }
             switch event.keyCode {
             case 53: self.close()
             case 125: self.move(1)

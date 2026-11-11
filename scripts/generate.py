@@ -178,6 +178,7 @@ public static class ProfileCatalog
         if not row: continue
         parts = row.split('⟩')
         if len(parts) != 3: sys.exit(f'shared/strings/en.txt:{number}: expected Russian⟩english low⟩English regular')
+        if '\\u{' in row: sys.exit(f'shared/strings/en.txt:{number}: escapes are not decoded, write the character itself')
         if parts[0] in seen: sys.exit(f'shared/strings/en.txt:{number}: duplicate key {parts[0]!r}')
         seen.add(parts[0])
     body = '\n'.join(r for r in rows if r).replace('\\', '\\\\')

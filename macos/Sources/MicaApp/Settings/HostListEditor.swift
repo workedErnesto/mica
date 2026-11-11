@@ -6,6 +6,7 @@ import MicaCore
 struct HostListEditor: View {
     @Binding var hosts: [String]
     @ObservedObject var store: Store
+    @ObservedObject var browser: BrowserModel
     @State private var input = ""
     @State private var invalid = false
     var body: some View {
@@ -13,17 +14,17 @@ struct HostListEditor: View {
             HStack(spacing: Space.small) {
                 MTextField(placeholder: "example.com", text: $input, symbol: "globe") { add() }
                     .onChange(of: input) { _, value in store.settingsDraft = value }
-                Button(store.text("добавить", "Добавить")) { add() }.buttonStyle(MButtonStyle(kind: .secondary, compact: true)).disabled(input.isEmpty)
+                Button(browser.text("добавить", "Добавить")) { add() }.buttonStyle(MButtonStyle(kind: .secondary, compact: true)).disabled(input.isEmpty)
             }
             .padding(10)
-            if invalid { Text(store.text("нужен домен без пути, например mail.example.com", "Нужен домен без пути, например mail.example.com")).font(.system(size: 11.5)).foregroundStyle(Palette.danger).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 14).padding(.bottom, Space.small).transition(.opacity) }
+            if invalid { Text(browser.text("нужен домен без пути, например mail.example.com", "Нужен домен без пути, например mail.example.com")).font(.system(size: 11.5)).foregroundStyle(Palette.danger).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 14).padding(.bottom, Space.small).transition(.opacity) }
             ForEach(hosts, id: \.self) { host in
                 VStack(spacing: 0) {
                     Hairline()
                     HStack {
                         Text(host).font(.system(size: 13)).foregroundStyle(Palette.ink)
                         Spacer()
-                        IconButton(symbol: "minus.circle", label: store.text("удалить ", "Удалить ") + host, size: 24) { withMotion(Motion.quick) { hosts.removeAll { $0 == host } } }
+                        IconButton(symbol: "minus.circle", label: browser.text("удалить ", "Удалить ") + host, size: 24) { withMotion(Motion.quick) { hosts.removeAll { $0 == host } } }
                     }
                     .padding(.horizontal, 14).padding(.vertical, 6)
                 }

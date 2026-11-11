@@ -32,15 +32,15 @@ struct ToolbarEditTile: View {
             } isTargeted: { targeted = $0 }
             .animation(Motion.hover, value: targeted)
             .animation(Motion.hover, value: hover)
-            .help(item.title(store))
+            .help(item.title(browser))
             .accessibilityElement()
-            .accessibilityLabel(item.title(store))
-            .accessibilityHint(store.text("перетащите или откройте меню действий", "Перетащите или откройте меню действий"))
-            .accessibilityAction(named: ToolbarZone.leading.title(store)) { moves.move(item, to: .leading) }
-            .accessibilityAction(named: ToolbarZone.leadingInner.title(store)) { moves.move(item, to: .leadingInner) }
-            .accessibilityAction(named: ToolbarZone.trailingInner.title(store)) { moves.move(item, to: .trailingInner) }
-            .accessibilityAction(named: ToolbarZone.trailing.title(store)) { moves.move(item, to: .trailing) }
-            .accessibilityAction(named: store.text("убрать", "Убрать")) { moves.move(item, to: .hidden) }
+            .accessibilityLabel(item.title(browser))
+            .accessibilityHint(browser.text("перетащите или откройте меню действий", "Перетащите или откройте меню действий"))
+            .accessibilityAction(named: ToolbarZone.leading.title(browser)) { moves.move(item, to: .leading) }
+            .accessibilityAction(named: ToolbarZone.leadingInner.title(browser)) { moves.move(item, to: .leadingInner) }
+            .accessibilityAction(named: ToolbarZone.trailingInner.title(browser)) { moves.move(item, to: .trailingInner) }
+            .accessibilityAction(named: ToolbarZone.trailing.title(browser)) { moves.move(item, to: .trailing) }
+            .accessibilityAction(named: browser.text("убрать", "Убрать")) { moves.move(item, to: .hidden) }
     }
 }
 

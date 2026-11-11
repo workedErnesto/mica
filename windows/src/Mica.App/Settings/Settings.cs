@@ -34,7 +34,7 @@ public sealed partial class SettingsOverlay : Grid
         {
             var store = browser.Store;
             if (Draft.Trim().Length == 0) { Draft = ""; browser.ShowSettings = false; return; }
-            var answer = await Dialogs.Ask(browser.Window, store.Text("адрес не добавлен", "Адрес не добавлен"), store.Text("введённый адрес «", "Введённый адрес «") + Draft + store.Text("» ещё не сохранён в списке.", "» ещё не сохранён в списке."), [store.Text("продолжить редактирование", "Продолжить редактирование"), store.Text("закрыть без сохранения", "Закрыть без сохранения")]);
+            var answer = await Dialogs.Ask(browser.Window, browser.Text("адрес не добавлен", "Адрес не добавлен"), browser.Text("введённый адрес «", "Введённый адрес «") + Draft + browser.Text("» ещё не сохранён в списке.", "» ещё не сохранён в списке."), [browser.Text("продолжить редактирование", "Продолжить редактирование"), browser.Text("закрыть без сохранения", "Закрыть без сохранения")]);
             if (answer == 1) { Draft = ""; browser.ShowSettings = false; }
         }
         Children.Add(new ModalCard(new SettingsView(browser, Close), 860, 660, dismiss: Close));
@@ -73,14 +73,14 @@ public sealed partial class SettingsView : Grid
         var store = browser.Store;
         ColumnDefinitions[0].Width = new GridLength(compact ? 60 : 228);
         nav.Children.Clear(); items.Clear(); footer.Children.Clear();
-        if (!compact) { var title = Ui.Text(store.Text("настройки", "Настройки"), 20); title.CharacterSpacing = -20; title.Margin = new Thickness(10, 6, 10, Space.Normal); nav.Children.Add(title); }
+        if (!compact) { var title = Ui.Text(browser.Text("настройки", "Настройки"), 20); title.CharacterSpacing = -20; title.Margin = new Thickness(10, 6, 10, Space.Normal); nav.Children.Add(title); }
         foreach (var section in Enum.GetValues<SettingsSection>())
         {
             var item = new NavItem(section.Title(store), section.Symbol(), section == browser.SettingsSection, compact, () => Show(section, true));
             items.Add((section, item)); nav.Children.Add(item);
         }
-        if (compact) { var close = new IconButton("xmark", store.Text("готово", "Готово"), 36); close.Click += dismiss; footer.Children.Add(close); }
-        else { var done = new MButton(store.Text("готово", "Готово"), ButtonKind.Primary, stretch: true); done.Click += dismiss; footer.Children.Add(done); }
+        if (compact) { var close = new IconButton("xmark", browser.Text("готово", "Готово"), 36); close.Click += dismiss; footer.Children.Add(close); }
+        else { var done = new MButton(browser.Text("готово", "Готово"), ButtonKind.Primary, stretch: true); done.Click += dismiss; footer.Children.Add(done); }
     }
 
     void Show(SettingsSection section, bool animated)
@@ -107,7 +107,7 @@ public sealed partial class SettingsView : Grid
         var scroll = Ui.Scroll(stack); scroll.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
         var host = new Grid(); host.RowDefinitions.Add(Ui.RowStar()); host.RowDefinitions.Add(Ui.RowAuto());
         host.Row(scroll, 0);
-        if (section == SettingsSection.About) host.Row(Ui.Text(store.Text("develop whoa with ❤️", "Develop whoa with ❤️"), 12, Palette.Text3.Brush()).Margin(28, Space.Small, 28, 22), 1);
+        if (section == SettingsSection.About) host.Row(Ui.Text(browser.Text("develop whoa with ❤️", "Develop whoa with ❤️"), 12, Palette.Text3.Brush()).Margin(28, Space.Small, 28, 22), 1);
         pane.Children.Clear(); pane.Children.Add(host);
         if (animated) Motion.Appear(host, Motion.Edge.Bottom);
     }
@@ -139,15 +139,15 @@ public static class Pickers
     /// <summary>Each option is written in the style it selects.</summary>
     public static Segmented<bool> CasePicker(Store s, double width = 0)
     {
-        var english = s.Preferences.Language == Language.En;
-        var picker = new Segmented<bool>(s.Preferences.Lowercase, [(true, english ? "lowercase" : "со строчной"), (false, english ? "Standard" : "Обычный")], minWidth: width, label: s.Text("текст интерфейса", "Текст интерфейса"));
+        var english = s.ActivePrefs.Language == Language.En;
+        var picker = new Segmented<bool>(s.ActivePrefs.Lowercase, [(true, english ? "lowercase" : "со строчной"), (false, english ? "Standard" : "Обычный")], minWidth: width, label: s.Text("текст интерфейса", "Текст интерфейса"));
         picker.Changed += v => s.Change(p => p.Lowercase = v);
         return picker;
     }
     /// <summary>Language names are written in their own language.</summary>
     public static Segmented<Language> LanguagePicker(Store s, double width = 0)
     {
-        var picker = new Segmented<Language>(s.Preferences.Language, [(Core.Language.Ru, s.Preferences.Lowercase ? "русский" : "Русский"), (Core.Language.En, s.Preferences.Lowercase ? "english" : "English")], minWidth: width, label: s.Text("язык", "Язык"));
+        var picker = new Segmented<Language>(s.ActivePrefs.Language, [(Core.Language.Ru, s.ActivePrefs.Lowercase ? "русский" : "Русский"), (Core.Language.En, s.ActivePrefs.Lowercase ? "english" : "English")], minWidth: width, label: s.Text("язык", "Язык"));
         picker.Changed += v => s.Change(p => p.Language = v);
         return picker;
     }
@@ -175,7 +175,7 @@ public static class Pickers
                 row.ColumnDefinitions.Add(Ui.Auto()); row.ColumnDefinitions.Add(Ui.Star()); row.ColumnDefinitions.Add(Ui.Auto());
                 row.Children.Add(plate); Grid.SetColumnSpan(plate, 3); plate.Margin = new Thickness(-10, 0, -10, 0);
                 row.Column(new Monogram(AddressParser.Host(engine.Home()), 20) { VerticalAlignment = VerticalAlignment.Center }, 0);
-                row.Column(Ui.Text(engine.Title(s.Preferences.Language), 12.5, selected ? Palette.Ink.Brush() : Palette.Text2.Brush(), selected ? Ui.Medium : Ui.Regular), 1);
+                row.Column(Ui.Text(engine.Title(s.TextStyle(s.Active?.ProfileId).Language), 12.5, selected ? Palette.Ink.Brush() : Palette.Text2.Brush(), selected ? Ui.Medium : Ui.Regular), 1);
                 if (selected) row.Column(new Glyph("checkmark", 10, Palette.Ink.Brush()) { VerticalAlignment = VerticalAlignment.Center }, 2);
                 row.Background = Palette.Clear;
                 var e = engine;
@@ -183,7 +183,7 @@ public static class Pickers
                 interaction.Invoked += () => { s.Change(p => p.Search = e); Render(); };
                 row.PointerEntered += (_, _) => { if (!selected) plate.Background = Palette.Hover.Brush(); };
                 row.PointerExited += (_, _) => plate.Background = Palette.Track.Brush();
-                Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(row, engine.Title(s.Preferences.Language));
+                Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(row, engine.Title(s.TextStyle(s.Active?.ProfileId).Language));
                 grid.Children.Add(row);
             }
         }

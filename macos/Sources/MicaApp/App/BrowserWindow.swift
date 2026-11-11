@@ -86,7 +86,7 @@ final class BrowserWindow: NSWindowController, NSWindowDelegate {
     func windowDidResize(_ notification: Notification) { placeWindowButtons() }
     func windowDidEnterFullScreen(_ notification: Notification) { model.fullScreen = true }
     func windowDidExitFullScreen(_ notification: Notification) { model.fullScreen = false; placeWindowButtons() }
-    func windowDidBecomeKey(_ notification: Notification) { if !model.privateMode { model.store.extensions.controller.didFocusWindow(model) } }
+    func windowDidBecomeKey(_ notification: Notification) { model.store.updateTextStyle(); if !model.privateMode { model.store.extensions.controller.didFocusWindow(model) } }
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         let running = model.downloads.items.contains { $0.state == .running || $0.state == .choosing }
         guard running else { return true }

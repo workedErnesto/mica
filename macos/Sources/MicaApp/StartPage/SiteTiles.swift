@@ -77,7 +77,7 @@ struct AddShortcutTile: View {
             VStack(spacing: Space.small) {
                 Image(systemName: "plus").font(.system(size: 16, weight: .regular)).foregroundStyle(hover ? Palette.ink : Palette.text2)
                     .modifier(TileBox(hover: hover, dashed: true))
-                Text(store.text("добавить", "Добавить")).font(.system(size: 11.5)).foregroundStyle(hover ? Palette.ink : Palette.text3).lineLimit(1)
+                Text(browser.text("добавить", "Добавить")).font(.system(size: 11.5)).foregroundStyle(hover ? Palette.ink : Palette.text3).lineLimit(1)
             }
             .frame(maxWidth: .infinity)
             .contentShape(Rectangle())
@@ -85,7 +85,7 @@ struct AddShortcutTile: View {
         .buttonStyle(PressStyle(scale: 0.95))
         .onHover { hover = $0 }
         .animation(reduced ? Motion.hover : Motion.snappySpring, value: hover)
-        .popover(isPresented: $adding, arrowEdge: .bottom) { ShortcutEditor(store: store, browser: browser, editing: nil) { adding = false } }
-        .accessibilityLabel(store.text("добавить сайт на начальную страницу", "Добавить сайт на начальную страницу"))
+        .stickyPopover(isPresented: $adding) { ShortcutEditor(store: store, browser: browser, editing: nil) { adding = false } }
+        .accessibilityLabel(browser.text("добавить сайт на начальную страницу", "Добавить сайт на начальную страницу"))
     }
 }

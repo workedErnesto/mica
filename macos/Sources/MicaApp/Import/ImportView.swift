@@ -5,40 +5,41 @@ import MicaCore
 /// Source browser, what to bring, and the result. Shared by onboarding and settings.
 struct ImportView: View {
     @ObservedObject var store: Store
+    @ObservedObject var browser: BrowserModel
     @ObservedObject var manager: ImportManager
     var body: some View {
         VStack(alignment: .leading, spacing: Space.normal) {
             if !manager.discovered {
-                HStack(spacing: Space.small) { ProgressView().controlSize(.small); Text(store.text("ищем браузеры на этом Mac", "Ищем браузеры на этом Mac")).font(.system(size: 12.5)).foregroundStyle(Palette.text2) }
+                HStack(spacing: Space.small) { ProgressView().controlSize(.small); Text(browser.text("ищем браузеры на этом Mac", "Ищем браузеры на этом Mac")).font(.system(size: 12.5)).foregroundStyle(Palette.text2) }
                     .padding(.vertical, Space.small)
             } else if manager.profiles.isEmpty {
-                Text(store.text("доступные профили не найдены. можно выбрать папку профиля или файл экспорта", "Доступные профили не найдены. Можно выбрать папку профиля или файл экспорта"))
+                Text(browser.text("доступные профили не найдены. можно выбрать папку профиля или файл экспорта", "Доступные профили не найдены. Можно выбрать папку профиля или файл экспорта"))
                     .font(.system(size: 12.5)).foregroundStyle(Palette.text2).fixedSize(horizontal: false, vertical: true)
             } else {
-                SettingsGroup(title: store.text("откуда", "Откуда")) {
+                SettingsGroup(title: browser.text("откуда", "Откуда")) {
                     ForEach(Array(manager.profiles.enumerated()), id: \.element.id) { index, profile in
-                        SourceRow(store: store, manager: manager, profile: profile, divider: index < manager.profiles.count - 1)
+                        SourceRow(store: store, browser: browser, manager: manager, profile: profile, divider: index < manager.profiles.count - 1)
                     }
                 }
                 if manager.selected == nil {
-                    Text(store.text("выберите браузер, чтобы открыть его данные", "Выберите браузер, чтобы открыть его данные"))
+                    Text(browser.text("выберите браузер, чтобы открыть его данные", "Выберите браузер, чтобы открыть его данные"))
                         .font(.system(size: 12.5)).foregroundStyle(Palette.text2).fixedSize(horizontal: false, vertical: true)
                 } else if manager.selected?.browser.family == .safari && manager.safariLocked {
                     safariHelp
                 } else if manager.selected != nil {
-                    SettingsGroup(title: store.text("что перенести", "Что перенести"), footnote: store.text("входы на сайты и пароли не переносятся. исходный браузер не изменяется", "Входы на сайты и пароли не переносятся. Исходный браузер не изменяется")) {
-                        kindToggle(.history, store.text("история", "История"), divider: true)
-                        kindToggle(.bookmarks, store.text("закладки и избранное", "Закладки и избранное"), divider: false)
+                    SettingsGroup(title: browser.text("что перенести", "Что перенести"), footnote: browser.text("входы на сайты и пароли не переносятся. исходный браузер не изменяется", "Входы на сайты и пароли не переносятся. Исходный браузер не изменяется")) {
+                        kindToggle(.history, browser.text("история", "История"), divider: true)
+                        kindToggle(.bookmarks, browser.text("закладки и избранное", "Закладки и избранное"), divider: false)
                     }
                 }
             }
             HStack(spacing: Space.small) {
                 if manager.selected != nil && !manager.selectedNeedsAccess && !(manager.selected?.browser.family == .safari && manager.safariLocked) {
-                    Button(store.text("перенести", "Перенести")) { manager.run() }
+                    Button(browser.text("перенести", "Перенести")) { manager.run() }
                         .buttonStyle(MButtonStyle(kind: .primary))
                         .disabled(manager.phase == .reading || manager.kinds.intersection(manager.selected?.browser.kinds ?? []).isEmpty)
                 }
-                OtherImportSources(store: store, manager: manager)
+                OtherImportSources(store: store, browser: browser, manager: manager)
                 if manager.phase == .reading { ProgressView().controlSize(.small).transition(.opacity) }
             }
             result
@@ -56,7 +57,7 @@ struct ImportView: View {
     private var safariHelp: some View {
         SettingsGroup(title: "Safari") {
             VStack(alignment: .leading, spacing: Space.small) {
-                Text(store.text("macOS ограничивает доступ к файлам Safari. экспортируйте данные в Safari: «Файл», «Экспортировать», «Данные браузера в файл», затем выберите архив здесь", "macOS ограничивает доступ к файлам Safari. Экспортируйте данные в Safari: «Файл», «Экспортировать», «Данные браузера в файл», затем выберите архив здесь"))
+                Text(browser.text("macOS ограничивает доступ к файлам Safari. экспортируйте данные в Safari: «Файл», «Экспортировать», «Данные браузера в файл», затем выберите архив здесь", "macOS ограничивает доступ к файлам Safari. Экспортируйте данные в Safari: «Файл», «Экспортировать», «Данные браузера в файл», затем выберите архив здесь"))
                     .font(.system(size: 12.5)).foregroundStyle(Palette.text2).fixedSize(horizontal: false, vertical: true).lineSpacing(2)
             }
             .padding(.horizontal, 14).padding(.vertical, 12)
@@ -67,7 +68,7 @@ struct ImportView: View {
         switch manager.phase {
         case .done(let summary):
             VStack(alignment: .leading, spacing: 4) {
-                Text(store.text("готово: ", "Готово: ") + summary.source).font(.system(size: 13, weight: .medium)).foregroundStyle(Palette.ink)
+                Text(browser.text("готово: ", "Готово: ") + summary.source).font(.system(size: 13, weight: .medium)).foregroundStyle(Palette.ink)
                 Text(counts(summary)).font(.system(size: 12.5).monospacedDigit()).foregroundStyle(Palette.text2)
                 ForEach(summary.problems, id: \.self) { Text($0).font(.system(size: 12)).foregroundStyle(Palette.text3).fixedSize(horizontal: false, vertical: true) }
             }
@@ -79,13 +80,14 @@ struct ImportView: View {
     }
 
     private func counts(_ s: ImportManager.Summary) -> String {
-        store.text("история: ", "История: ") + "\(s.history), " + store.text("закладки: ", "Закладки: ") + "\(s.bookmarks)"
+        browser.text("история: ", "История: ") + "\(s.history), " + browser.text("закладки: ", "Закладки: ") + "\(s.bookmarks)"
     }
 }
 
 /// One browser profile: the app's own icon, its name and the profile, a check when chosen.
 private struct SourceRow: View {
     @ObservedObject var store: Store
+    @ObservedObject var browser: BrowserModel
     @ObservedObject var manager: ImportManager
     let profile: ImportProfile
     let divider: Bool
@@ -128,16 +130,17 @@ private struct SourceRow: View {
 /// Less common inputs stay together, beside the main import action.
 private struct OtherImportSources: View {
     @ObservedObject var store: Store
+    @ObservedObject var browser: BrowserModel
     @ObservedObject var manager: ImportManager
     @State private var anchor = PopupAnchor()
 
     var body: some View {
-        Button(store.text("другие источники…", "Другие источники…")) {
+        Button(browser.text("другие источники…", "Другие источники…")) {
             guard let view = anchor.view, let window = view.window else { return }
             let rect = window.convertToScreen(view.convert(view.bounds, to: nil))
             MicaMenu.shared.show([
-                .item(store.text("выбрать папку профиля…", "Выбрать папку профиля…")) { manager.chooseProfile() },
-                .item(store.text("из файла экспорта…", "Из файла экспорта…")) { manager.chooseExport() }
+                .item(browser.text("выбрать папку профиля…", "Выбрать папку профиля…")) { manager.chooseProfile() },
+                .item(browser.text("из файла экспорта…", "Из файла экспорта…")) { manager.chooseExport() }
             ], below: rect, in: window)
         }
         .buttonStyle(MButtonStyle(kind: .secondary))

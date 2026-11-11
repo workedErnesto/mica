@@ -87,8 +87,16 @@ public sealed partial class Store
         settings.ColorValuesChanged += (_, _) => queue.TryEnqueue(ApplyAppearance);
     }
 
-    public string Text(string low, string regular) => Copy.Text(low, regular, Preferences.Lowercase, Preferences.Language);
-    public CultureInfo Culture => Preferences.Language.Culture();
+    /// <summary>Text that belongs to no window (jump list, dialogs without an owner, extension and update messages) takes the
+    /// language and case of the profile of the window in front. A window's own text follows its profile (BrowserModel.Text).</summary>
+    public string Text(string low, string regular) => TextStyle(Active?.ProfileId).Text(low, regular);
+    public CultureInfo Culture => TextStyle(Active?.ProfileId).Language.Culture();
+    /// <summary>Language and case of a profile's windows, without building its whole preferences.</summary>
+    public TextStyle TextStyle(Guid? profile)
+    {
+        var look = Profile(profile).Look;
+        return new TextStyle(look.Language ?? Preferences.Language, look.Lowercase ?? Preferences.Lowercase);
+    }
 
     public string CapabilityName(SiteCapability capability) => capability switch
     {
@@ -101,9 +109,8 @@ public sealed partial class Store
     public BrowserModel? Active => Windows.FirstOrDefault(w => w.IsKey)?.Model ?? Windows.LastOrDefault()?.Model;
 
     public Profile Profile(Guid? id) => Core.Profiles.Resolve(id, Profiles);
-    public string ProfileName(Profile profile) => Core.Profiles.DisplayName(profile, Preferences.Lowercase, Preferences.Language);
-    /// <summary>A name inside authored text: «…» in Russian, “…” in English.</summary>
-    public string Quoted(string text) => Preferences.Language == Language.En ? "“" + text + "”" : "«" + text + "»";
+    public string ProfileName(Profile profile) => TextStyle(Active?.ProfileId).ProfileName(profile);
+    public string Quoted(string text) => TextStyle(Active?.ProfileId).Quoted(text);
     /// <summary>Preferences in effect for a window of this profile: the application-wide ones with the profile's look over them.</summary>
     public Preferences Prefs(Guid? profile) => Profile(profile).Look.AppliedTo(Preferences);
     /// <summary>Preferences of the window in front. Settings and onboarding live in that window and edit its profile.</summary>
@@ -384,4 +391,14 @@ public sealed partial class Store
         foreach (var window in Windows.ToList()) window.CloseForQuit();
         Microsoft.UI.Xaml.Application.Current.Exit();
     }
+}
+
+/// <summary>Language and letter case of interface text, taken from a profile (macOS TextStyle).</summary>
+public readonly record struct TextStyle(Language Language, bool Lowercase)
+{
+    public string Text(string low, string regular) => Copy.Text(low, regular, Lowercase, Language);
+    /// <summary>A name inside authored text: «…» in Russian, “…” in English.</summary>
+    public string Quoted(string text) => Language == Language.En ? "“" + text + "”" : "«" + text + "»";
+    public string ProfileName(Profile profile) => Core.Profiles.DisplayName(profile, Lowercase, Language);
+    public CultureInfo Culture => Language.Culture();
 }

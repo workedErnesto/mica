@@ -149,7 +149,7 @@ public sealed partial class BrowserRoot : Grid
     FrameworkElement ResizeHandle(int sign, TabLayout side)
     {
         var handle = new ResizeGrip { Width = 6, Background = Palette.Clear, HorizontalAlignment = side == TabLayout.Left ? HorizontalAlignment.Right : HorizontalAlignment.Left };
-        handle.Tip(Store.Text("ширина боковой панели", "Ширина боковой панели"));
+        handle.Tip(browser.Text("ширина боковой панели", "Ширина боковой панели"));
         double start = 0, origin = 0;
         handle.PointerPressed += (_, e) => { handle.CapturePointer(e.Pointer); start = e.GetCurrentPoint(this).Position.X; origin = browser.Prefs.SidebarWidth; dragWidth = origin; e.Handled = true; };
         handle.PointerMoved += (_, e) =>

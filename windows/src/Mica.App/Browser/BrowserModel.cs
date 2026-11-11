@@ -63,6 +63,8 @@ public sealed partial class BrowserModel : Observable
     public Preferences Prefs => Store.Prefs(ProfileId);
     /// <summary>Edits this window's preferences: the look part goes to its profile.</summary>
     public void Change(Action<Preferences> edit) => Store.Change(ProfileId, edit);
+    /// <summary>Takes the page off the start page's own sites of this window's profile.</summary>
+    public void RemoveStartShortcut(string url) => Change(p => p.Start.Shortcuts.RemoveAll(s => s.Url == url));
 
     public BrowserModel(Store store, bool privateMode, Guid profile)
     {
@@ -72,7 +74,12 @@ public sealed partial class BrowserModel : Observable
         showOnboarding = !store.Preferences.OnboardingComplete && !privateMode;
     }
 
-    public string Text(string low, string regular) => Store.Text(low, regular);
+    /// <summary>Text of this window in its profile's language and case.</summary>
+    public TextStyle TextStyle => Store.TextStyle(ProfileId);
+    public string Text(string low, string regular) => TextStyle.Text(low, regular);
+    public string Quoted(string text) => TextStyle.Quoted(text);
+    public string ProfileName(Profile profile) => TextStyle.ProfileName(profile);
+    public System.Globalization.CultureInfo Culture => TextStyle.Culture;
     public Tab? Selected => Tabs.FirstOrDefault(t => t.Id == SelectedId);
     public SavedWindow Snapshot => new() { Tabs = Tabs.Select(t => t.Saved).ToList(), Selected = SelectedId, Profile = ProfileId };
 

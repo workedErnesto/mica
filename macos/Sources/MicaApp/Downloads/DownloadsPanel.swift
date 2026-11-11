@@ -18,7 +18,7 @@ struct DownloadsPanel: View {
                     ForEach(Self.days(items), id: \.day) { group in
                         Section {
                             ForEach(group.items) { item in DownloadRow(item: item, manager: manager, browser: browser).transition(.opacity) }
-                        } header: { DayHeader(day: group.day, store: browser.store) }
+                        } header: { DayHeader(day: group.day, store: browser.store, browser: browser) }
                     }
                 }
                 .animation(Motion.quick, value: items.map(\.id))
@@ -117,7 +117,7 @@ struct DownloadRow: View {
         case .running:
             return item.total > 0 ? size(item.bytes) + " " + browser.text("из", "из") + " " + size(item.total) : size(item.bytes)
         case .complete:
-            let time = item.date.map { $0.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(browser.store.locale)) }
+            let time = item.date.map { $0.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(browser.locale)) }
             return [time, item.size > 0 ? size(item.size) : nil].compactMap { $0 }.joined(separator: ", ")
         case .cancelled: return browser.text("отменено", "Отменено")
         case .failed: return item.failure ?? browser.text("ошибка загрузки", "Ошибка загрузки")

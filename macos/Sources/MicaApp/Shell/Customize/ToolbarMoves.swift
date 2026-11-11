@@ -16,14 +16,14 @@ enum ToolbarDrag {
 }
 
 extension ToolbarZone {
-    @MainActor func title(_ store: Store) -> String {
+    @MainActor func title(_ browser: BrowserModel) -> String {
         switch self {
-        case .leading: return store.text("у левого края", "У левого края")
-        case .leadingInner: return store.text("слева от адреса", "Слева от адреса")
-        case .trailingInner: return store.text("справа от адреса", "Справа от адреса")
-        case .trailing: return store.text("у правого края", "У правого края")
-        case .sidebar: return store.text("в боковой панели", "В боковой панели")
-        case .hidden: return store.text("не показывается", "Не показывается")
+        case .leading: return browser.text("у левого края", "У левого края")
+        case .leadingInner: return browser.text("слева от адреса", "Слева от адреса")
+        case .trailingInner: return browser.text("справа от адреса", "Справа от адреса")
+        case .trailing: return browser.text("у правого края", "У правого края")
+        case .sidebar: return browser.text("в боковой панели", "В боковой панели")
+        case .hidden: return browser.text("не показывается", "Не показывается")
         }
     }
 }
@@ -46,8 +46,8 @@ struct ToolbarMoves {
     func menu(_ item: ToolbarControl, layout: TabLayout) -> [MenuEntry] {
         let current = browser.prefs.toolbar.zone(of: item)
         return Self.placements.map { zone in
-            MenuEntry.item(zone.title(store), checked: current == zone) { move(item, to: zone) }
+            MenuEntry.item(zone.title(browser), checked: current == zone) { move(item, to: zone) }
                 .with(enabled: current != zone && !(zone == .sidebar && layout.horizontal))
-        } + [.divider, .item(store.text("убрать", "Убрать"), destructive: true) { move(item, to: .hidden) }.with(enabled: current != .hidden)]
+        } + [.divider, .item(browser.text("убрать", "Убрать"), destructive: true) { move(item, to: .hidden) }.with(enabled: current != .hidden)]
     }
 }

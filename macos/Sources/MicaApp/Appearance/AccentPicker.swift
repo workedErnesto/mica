@@ -13,10 +13,10 @@ struct AccentPicker: View {
             ForEach(Self.presets, id: \.self) { hex in
                 ColorDot(hex: hex, selected: accent == hex, size: 26) { withMotion(Motion.quick) { browser.prefs.accent = hex } }
             }
-            ColorWell(hex: accent, presets: Self.presets, label: store.text("другой цвет", "Другой цвет")) { browser.prefs.accent = $0 }
+            ColorWell(hex: accent, presets: Self.presets, label: browser.text("другой цвет", "Другой цвет")) { browser.prefs.accent = $0 }
             Text(accent).font(.system(size: 11, design: .monospaced)).foregroundStyle(Palette.text3).textSelection(.enabled)
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(store.text("акцентный цвет", "Акцентный цвет"))
+        .accessibilityLabel(browser.text("акцентный цвет", "Акцентный цвет"))
     }
 }

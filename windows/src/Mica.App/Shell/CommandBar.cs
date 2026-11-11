@@ -22,7 +22,7 @@ public sealed record Suggestion(string Id, SuggestionKind Kind, string Title, st
         var target = AddressParser.Resolve(query, engine);
         if (target.Kind == AddressKind.Web)
         {
-            var searchDetail = browser.Text("поиск: ", "Поиск: ") + engine.Title(store.Preferences.Language);
+            var searchDetail = browser.Text("поиск: ", "Поиск: ") + engine.Title(browser.TextStyle.Language);
             if (engine.IsSearch(target.Value, query)) result.Add(new("search", SuggestionKind.Search, query, searchDetail, target.Value));
             else
             {

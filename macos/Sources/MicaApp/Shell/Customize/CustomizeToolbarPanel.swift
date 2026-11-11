@@ -19,10 +19,10 @@ struct CustomizeToolbarPanel: View {
         ScrollView {
         VStack(alignment: .leading, spacing: Space.section) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(store.text("перетащите кнопки на панель", "Перетащите кнопки на панель")).font(.system(size: 15, weight: .medium)).foregroundStyle(Palette.ink)
+                Text(browser.text("перетащите кнопки на панель", "Перетащите кнопки на панель")).font(.system(size: 15, weight: .medium)).foregroundStyle(Palette.ink)
                 Text(layout.horizontal
-                     ? store.text("в шапке четыре места: у краёв окна и рядом с адресом. чтобы убрать кнопку, верните её сюда.", "В шапке четыре места: у краёв окна и рядом с адресом. Чтобы убрать кнопку, верните её сюда.")
-                     : store.text("в шапке четыре места: у краёв окна и рядом с адресом, ещё одно внизу боковой панели. чтобы убрать кнопку, верните её сюда.", "В шапке четыре места: у краёв окна и рядом с адресом, ещё одно внизу боковой панели. Чтобы убрать кнопку, верните её сюда."))
+                     ? browser.text("в шапке четыре места: у краёв окна и рядом с адресом. чтобы убрать кнопку, верните её сюда.", "В шапке четыре места: у краёв окна и рядом с адресом. Чтобы убрать кнопку, верните её сюда.")
+                     : browser.text("в шапке четыре места: у краёв окна и рядом с адресом, ещё одно внизу боковой панели. чтобы убрать кнопку, верните её сюда.", "В шапке четыре места: у краёв окна и рядом с адресом, ещё одно внизу боковой панели. Чтобы убрать кнопку, верните её сюда."))
                     .font(.system(size: 12)).foregroundStyle(Palette.text3).fixedSize(horizontal: false, vertical: true)
             }
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 96, maximum: 140), spacing: Space.small)], spacing: Space.small) {
@@ -37,15 +37,15 @@ struct CustomizeToolbarPanel: View {
             }
             VStack(alignment: .leading, spacing: Space.normal) {
                 HStack(spacing: Space.normal) {
-                    Text(store.text("длина адресной строки", "Длина адресной строки")).font(.system(size: 12.5)).foregroundStyle(Palette.text2)
-                    MSlider(value: $browser.prefs.toolbar.addressWidth, range: ToolbarLayout.addressRange, label: store.text("длина адресной строки", "Длина адресной строки")).frame(maxWidth: 180)
+                    Text(browser.text("длина адресной строки", "Длина адресной строки")).font(.system(size: 12.5)).foregroundStyle(Palette.text2)
+                    MSlider(value: $browser.prefs.toolbar.addressWidth, range: ToolbarLayout.addressRange, label: browser.text("длина адресной строки", "Длина адресной строки")).frame(maxWidth: 180)
                     Text(String(Int(toolbar.addressWidth.rounded())) + " pt").font(.system(size: 11.5).monospacedDigit()).foregroundStyle(Palette.text3).fixedSize()
                 }
                 HStack(spacing: Space.small) {
-                    Button(store.text("вернуть как было", "Вернуть как было")) { withMotion(Motion.quick) { browser.prefs.toolbar = ToolbarLayout() } }
+                    Button(browser.text("вернуть как было", "Вернуть как было")) { withMotion(Motion.quick) { browser.prefs.toolbar = ToolbarLayout() } }
                         .buttonStyle(MButtonStyle(kind: .ghost)).disabled(toolbar == ToolbarLayout()).fixedSize()
                     Spacer(minLength: 0)
-                    Button(store.text("готово", "Готово")) { browser.customizingToolbar = false }
+                    Button(browser.text("готово", "Готово")) { browser.customizingToolbar = false }
                         .buttonStyle(MButtonStyle(kind: .primary)).keyboardShortcut(.defaultAction).fixedSize()
                 }
             }
@@ -93,8 +93,8 @@ private struct PaletteTile: View {
                 .overlay(RoundedRectangle(cornerRadius: Radius.icon, style: .continuous).strokeBorder(placed ? Palette.hairlineStrong : Palette.hairline, style: StrokeStyle(lineWidth: 1, dash: placed ? [3, 2] : [])))
                 .shadow(color: placed ? .clear : Palette.shadow, radius: hover ? 4 : 2, y: 1)
             VStack(spacing: 1) {
-                Text(item.title(store)).font(.system(size: 11.5)).foregroundStyle(Palette.ink).lineLimit(1)
-                Text(placed ? zone.title(store) : store.text("можно добавить", "Можно добавить")).font(.system(size: 10.5)).foregroundStyle(Palette.text3).lineLimit(1)
+                Text(item.title(browser)).font(.system(size: 11.5)).foregroundStyle(Palette.ink).lineLimit(1)
+                Text(placed ? zone.title(browser) : browser.text("можно добавить", "Можно добавить")).font(.system(size: 10.5)).foregroundStyle(Palette.text3).lineLimit(1)
             }
         }
         .padding(.vertical, Space.small).padding(.horizontal, 4)
@@ -107,12 +107,12 @@ private struct PaletteTile: View {
         .animation(Motion.hover, value: hover)
         .animation(Motion.hover, value: zone)
         .accessibilityElement()
-        .accessibilityLabel(item.title(store) + ", " + zone.title(store))
-        .accessibilityAction(named: ToolbarZone.leading.title(store)) { moves.move(item, to: .leading) }
-        .accessibilityAction(named: ToolbarZone.leadingInner.title(store)) { moves.move(item, to: .leadingInner) }
-        .accessibilityAction(named: ToolbarZone.trailingInner.title(store)) { moves.move(item, to: .trailingInner) }
-        .accessibilityAction(named: ToolbarZone.trailing.title(store)) { moves.move(item, to: .trailing) }
-        .accessibilityAction(named: ToolbarZone.sidebar.title(store)) { moves.move(item, to: .sidebar) }
-        .accessibilityAction(named: store.text("убрать", "Убрать")) { moves.move(item, to: .hidden) }
+        .accessibilityLabel(item.title(browser) + ", " + zone.title(browser))
+        .accessibilityAction(named: ToolbarZone.leading.title(browser)) { moves.move(item, to: .leading) }
+        .accessibilityAction(named: ToolbarZone.leadingInner.title(browser)) { moves.move(item, to: .leadingInner) }
+        .accessibilityAction(named: ToolbarZone.trailingInner.title(browser)) { moves.move(item, to: .trailingInner) }
+        .accessibilityAction(named: ToolbarZone.trailing.title(browser)) { moves.move(item, to: .trailing) }
+        .accessibilityAction(named: ToolbarZone.sidebar.title(browser)) { moves.move(item, to: .sidebar) }
+        .accessibilityAction(named: browser.text("убрать", "Убрать")) { moves.move(item, to: .hidden) }
     }
 }

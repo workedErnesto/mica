@@ -35,8 +35,8 @@ struct ToolbarDropZone: View {
         } isTargeted: { targeted = $0 }
         .animation(Motion.quick, value: items)
         .animation(Motion.hover, value: targeted)
-        .help(zone.title(store))
+        .help(zone.title(browser))
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(zone.title(store))
+        .accessibilityLabel(zone.title(browser))
     }
 }

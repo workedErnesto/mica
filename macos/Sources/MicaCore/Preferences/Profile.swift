@@ -1,6 +1,7 @@
 import Foundation
 
-/// What a profile changes: the start page, the window arrangement, theme and colours, and the greeting name.
+/// What a profile changes: the start page, the window arrangement, theme and colours, the greeting name, and the language
+/// and letter case of the interface text.
 /// Passwords, cookies, history, bookmarks, downloads and extensions are shared by every profile.
 /// The keys are those of `Preferences`, so preferences saved before profiles decode straight into the standard profile.
 public struct ProfileLook: Codable, Equatable, Sendable {
@@ -17,12 +18,22 @@ public struct ProfileLook: Codable, Equatable, Sendable {
     public var start: StartPage
     public var sidebarCollapsed: Bool
     public var sidebarWidth: Double
+    /// Interface language and letter case of this profile's windows. `nil` only in profiles saved before they had their own,
+    /// which keep following the application-wide setting until the store fills them in.
+    public var language: Language?
+    public var lowercase: Bool?
 
     public init() { self.init(Preferences()) }
     public init(_ p: Preferences) {
         layout = p.layout; theme = p.theme; customBase = p.customBase; accent = p.accent; customTint = p.customTint
         frosted = p.frosted; transparency = p.transparency; userName = p.userName; greetByName = p.greetByName
         toolbar = p.toolbar; start = p.start; sidebarCollapsed = p.sidebarCollapsed; sidebarWidth = p.sidebarWidth
+        language = p.language; lowercase = p.lowercase
+    }
+    /// Fills a missing language or case from `source`.
+    public mutating func adopt(_ source: ProfileLook) {
+        if language == nil { language = source.language }
+        if lowercase == nil { lowercase = source.lowercase }
     }
     /// The application-wide preferences with this profile's part laid over them.
     public func applied(to base: Preferences) -> Preferences {
@@ -30,18 +41,25 @@ public struct ProfileLook: Codable, Equatable, Sendable {
         p.layout = layout; p.theme = theme; p.customBase = customBase; p.accent = accent; p.customTint = customTint
         p.frosted = frosted; p.transparency = transparency; p.userName = userName; p.greetByName = greetByName
         p.toolbar = toolbar; p.start = start; p.sidebarCollapsed = sidebarCollapsed; p.sidebarWidth = sidebarWidth
+        p.language = language ?? base.language; p.lowercase = lowercase ?? base.lowercase
         return p
     }
     /// Decoding goes through `Preferences`, which already repairs and clamps every one of these values.
-    public init(from decoder: Decoder) throws { self.init(try Preferences(from: decoder)) }
-    private enum Keys: String, CodingKey { case layout, theme, customBase, accent, customTint, frosted, transparency, userName, greetByName, toolbar, start, sidebarCollapsed, sidebarWidth }
+    /// A language or case the file does not have stays `nil` instead of taking the `Preferences` default.
+    public init(from decoder: Decoder) throws {
+        self.init(try Preferences(from: decoder))
+        let c = try decoder.container(keyedBy: Keys.self)
+        language = try? c.decodeIfPresent(Language.self, forKey: .language)
+        lowercase = try? c.decodeIfPresent(Bool.self, forKey: .lowercase)
+    }
+    private enum Keys: String, CodingKey { case layout, theme, customBase, accent, customTint, frosted, transparency, userName, greetByName, toolbar, start, sidebarCollapsed, sidebarWidth, language, lowercase }
     public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: Keys.self)
         try c.encode(layout, forKey: .layout); try c.encode(theme, forKey: .theme); try c.encode(customBase, forKey: .customBase)
         try c.encode(accent, forKey: .accent); try c.encode(customTint, forKey: .customTint); try c.encode(frosted, forKey: .frosted)
         try c.encode(transparency, forKey: .transparency); try c.encode(userName, forKey: .userName); try c.encode(greetByName, forKey: .greetByName)
         try c.encode(toolbar, forKey: .toolbar); try c.encode(start, forKey: .start); try c.encode(sidebarCollapsed, forKey: .sidebarCollapsed)
-        try c.encode(sidebarWidth, forKey: .sidebarWidth)
+        try c.encode(sidebarWidth, forKey: .sidebarWidth); try c.encodeIfPresent(language, forKey: .language); try c.encodeIfPresent(lowercase, forKey: .lowercase)
     }
 }
 
@@ -100,6 +118,9 @@ public enum Profiles {
         var result = list.filter { seen.insert($0.id).inserted }
         var standard = result.first { $0.isStandard } ?? .standard(look: fallback)
         result.removeAll { $0.isStandard }
+        // Profiles saved before they had their own language and case take the application-wide ones.
+        for index in result.indices { result[index].look.adopt(fallback) }
+        standard.look.adopt(fallback)
         standard.pinned = standard.pinned.filter(\.pinned)
         return Array(([standard] + result).prefix(limit))
     }

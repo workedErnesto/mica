@@ -1,7 +1,7 @@
 namespace Mica.Core;
 
-/// <summary>What a profile changes: the start page, the window arrangement, theme and colours, and the greeting name
-/// (macOS ProfileLook). Passwords, cookies, history, bookmarks, downloads and extensions are shared by every profile.</summary>
+/// <summary>What a profile changes: the start page, the window arrangement, theme and colours, the greeting name, and the
+/// language and letter case of the interface text (macOS ProfileLook). Passwords, cookies, history, bookmarks, downloads and extensions are shared by every profile.</summary>
 public sealed class ProfileLook
 {
     public TabLayout Layout { get; set; } = TabLayout.Left;
@@ -17,12 +17,16 @@ public sealed class ProfileLook
     public StartPage Start { get; set; } = new();
     public bool SidebarCollapsed { get; set; }
     public double SidebarWidth { get; set; } = 248;
+    /// <summary>Interface language and letter case of this profile's windows. Null only in profiles saved before they had their
+    /// own, which follow the application-wide setting until Profiles.Normalized fills them in.</summary>
+    public Language? Language { get; set; }
+    public bool? Lowercase { get; set; }
 
     public static ProfileLook From(Preferences p) => new()
     {
         Layout = p.Layout, Theme = p.Theme, CustomBase = p.CustomBase, Accent = p.Accent, CustomTint = p.CustomTint, Frosted = p.Frosted,
         Transparency = p.Transparency, UserName = p.UserName, GreetByName = p.GreetByName, SidebarCollapsed = p.SidebarCollapsed, SidebarWidth = p.SidebarWidth,
-        Toolbar = p.Toolbar.Clone(), Start = p.Clone().Start,
+        Toolbar = p.Toolbar.Clone(), Start = p.Clone().Start, Language = p.Language, Lowercase = p.Lowercase,
     };
 
     /// <summary>A copy of the application-wide preferences with this profile's part laid over them.</summary>
@@ -33,6 +37,7 @@ public sealed class ProfileLook
         p.Transparency = Transparency; p.UserName = UserName; p.GreetByName = GreetByName; p.SidebarCollapsed = SidebarCollapsed; p.SidebarWidth = SidebarWidth;
         p.Toolbar = Toolbar.Clone();
         p.Start = Start;
+        p.Language = Language ?? base_.Language; p.Lowercase = Lowercase ?? base_.Lowercase;
         return p.Clone().Sanitized();
     }
 
@@ -43,7 +48,15 @@ public sealed class ProfileLook
         var repaired = From(AppliedTo(new Preferences()));
         Toolbar = repaired.Toolbar; Start = repaired.Start; Accent = repaired.Accent; CustomTint = repaired.CustomTint; Transparency = repaired.Transparency;
         UserName = repaired.UserName; SidebarWidth = repaired.SidebarWidth; CustomBase = repaired.CustomBase;
+        if (Language is { } language && !Enum.IsDefined(language)) Language = null;
         return this;
+    }
+
+    /// <summary>Fills a missing language or case from source.</summary>
+    public void Adopt(ProfileLook source)
+    {
+        Language ??= source.Language;
+        Lowercase ??= source.Lowercase;
     }
 
     public bool SameAs(ProfileLook other) =>
@@ -118,6 +131,8 @@ public static class Profiles
         var unique = list.Where(p => p is not null && seen.Add(p.Id)).Select(p => p.Sanitized()).ToList();
         var standard = unique.FirstOrDefault(p => p.IsStandard) ?? Profile.Standard(fallback);
         unique.RemoveAll(p => p.IsStandard);
+        // Profiles saved before they had their own language and case take the application-wide ones.
+        if (fallback is not null) foreach (var p in unique.Append(standard)) p.Look.Adopt(fallback);
         return [.. new[] { standard }.Concat(unique).Take(Limit)];
     }
 

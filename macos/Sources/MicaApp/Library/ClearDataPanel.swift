@@ -14,29 +14,29 @@ struct ClearDataPanel: View {
         let visits = History.count(store.history, since: current.period.start(before: Date()))
         VStack(alignment: .leading, spacing: Space.section) {
             VStack(alignment: .leading, spacing: Space.micro) {
-                Text(store.text("очистить данные", "Очистить данные")).font(.system(size: 20, weight: .regular)).tracking(-0.4).foregroundStyle(Palette.ink)
-                Text(store.text("только обычные окна. закладки и открытые вкладки останутся", "Только обычные окна. Закладки и открытые вкладки останутся")).font(.system(size: 12.5)).foregroundStyle(Palette.text2)
+                Text(browser.text("очистить данные", "Очистить данные")).font(.system(size: 20, weight: .regular)).tracking(-0.4).foregroundStyle(Palette.ink)
+                Text(browser.text("только обычные окна. закладки и открытые вкладки останутся", "Только обычные окна. Закладки и открытые вкладки останутся")).font(.system(size: 12.5)).foregroundStyle(Palette.text2)
             }
             VStack(alignment: .leading, spacing: Space.small) {
-                Text(store.text("период", "Период")).font(.system(size: 12, weight: .medium)).foregroundStyle(Palette.text2)
+                Text(browser.text("период", "Период")).font(.system(size: 12, weight: .medium)).foregroundStyle(Palette.text2)
                 Segmented(selection: choice.period, options: [
-                    (.hour, store.text("час", "Час")),
-                    (.day, store.text("сутки", "Сутки")),
-                    (.week, store.text("неделя", "Неделя")),
-                    (.month, store.text("4 недели", "4 недели")),
-                    (.all, store.text("всё время", "Всё время")),
-                ], width: 424, label: store.text("период", "Период"))
+                    (.hour, browser.text("час", "Час")),
+                    (.day, browser.text("сутки", "Сутки")),
+                    (.week, browser.text("неделя", "Неделя")),
+                    (.month, browser.text("4 недели", "4 недели")),
+                    (.all, browser.text("всё время", "Всё время")),
+                ], width: 424, label: browser.text("период", "Период"))
             }
             SettingsGroup {
-                option(choice.history, store.text("история посещений", "История посещений"), visits == 0 ? store.text("за этот период записей нет", "За этот период записей нет") : count(visits), divider: true)
-                option(choice.siteData, store.text("cookie и данные сайтов", "Cookie и данные сайтов"), store.text("вы выйдете из аккаунтов на сайтах, открытых за этот период", "Вы выйдете из аккаунтов на сайтах, открытых за этот период"), divider: true)
-                option(choice.cache, store.text("кэш", "Кэш"), store.text("страницы загрузятся заново, это безопасно", "Страницы загрузятся заново, это безопасно"), divider: true)
-                option(choice.permissions, store.text("разрешения сайтов", "Разрешения сайтов"), store.text("камера, микрофон и уведомления, за всё время: у решений нет даты", "Камера, микрофон и уведомления, за всё время: у решений нет даты"), divider: false)
+                option(choice.history, browser.text("история посещений", "История посещений"), visits == 0 ? browser.text("за этот период записей нет", "За этот период записей нет") : count(visits), divider: true)
+                option(choice.siteData, browser.text("cookie и данные сайтов", "Cookie и данные сайтов"), browser.text("вы выйдете из аккаунтов на сайтах, открытых за этот период", "Вы выйдете из аккаунтов на сайтах, открытых за этот период"), divider: true)
+                option(choice.cache, browser.text("кэш", "Кэш"), browser.text("страницы загрузятся заново, это безопасно", "Страницы загрузятся заново, это безопасно"), divider: true)
+                option(choice.permissions, browser.text("разрешения сайтов", "Разрешения сайтов"), browser.text("камера, микрофон и уведомления, за всё время: у решений нет даты", "Камера, микрофон и уведомления, за всё время: у решений нет даты"), divider: false)
             }
             HStack(spacing: Space.small) {
                 Spacer()
-                Button(store.text("отмена", "Отмена")) { close() }.buttonStyle(MButtonStyle(kind: .ghost)).keyboardShortcut(.cancelAction)
-                Button(working ? store.text("очищаем…", "Очищаем…") : store.text("очистить", "Очистить")) { run() }
+                Button(browser.text("отмена", "Отмена")) { close() }.buttonStyle(MButtonStyle(kind: .ghost)).keyboardShortcut(.cancelAction)
+                Button(working ? browser.text("очищаем…", "Очищаем…") : browser.text("очистить", "Очистить")) { run() }
                     .buttonStyle(MButtonStyle(kind: .destructive))
                     .disabled(current.isEmpty || working)
                     .keyboardShortcut(.defaultAction)
@@ -57,7 +57,7 @@ struct ClearDataPanel: View {
     }
 
     private func count(_ n: Int) -> String {
-        if store.preferences.language == .en { return "\(n) " + (n == 1 ? "entry" : "entries") }
+        if browser.prefs.language == .en { return "\(n) " + (n == 1 ? "entry" : "entries") }
         let ten = n % 10, hundred = n % 100
         let word = ten == 1 && hundred != 11 ? "запись" : (2...4).contains(ten) && !(12...14).contains(hundred) ? "записи" : "записей"
         return "\(n) " + word

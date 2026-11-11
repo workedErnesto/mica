@@ -7,7 +7,7 @@ import MicaCore
 enum ProfileMenu {
     static func entries(browser: BrowserModel, store: Store) -> [MenuEntry] {
         var entries = store.profiles.map { profile in
-            MenuEntry.profile(store.profileName(profile), profile: profile, checked: profile.id == browser.profileID) {
+            MenuEntry.profile(browser.profileName(profile), profile: profile, checked: profile.id == browser.profileID, secondary: choices(profile.id, browser: browser, store: store)) {
                 Task { await open(profile.id, browser: browser, store: store) }
             }
         }
@@ -17,6 +17,16 @@ enum ProfileMenu {
         }
         entries.append(.item(browser.text("настроить профили…", "Настроить профили…"), symbol: "gearshape") { edit(browser: browser, profile: browser.profileID) })
         return entries
+    }
+    /// Right click choices of a profile row: where to open it, regardless of the remembered answer.
+    static func choices(_ id: UUID, browser: BrowserModel, store: Store) -> [MenuEntry] {
+        let here = id == browser.profileID
+        return [
+            .item(browser.text("открыть в новом окне", "Открыть в новом окне"), symbol: "macwindow.badge.plus") { store.openProfile(id, newWindow: true) },
+            .item(browser.text("открыть в этом окне", "Открыть в этом окне"), symbol: "macwindow", enabled: !here) { withMotion(Motion.panel) { browser.switchProfile(to: id) } },
+            .divider,
+            .item(browser.text("настроить…", "Настроить…"), symbol: "gearshape") { edit(browser: browser, profile: id) },
+        ]
     }
     /// Opens a profile chosen in the menu as the user set it up: in this window, in a new one, or after asking in
     /// ProfileOpenPrompt. Switching this window swaps its pinned tabs for the profile's, so until an answer is
@@ -45,7 +55,7 @@ struct ProfileButton: View {
     @State private var hover = false
     var body: some View {
         let profile = browser.profile
-        let label = browser.text("профиль: ", "Профиль: ") + store.profileName(profile)
+        let label = browser.text("профиль: ", "Профиль: ") + browser.profileName(profile)
         Button {
             guard let view = anchor.view, let window = view.window else { return }
             let rect = window.convertToScreen(view.convert(view.bounds, to: nil))

@@ -54,7 +54,7 @@ struct LayoutPreview: View {
         .animation(Motion.panel, value: collapsed)
         .animation(Motion.hover, value: dark)
         .animation(Motion.hover, value: browser.prefs.accent)
-        .accessibilityElement().accessibilityLabel(store.text("предпросмотр оформления и раскладки", "Предпросмотр оформления и раскладки"))
+        .accessibilityElement().accessibilityLabel(browser.text("предпросмотр оформления и раскладки", "Предпросмотр оформления и раскладки"))
     }
     private var address: some View {
         RoundedRectangle(cornerRadius: 4, style: .continuous).fill(Palette.track).frame(width: 130, height: 11)

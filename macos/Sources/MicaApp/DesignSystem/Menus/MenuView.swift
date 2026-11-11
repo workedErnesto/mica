@@ -7,14 +7,13 @@ struct MenuView: View {
     let choose: (Int) -> Void
     @Environment(\.accessibilityReduceMotion) private var reduced
     var body: some View {
-        let checks = model.entries.contains { $0.checked }
         let symbols = model.entries.contains { $0.symbol != nil || $0.profile != nil }
         VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(model.entries.enumerated()), id: \.element.id) { index, entry in
                 if entry.kind == .divider {
                     Rectangle().fill(Palette.hairline).frame(height: 1).padding(.vertical, 4).padding(.horizontal, 8)
                 } else {
-                    MenuRow(entry: entry, highlighted: model.highlighted == index, checks: checks, symbols: symbols) { choose(index) }
+                    MenuRow(entry: entry, highlighted: model.highlighted == index, symbols: symbols) { choose(index) }
                         .onHover { inside in
                             if inside { model.highlighted = entry.enabled ? index : nil } else if model.highlighted == index { model.highlighted = nil }
                         }
@@ -41,21 +40,20 @@ struct MenuView: View {
 private struct MenuRow: View {
     let entry: MenuEntry
     let highlighted: Bool
-    let checks: Bool
     let symbols: Bool
     let action: () -> Void
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                if checks {
-                    Image(systemName: "checkmark").font(.system(size: 10, weight: .semibold)).frame(width: 12).opacity(entry.checked ? 1 : 0)
-                }
                 if symbols {
                     if let profile = entry.profile { ProfileMark(profile: profile, size: 16) }
                     else if let symbol = entry.symbol { Glyph(name: symbol, size: 12).frame(width: 16) }
                     else { Color.clear.frame(width: 16, height: 1) }
                 }
                 Text(entry.title).font(.system(size: 13)).lineLimit(1).fixedSize()
+                if entry.checked {
+                    Image(systemName: "checkmark").font(.system(size: 10, weight: .semibold))
+                }
                 Spacer(minLength: 0)
             }
             .foregroundStyle(!entry.enabled ? Palette.text3.opacity(0.7) : entry.destructive ? Palette.danger : Palette.ink)

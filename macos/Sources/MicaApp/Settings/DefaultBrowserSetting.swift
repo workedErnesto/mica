@@ -4,15 +4,16 @@ import SwiftUI
 /// The same optional action is available during onboarding and in settings.
 struct DefaultBrowserSetting: View {
     @ObservedObject var store: Store
+    @ObservedObject var browser: BrowserModel
     @State private var isDefault = false
     @State private var busy = false
     @State private var failed = false
 
     var body: some View {
-        SettingsGroup(title: store.text("браузер по умолчанию", "Браузер по умолчанию")) {
-            SettingRow(title: isDefault ? store.text("mica открывает веб-ссылки", "mica открывает веб-ссылки") : store.text("открывать веб-ссылки в mica", "Открывать веб-ссылки в mica"), divider: false) {
+        SettingsGroup(title: browser.text("браузер по умолчанию", "Браузер по умолчанию")) {
+            SettingRow(title: isDefault ? browser.text("mica открывает веб-ссылки", "mica открывает веб-ссылки") : browser.text("открывать веб-ссылки в mica", "Открывать веб-ссылки в mica"), divider: false) {
                 if !isDefault {
-                    Button(store.text("сделать основным", "Сделать основным")) { setDefault() }
+                    Button(browser.text("сделать основным", "Сделать основным")) { setDefault() }
                         .buttonStyle(MButtonStyle(kind: .secondary, compact: true)).disabled(busy)
                 }
             }
@@ -20,7 +21,7 @@ struct DefaultBrowserSetting: View {
         .onAppear { refresh() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in refresh() }
         if failed && !isDefault {
-            Text(store.text("не удалось изменить браузер по умолчанию. попробуйте ещё раз или откройте системные настройки", "Не удалось изменить браузер по умолчанию. Попробуйте ещё раз или откройте системные настройки"))
+            Text(browser.text("не удалось изменить браузер по умолчанию. попробуйте ещё раз или откройте системные настройки", "Не удалось изменить браузер по умолчанию. Попробуйте ещё раз или откройте системные настройки"))
                 .font(.system(size: 12.5)).foregroundStyle(Palette.danger).fixedSize(horizontal: false, vertical: true)
         }
     }

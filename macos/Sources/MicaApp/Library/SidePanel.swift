@@ -39,7 +39,7 @@ struct SidePanel: View {
     @ViewBuilder private var visits: some View {
         MTextField(placeholder: browser.text("поиск", "Поиск"), text: $query, symbol: "magnifyingglass")
         if panel == .history && browser.privateMode { Text(browser.text("история окна инкогнито не записывается", "История окна инкогнито не записывается")).font(.system(size: 11.5)).foregroundStyle(Palette.text3) }
-        if panel == .history && store.profiles.count > 1 && !browser.privateMode { ProfileFilter(selection: $profileFilter, store: store) }
+        if panel == .history && store.profiles.count > 1 && !browser.privateMode { ProfileFilter(selection: $profileFilter, store: store, browser: browser) }
         let filter = store.profiles.contains { $0.id == profileFilter } ? profileFilter : nil
         let visits = (panel == .history ? store.history : store.bookmarks).filter { visit in
             (query.isEmpty || visit.title.localizedCaseInsensitiveContains(query) || visit.url.absoluteString.localizedCaseInsensitiveContains(query))
@@ -54,7 +54,7 @@ struct SidePanel: View {
                         ForEach(History.days(visits), id: \.day) { group in
                             Section {
                                 ForEach(group.visits) { visit in VisitRow(visit: visit, panel: panel, browser: browser, store: store).transition(.opacity) }
-                            } header: { DayHeader(day: group.day, store: store) }
+                            } header: { DayHeader(day: group.day, store: store, browser: browser) }
                         }
                     } else {
                         ForEach(visits) { visit in VisitRow(visit: visit, panel: panel, browser: browser, store: store).transition(.opacity) }
@@ -77,6 +77,7 @@ struct SidePanel: View {
 struct DayHeader: View {
     let day: Date?
     @ObservedObject var store: Store
+    @ObservedObject var browser: BrowserModel
     var body: some View {
         Text(title).font(.system(size: 11.5, weight: .medium)).foregroundStyle(Palette.text3)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -85,17 +86,17 @@ struct DayHeader: View {
             .accessibilityAddTraits(.isHeader)
     }
     private var title: String {
-        guard let day else { return store.text("раньше", "Раньше") }
+        guard let day else { return browser.text("раньше", "Раньше") }
         let calendar = Calendar.current
-        if calendar.isDateInToday(day) { return store.text("сегодня", "Сегодня") }
-        if calendar.isDateInYesterday(day) { return store.text("вчера", "Вчера") }
+        if calendar.isDateInToday(day) { return browser.text("сегодня", "Сегодня") }
+        if calendar.isDateInYesterday(day) { return browser.text("вчера", "Вчера") }
         let format = DateFormatter()
-        format.locale = store.locale
+        format.locale = browser.locale
         let sameYear = calendar.component(.year, from: day) == calendar.component(.year, from: Date())
         format.setLocalizedDateFormatFromTemplate(sameYear ? "EEEEdMMMM" : "EEEEdMMMMy")
         let text = format.string(from: day)
         // Weekday and month names are authored words, so they follow the case style.
-        return store.preferences.lowercase ? text.lowercased(with: store.locale) : text.prefix(1).uppercased(with: store.locale) + text.dropFirst()
+        return browser.prefs.lowercase ? text.lowercased(with: browser.locale) : text.prefix(1).uppercased(with: browser.locale) + text.dropFirst()
     }
 }
 
@@ -103,19 +104,20 @@ struct DayHeader: View {
 private struct ProfileFilter: View {
     @Binding var selection: UUID?
     @ObservedObject var store: Store
+    @ObservedObject var browser: BrowserModel
     @Namespace private var chip
     var body: some View {
         ScrollView(.horizontal) {
             HStack(spacing: Space.micro) {
-                FilterChip(title: store.text("все", "Все"), profile: nil, selected: selection == nil, namespace: chip) { withMotion(Motion.quick) { selection = nil } }
+                FilterChip(title: browser.text("все", "Все"), profile: nil, selected: selection == nil, namespace: chip) { withMotion(Motion.quick) { selection = nil } }
                 ForEach(store.profiles) { profile in
-                    FilterChip(title: store.profileName(profile), profile: profile, selected: selection == profile.id, namespace: chip) { withMotion(Motion.quick) { selection = profile.id } }
+                    FilterChip(title: browser.profileName(profile), profile: profile, selected: selection == profile.id, namespace: chip) { withMotion(Motion.quick) { selection = profile.id } }
                 }
             }
         }
         .scrollIndicators(.never)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(store.text("профиль", "Профиль"))
+        .accessibilityLabel(browser.text("профиль", "Профиль"))
     }
 }
 

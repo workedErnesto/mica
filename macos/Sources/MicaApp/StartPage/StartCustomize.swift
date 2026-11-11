@@ -36,6 +36,7 @@ struct StartBlockHeader<Order: View>: View {
     let editing: Bool
     @Binding var shown: Bool
     @ObservedObject var store: Store
+    @ObservedObject var browser: BrowserModel
     @ViewBuilder var order: Order
     var body: some View {
         HStack(spacing: Space.small) {
@@ -44,7 +45,7 @@ struct StartBlockHeader<Order: View>: View {
             if editing {
                 HStack(spacing: Space.small) {
                     order
-                    BareSwitch(label: store.text("показывать", "Показывать") + ": " + title, isOn: $shown)
+                    BareSwitch(label: browser.text("показывать", "Показывать") + ": " + title, isOn: $shown)
                 }
                 .transition(.opacity)
             }
@@ -55,21 +56,22 @@ struct StartBlockHeader<Order: View>: View {
 }
 
 extension StartBlockHeader where Order == EmptyView {
-    init(title: String, editing: Bool, shown: Binding<Bool>, store: Store) {
-        self.init(title: title, editing: editing, shown: shown, store: store) { EmptyView() }
+    init(title: String, editing: Bool, shown: Binding<Bool>, store: Store, browser: BrowserModel) {
+        self.init(title: title, editing: editing, shown: shown, store: store, browser: browser) { EmptyView() }
     }
 }
 
 /// Quiet entry to customizing, in the corner of the start page.
 struct StartCustomizeButton: View {
     @ObservedObject var store: Store
+    @ObservedObject var browser: BrowserModel
     let action: () -> Void
     @State private var hover = false
     var body: some View {
         Button(action: action) {
             HStack(spacing: 6) {
                 Image(systemName: "slider.horizontal.3").font(.system(size: 11.5, weight: .medium))
-                Text(store.text("настроить", "Настроить")).font(.system(size: 12))
+                Text(browser.text("настроить", "Настроить")).font(.system(size: 12))
             }
             .foregroundStyle(hover ? Palette.ink : Palette.text3)
             .padding(.horizontal, 10).frame(height: 28)
@@ -79,7 +81,7 @@ struct StartCustomizeButton: View {
         .buttonStyle(PressStyle(scale: 0.96))
         .onHover { hover = $0 }
         .animation(Motion.hover, value: hover)
-        .help(store.text("настроить начальную страницу", "Настроить начальную страницу"))
+        .help(browser.text("настроить начальную страницу", "Настроить начальную страницу"))
     }
 }
 
@@ -92,18 +94,18 @@ struct StartCustomizeBar: View {
         let defaults = StartPage()
         let changed = start.sections != defaults.sections || start.wordmark != defaults.wordmark || start.frequentCount != defaults.frequentCount
         HStack(spacing: Space.small) {
-            Text(store.text("сайтов в разделе", "Сайтов в разделе"))
+            Text(browser.text("сайтов в разделе", "Сайтов в разделе"))
                 .font(.system(size: 12)).foregroundStyle(Palette.text2).fixedSize()
-            Segmented(selection: $browser.prefs.start.frequentCount, options: StartPage.frequentChoices.map { ($0, String($0)) }, compact: true, label: store.text("сайтов в разделе", "Сайтов в разделе"))
+            Segmented(selection: $browser.prefs.start.frequentCount, options: StartPage.frequentChoices.map { ($0, String($0)) }, compact: true, label: browser.text("сайтов в разделе", "Сайтов в разделе"))
             Spacer(minLength: Space.small)
-            IconButton(symbol: "arrow.counterclockwise", label: store.text("вернуть как было", "Вернуть как было"), size: 28) {
+            IconButton(symbol: "arrow.counterclockwise", label: browser.text("вернуть как было", "Вернуть как было"), size: 28) {
                 withMotion(Motion.quick) {
                     browser.prefs.start.sections = defaults.sections
                     browser.prefs.start.wordmark = defaults.wordmark
                     browser.prefs.start.frequentCount = defaults.frequentCount
                 }
             }.disabled(!changed)
-            IconButton(symbol: "gearshape", label: store.text("все настройки", "Все настройки"), size: 28) {
+            IconButton(symbol: "gearshape", label: browser.text("все настройки", "Все настройки"), size: 28) {
                 browser.customizingStart = false; browser.settingsSection = .start; browser.showSettings = true
             }
             done
@@ -113,7 +115,7 @@ struct StartCustomizeBar: View {
         .modifier(RaisedSurface(radius: Radius.panel))
     }
     private var done: some View {
-        Button(store.text("готово", "Готово")) { withMotion(Motion.panel) { browser.customizingStart = false } }
+        Button(browser.text("готово", "Готово")) { withMotion(Motion.panel) { browser.customizingStart = false } }
             .buttonStyle(MButtonStyle(kind: .primary, compact: true)).keyboardShortcut(.defaultAction).fixedSize()
     }
 }

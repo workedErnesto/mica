@@ -230,7 +230,7 @@ public sealed partial class DownloadsPanel : Grid
         }
         foreach (var (day, group) in Days(items))
         {
-            list.Children.Add(Library.SidePanel.DayHeader(day, browser.Store));
+            list.Children.Add(Library.SidePanel.DayHeader(day, browser));
             foreach (var item in group) list.Children.Add(new DownloadRow(item, browser));
         }
     }

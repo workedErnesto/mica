@@ -140,7 +140,7 @@ public sealed partial class StartScreen : Grid
     void Render()
     {
         var editing = browser.CustomizingStart;
-        field.PlaceholderText = browser.Text("поиск в ", "Поиск в ") + Store.Preferences.Search.Title(Store.Preferences.Language) + browser.Text(" или адрес", " или адрес");
+        field.PlaceholderText = browser.Text("поиск в ", "Поиск в ") + Store.Preferences.Search.Title(browser.TextStyle.Language) + browser.Text(" или адрес", " или адрес");
         fieldSurface.Opacity = editing ? 0.5 : 1; fieldSurface.IsHitTestVisible = !editing;
         column.Padding = new Thickness(Space.Large, 96, Space.Large, editing ? 128 : 64);
         var start = browser.Prefs.Start;
@@ -160,7 +160,7 @@ public sealed partial class StartScreen : Grid
         else
         {
             corner.HorizontalAlignment = HorizontalAlignment.Right;
-            var customize = new MButton(Store.Text("настроить", "Настроить"), ButtonKind.Ghost, compact: true).Tip(Store.Text("настроить начальную страницу", "Настроить начальную страницу"));
+            var customize = new MButton(browser.Text("настроить", "Настроить"), ButtonKind.Ghost, compact: true).Tip(browser.Text("настроить начальную страницу", "Настроить начальную страницу"));
             customize.Click += () => browser.CustomizingStart = true;
             corner.Children.Add(customize);
         }
@@ -183,7 +183,7 @@ public sealed partial class StartScreen : Grid
                 // While customizing the greeting gets the same title row as the sections, so the switch never covers the text.
                 text.Opacity = options.Wordmark ? 1 : 0.4;
                 text.HorizontalAlignment = HorizontalAlignment.Center; text.Margin = new Thickness(StartLayout.Inset, 0, StartLayout.Inset, 0);
-                var title = new StartBlockHeader(greeting is null ? Store.Text("знак mica", "Знак mica") : Store.Text("приветствие", "Приветствие"), true, options.Wordmark, Store, on => Store.Change(p => p.Start.Wordmark = on));
+                var title = new StartBlockHeader(greeting is null ? browser.Text("знак mica", "Знак mica") : browser.Text("приветствие", "Приветствие"), true, options.Wordmark, Store, on => Store.Change(p => p.Start.Wordmark = on));
                 header.Children.Add(new StartEditFrame(Ui.V(Space.Normal, title, text), true));
                 return;
             }
@@ -326,19 +326,19 @@ public sealed partial class StartCustomizeBar : Grid
         var start = browser.Prefs.Start;
         var defaults = new Mica.Core.StartPage();
         MaxWidth = 520;
-        var count = new Segmented<int>(start.FrequentCount, Mica.Core.StartPage.FrequentChoices.Select(c => (c, c.ToString())), compact: true, label: store.Text("сайтов в разделе", "Сайтов в разделе"));
+        var count = new Segmented<int>(start.FrequentCount, Mica.Core.StartPage.FrequentChoices.Select(c => (c, c.ToString())), compact: true, label: browser.Text("сайтов в разделе", "Сайтов в разделе"));
         count.Changed += value => store.Change(p => p.Start.FrequentCount = value);
         var changed = !start.Sections.SequenceEqual(defaults.Sections) || start.Wordmark != defaults.Wordmark || start.FrequentCount != defaults.FrequentCount;
-        var reset = new IconButton("arrow.counterclockwise", store.Text("вернуть как было", "Вернуть как было")) { IsEnabled = changed };
+        var reset = new IconButton("arrow.counterclockwise", browser.Text("вернуть как было", "Вернуть как было")) { IsEnabled = changed };
         reset.Click += () => store.Change(p => { p.Start.Sections = [.. defaults.Sections]; p.Start.Wordmark = defaults.Wordmark; p.Start.FrequentCount = defaults.FrequentCount; });
-        var all = new IconButton("gearshape", store.Text("все настройки", "Все настройки"));
+        var all = new IconButton("gearshape", browser.Text("все настройки", "Все настройки"));
         all.Click += () => { browser.CustomizingStart = false; browser.SettingsSection = Settings.SettingsSection.Start; browser.ShowSettings = true; };
-        var done = new MButton(store.Text("готово", "Готово"), ButtonKind.Primary, compact: true);
+        var done = new MButton(browser.Text("готово", "Готово"), ButtonKind.Primary, compact: true);
         done.Click += () => browser.CustomizingStart = false;
         var row = new Grid { ColumnSpacing = Space.Small, Padding = new Thickness(Space.Normal, 8, Space.Normal, 8) };
         foreach (var _ in Enumerable.Range(0, 6)) row.ColumnDefinitions.Add(Ui.Auto());
         row.ColumnDefinitions[2] = Ui.Star();
-        row.Column(Ui.Text(store.Text("сайтов в разделе", "Сайтов в разделе"), 12, Palette.Text2.Brush()), 0);
+        row.Column(Ui.Text(browser.Text("сайтов в разделе", "Сайтов в разделе"), 12, Palette.Text2.Brush()), 0);
         row.Column(count, 1); row.Column(reset, 3); row.Column(all, 4); row.Column(done, 5);
         Children.Add(Ui.Raised(row, Radius.Panel));
     }
@@ -353,17 +353,17 @@ public sealed partial class StartSectionView : Grid
         var start = browser.Prefs.Start;
         var visible = start.Sections.Contains(section);
         var stack = new StackPanel { Spacing = Space.Normal };
-        var up = new IconButton("chevron.up", store.Text("выше", "Выше") + ": " + section.Title(store), 24) { IsEnabled = visible && start.Sections.FirstOrDefault() != section };
+        var up = new IconButton("chevron.up", browser.Text("выше", "Выше") + ": " + section.Title(store), 24) { IsEnabled = visible && start.Sections.FirstOrDefault() != section };
         up.Click += () => store.Change(p => p.Start.Shift(section, -1));
-        var down = new IconButton("chevron.down", store.Text("ниже", "Ниже") + ": " + section.Title(store), 24) { IsEnabled = visible && start.Sections.LastOrDefault() != section };
+        var down = new IconButton("chevron.down", browser.Text("ниже", "Ниже") + ": " + section.Title(store), 24) { IsEnabled = visible && start.Sections.LastOrDefault() != section };
         down.Click += () => store.Change(p => p.Start.Shift(section, 1));
         stack.Children.Add(new StartBlockHeader(section.Title(store), editing, visible, store, on => store.Change(p => p.Start.SetVisible(section, on)), up, down));
         FrameworkElement content;
         if (editing && sites.Count == 0 && section != StartSection.Custom)
         {
             var placeholder = section == StartSection.Frequent
-                ? (browser.PrivateMode ? store.Text("в окне инкогнито частые сайты не показываются", "В окне инкогнито частые сайты не показываются") : store.Text("появятся, когда вы начнёте открывать сайты", "Появятся, когда вы начнёте открывать сайты"))
-                : store.Text("здесь будут закладки, ", "Здесь будут закладки, ") + (Keymap.Label("bookmark") ?? "Ctrl+D") + store.Text(" добавляет страницу", " добавляет страницу");
+                ? (browser.PrivateMode ? browser.Text("в окне инкогнито частые сайты не показываются", "В окне инкогнито частые сайты не показываются") : browser.Text("появятся, когда вы начнёте открывать сайты", "Появятся, когда вы начнёте открывать сайты"))
+                : browser.Text("здесь будут закладки, ", "Здесь будут закладки, ") + (Keymap.Label("bookmark") ?? "Ctrl+D") + browser.Text(" добавляет страницу", " добавляет страницу");
             var box = new Grid { MinHeight = 60, Margin = new Thickness(StartLayout.Inset, 0, StartLayout.Inset, 0) };
             box.Children.Add(new Microsoft.UI.Xaml.Shapes.Rectangle { Stroke = Palette.Hairline.Brush(), StrokeThickness = 1, StrokeDashArray = [4, 3], RadiusX = Radius.Row, RadiusY = Radius.Row });
             var t = Ui.Text(placeholder, 12, Palette.Text3.Brush(), wrap: true); t.HorizontalAlignment = HorizontalAlignment.Center; t.TextAlignment = TextAlignment.Center; t.Margin = new Thickness(Space.Normal, 0, Space.Normal, 0); box.Children.Add(t);
@@ -463,42 +463,49 @@ public sealed partial class AddShortcutTile : Grid
     }
 }
 
-/// <summary>Adds or edits a custom site. Plain words are refused instead of becoming a search shortcut.</summary>
+/// <summary>Adds or edits a custom site. Plain words are refused instead of becoming a search shortcut.
+/// Opened from the address bar it comes with the page's address filled in, and the name field takes the focus.</summary>
 public static class ShortcutEditor
 {
-    public static void Show(FrameworkElement anchor, Store store, Guid? editing)
+    public static void Show(FrameworkElement anchor, Store store, Guid? editing, string? page = null)
     {
         var existing = editing is { } id ? store.ActivePrefs.Start.Shortcuts.FirstOrDefault(s => s.Id == id) : null;
-        var address = new SurfaceField(store.Text("адрес, например github.com", "Адрес, например github.com"), existing?.Url ?? "", "globe");
-        var title = new SurfaceField(store.Text("название, необязательно", "Название, необязательно"), existing?.Title ?? "", "textformat");
+        var address = new MTextField(store.Text("адрес, например github.com", "Адрес, например github.com"), existing?.Url ?? page ?? "", "globe");
+        var title = new MTextField(store.Text("название, необязательно", "Название, необязательно"), existing?.Title ?? "", "textformat");
         address.ClearLabel(store.Text("очистить", "Очистить")); title.ClearLabel(store.Text("очистить", "Очистить"));
         var invalid = Ui.Text(store.Text("нужен адрес сайта, а не поисковый запрос", "Нужен адрес сайта, а не поисковый запрос"), 11.5, Palette.Danger.Brush()); invalid.Visibility = Visibility.Collapsed;
-        // The app canvas instead of the default acrylic, so the fields read like the start page search field.
+        // The raised surface of the shell menus instead of the default acrylic: a warm card the fields sit in.
         var presenter = new Style(typeof(FlyoutPresenter));
-        presenter.Setters.Add(new Setter(Control.BackgroundProperty, Palette.Canvas.Brush()));
-        presenter.Setters.Add(new Setter(Control.BorderBrushProperty, Palette.HairlineStrong.Brush()));
+        presenter.Setters.Add(new Setter(Control.BackgroundProperty, Palette.Raised.Brush()));
+        presenter.Setters.Add(new Setter(Control.BorderBrushProperty, Palette.Hairline.Brush()));
         presenter.Setters.Add(new Setter(Control.BorderThicknessProperty, new Thickness(1)));
         presenter.Setters.Add(new Setter(Control.CornerRadiusProperty, new CornerRadius(Radius.Panel)));
         presenter.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(16)));
+        // Stays open while the user visits another window; closes on its buttons, Esc or a click in free space.
         var flyout = new Flyout { FlyoutPresenterStyle = presenter };
+        // Light dismiss also fires when mica loses focus; then no window is key and the editor stays.
+        flyout.Closing += (_, e) => { if (store.Windows.Count > 0 && !store.Windows.Any(w => w.IsKey)) e.Cancel = true; };
         var cancel = new MButton(store.Text("отмена", "Отмена"), ButtonKind.Ghost, compact: true);
         var save = new MButton(editing is null ? store.Text("добавить", "Добавить") : store.Text("сохранить", "Сохранить"), ButtonKind.Primary, compact: true) { IsEnabled = address.Text.Trim().Length > 0 };
         address.Box.TextChanged += (_, _) => save.IsEnabled = address.Text.Trim().Length > 0;
         void Save()
         {
-            if (Mica.Core.StartPage.ShortcutUrl(address.Text, store.Preferences.Search) is not { } url) { invalid.Visibility = Visibility.Visible; return; }
+            // The page's own address is kept as it is, so the address bar finds the page pinned afterwards.
+            var url = page is not null && address.Text.Trim() == page ? page : Mica.Core.StartPage.ShortcutUrl(address.Text, store.Preferences.Search);
+            if (url is null) { invalid.Visibility = Visibility.Visible; return; }
             var name = title.Text.Trim();
             store.Change(p =>
             {
                 if (editing is { } id && p.Start.Shortcuts.FirstOrDefault(s => s.Id == id) is { } item) { item.Url = url; item.Title = name; }
-                else p.Start.Shortcuts.Add(new StartShortcut { Title = name, Url = url });
+                else { p.Start.Shortcuts.Add(new StartShortcut { Title = name, Url = url }); p.Start.SetVisible(StartSection.Custom, true); }
             });
             flyout.Hide();
         }
         address.Submit += Save; title.Submit += Save; save.Click += Save; cancel.Click += flyout.Hide;
+        address.Escape += flyout.Hide; title.Escape += flyout.Hide;
         var buttons = Ui.H(Space.Small, cancel, save); buttons.HorizontalAlignment = HorizontalAlignment.Right;
         flyout.Content = Ui.V(Space.Normal, Ui.Text(editing is null ? store.Text("новый сайт", "Новый сайт") : store.Text("изменить сайт", "Изменить сайт"), 14, null, Ui.Medium), Ui.V(Space.Small, address, invalid, title), buttons).Size(300 - 32);
-        flyout.Opened += (_, _) => address.Box.Focus(FocusState.Programmatic);
+        flyout.Opened += (_, _) => (page is null ? address : title).Box.Focus(FocusState.Programmatic);
         flyout.ShowAt(anchor);
     }
 }
