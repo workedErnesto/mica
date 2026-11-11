@@ -1,6 +1,6 @@
 import Foundation
 
-/// What a profile changes: the start page, the window arrangement, theme and colours, the greeting name, and the language
+/// What a profile changes: the start page, the window arrangement and the address field, theme and colours, the greeting name, and the language
 /// and letter case of the interface text.
 /// Passwords, cookies, history, bookmarks, downloads and extensions are shared by every profile.
 /// The keys are those of `Preferences`, so preferences saved before profiles decode straight into the standard profile.
@@ -15,6 +15,7 @@ public struct ProfileLook: Codable, Equatable, Sendable {
     public var userName: String
     public var greetByName: Bool
     public var toolbar: ToolbarLayout
+    public var address: AddressStyle
     public var start: StartPage
     public var sidebarCollapsed: Bool
     public var sidebarWidth: Double
@@ -27,7 +28,7 @@ public struct ProfileLook: Codable, Equatable, Sendable {
     public init(_ p: Preferences) {
         layout = p.layout; theme = p.theme; customBase = p.customBase; accent = p.accent; customTint = p.customTint
         frosted = p.frosted; transparency = p.transparency; userName = p.userName; greetByName = p.greetByName
-        toolbar = p.toolbar; start = p.start; sidebarCollapsed = p.sidebarCollapsed; sidebarWidth = p.sidebarWidth
+        toolbar = p.toolbar; address = p.address; start = p.start; sidebarCollapsed = p.sidebarCollapsed; sidebarWidth = p.sidebarWidth
         language = p.language; lowercase = p.lowercase
     }
     /// Fills a missing language or case from `source`.
@@ -40,7 +41,7 @@ public struct ProfileLook: Codable, Equatable, Sendable {
         var p = base
         p.layout = layout; p.theme = theme; p.customBase = customBase; p.accent = accent; p.customTint = customTint
         p.frosted = frosted; p.transparency = transparency; p.userName = userName; p.greetByName = greetByName
-        p.toolbar = toolbar; p.start = start; p.sidebarCollapsed = sidebarCollapsed; p.sidebarWidth = sidebarWidth
+        p.toolbar = toolbar; p.address = address; p.start = start; p.sidebarCollapsed = sidebarCollapsed; p.sidebarWidth = sidebarWidth
         p.language = language ?? base.language; p.lowercase = lowercase ?? base.lowercase
         return p
     }
@@ -52,13 +53,13 @@ public struct ProfileLook: Codable, Equatable, Sendable {
         language = try? c.decodeIfPresent(Language.self, forKey: .language)
         lowercase = try? c.decodeIfPresent(Bool.self, forKey: .lowercase)
     }
-    private enum Keys: String, CodingKey { case layout, theme, customBase, accent, customTint, frosted, transparency, userName, greetByName, toolbar, start, sidebarCollapsed, sidebarWidth, language, lowercase }
+    private enum Keys: String, CodingKey { case layout, theme, customBase, accent, customTint, frosted, transparency, userName, greetByName, toolbar, address, start, sidebarCollapsed, sidebarWidth, language, lowercase }
     public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: Keys.self)
         try c.encode(layout, forKey: .layout); try c.encode(theme, forKey: .theme); try c.encode(customBase, forKey: .customBase)
         try c.encode(accent, forKey: .accent); try c.encode(customTint, forKey: .customTint); try c.encode(frosted, forKey: .frosted)
         try c.encode(transparency, forKey: .transparency); try c.encode(userName, forKey: .userName); try c.encode(greetByName, forKey: .greetByName)
-        try c.encode(toolbar, forKey: .toolbar); try c.encode(start, forKey: .start); try c.encode(sidebarCollapsed, forKey: .sidebarCollapsed)
+        try c.encode(toolbar, forKey: .toolbar); try c.encode(address, forKey: .address); try c.encode(start, forKey: .start); try c.encode(sidebarCollapsed, forKey: .sidebarCollapsed)
         try c.encode(sidebarWidth, forKey: .sidebarWidth); try c.encodeIfPresent(language, forKey: .language); try c.encodeIfPresent(lowercase, forKey: .lowercase)
     }
 }

@@ -71,6 +71,28 @@ enum UITour {
         browser.showSettings = true; await settle(); await step("settings")
         browser.settingsSection = .appearance; await settle(); await step("settings-appearance")
         browser.settingsSection = .start; await settle(); await step("settings-start")
+        // Address field: the sample in settings and the field itself in each style.
+        browser.selected?.load(URL(string: "https://ru.wikipedia.org/wiki/%D0%A1%D0%BB%D1%8E%D0%B4%D0%B0")!)
+        browser.settingsSection = .space; try? await Task.sleep(nanoseconds: 2_000_000_000)
+        // The address group is the last one in the section: scroll the tallest scroll view down to it.
+        func scrollDown() {
+            func all(_ view: NSView) -> [NSScrollView] { (view as? NSScrollView).map { [$0] } ?? [] + view.subviews.flatMap(all) }
+            guard let content = window.contentView, let scroll = all(content).max(by: { ($0.documentView?.frame.height ?? 0) < ($1.documentView?.frame.height ?? 0) }), let document = scroll.documentView else { return }
+            let y = document.isFlipped ? max(0, document.frame.height - scroll.contentView.bounds.height) : 0
+            scroll.contentView.scroll(to: NSPoint(x: 0, y: y)); scroll.reflectScrolledClipView(scroll.contentView)
+        }
+        scrollDown(); await settle(); await step("settings-address")
+        browser.prefs.address = AddressStyle(full: true, dimSubdomain: true, dimPath: true); await settle(); scrollDown(); await settle(); await step("settings-address-full")
+        // A pinned page keeps its pin hidden until the pointer is over the field.
+        let pinnedPage = browser.selected?.url
+        if let pinnedPage { browser.prefs.start.shortcuts.append(StartShortcut(title: "слюды", url: pinnedPage)) }
+        browser.showSettings = false; await settle()
+        log("ADDRESS " + AddressDisplay.parts(browser.selected?.url?.absoluteString ?? "", style: browser.prefs.address).map { ($0.dim ? "~" : "") + $0.text }.joined(separator: " | "))
+        await step("address-full")
+        browser.prefs.address = AddressStyle(full: false, dimSubdomain: true); await settle(); await step("address-site-dim")
+        browser.prefs.theme = .dark; browser.prefs.address = AddressStyle(full: true, dimSubdomain: true, dimPath: true); await settle(); await step("address-full-dark")
+        if let pinnedPage { browser.removeStartShortcut(pinnedPage) }
+        browser.prefs.theme = .light; browser.prefs.address = AddressStyle(); browser.showSettings = true
         // Profiles: a second profile with its own look, the editor, the menu, the colour panel and history marks.
         let work = store.addProfile(from: browser.profileID)
         store.updateProfile(work.id) { $0.name = "работа"; $0.icon = "briefcase" }

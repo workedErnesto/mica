@@ -665,3 +665,13 @@ mica не может показать файл из этой папки: macOS �
 Профили, блокировка трекеров, зашифрованные пароли и расширения Chrome Web Store и Firefox Add-ons. Собственной телеметрии нет.⟩profiles, tracker blocking, encrypted passwords, and extensions from the Chrome Web Store and Firefox Add-ons. no telemetry of its own.⟩Profiles, tracker blocking, encrypted passwords, and extensions from the Chrome Web Store and Firefox Add-ons. No telemetry of its own.
 Открыть в этом окне⟩open in this window⟩Open in This Window
 Настроить…⟩edit…⟩Edit…
+Сайт⟩site⟩Site
+Полный адрес⟩full address⟩Full Address
+Что показывать в адресной строке⟩what the address bar shows⟩What the address bar shows
+Приглушать поддомен⟩quiet the subdomain⟩Quiet the subdomain
+www и всё, что стоит перед доменом⟩www and everything before the domain⟩www and everything before the domain
+Всё, что стоит перед доменом⟩everything before the domain⟩Everything before the domain
+Приглушать путь⟩quiet the path⟩Quiet the path
+Всё, что после домена: /shoes, ?size и #⟩everything after the domain: /shoes, ?size and #⟩Everything after the domain: /shoes, ?size and #
+Домен сайта всегда остаётся основным цветом, по нему видно, чей это адрес.⟩the site’s domain always keeps the main colour, it shows whose address this is.⟩The site’s domain always keeps the main colour, it shows whose address this is.
+Пример адресной строки⟩address bar sample⟩Address bar sample

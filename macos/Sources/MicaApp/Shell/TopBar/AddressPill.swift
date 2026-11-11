@@ -26,9 +26,10 @@ struct AddressPill: View {
                 .disabled(tab.url == nil)
                 .popover(isPresented: $siteInfo, arrowEdge: .bottom) { SiteInfo(tab: tab, browser: browser, store: store).frame(width: 320) }
             Button { browser.commandBar = true } label: {
-                Text(display)
+                Group {
+                    if let url = tab.url { AddressText(address: url.absoluteString, style: browser.prefs.address) } else { Text(browser.text("адрес или поиск", "Адрес или поиск")).foregroundStyle(Palette.text3) }
+                }
                     .font(.system(size: 12.5, weight: .regular))
-                    .foregroundStyle(tab.url == nil ? Palette.text3 : Palette.ink)
                     .lineLimit(1).truncationMode(.middle)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                     .contentShape(Rectangle())
@@ -47,7 +48,7 @@ struct AddressPill: View {
                 if pinned, let url = tab.url { withMotion(Motion.quick) { browser.removeStartShortcut(url) } } else { pinning = true }
             }
             .stickyPopover(isPresented: $pinning) { ShortcutEditor(store: store, browser: browser, editing: nil, page: tab.url) { pinning = false } }
-            .opacity(pinnable && (hover || pinned || pinning) ? 1 : 0)
+            .opacity(pinnable && (hover || pinning) ? 1 : 0)
             .disabled(!pinnable)
             IconButton(symbol: bookmarked ? "bookmark.fill" : "bookmark", label: browser.text("добавить или удалить закладку", "Добавить или удалить закладку"), size: control) { store.bookmark(tab) }
                 .opacity(tab.url != nil && !local && (hover || bookmarked) ? 1 : 0)
@@ -74,11 +75,5 @@ struct AddressPill: View {
         .overlay(RoundedRectangle(cornerRadius: Radius.icon, style: .continuous).strokeBorder(Palette.fieldBorder, lineWidth: 1))
         .onHover { hover = $0 }
         .animation(Motion.hover, value: hover)
-    }
-    private var display: String {
-        guard let url = tab.url else { return browser.text("адрес или поиск", "Адрес или поиск") }
-        if url.isFileURL { return url.lastPathComponent }
-        if let host = url.host { return host.hasPrefix("www.") ? String(host.dropFirst(4)) : host }
-        return url.absoluteString
     }
 }

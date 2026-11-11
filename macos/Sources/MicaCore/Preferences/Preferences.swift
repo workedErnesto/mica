@@ -19,6 +19,8 @@ public struct Preferences: Codable, Equatable, Sendable {
     public var transparency = 0.55
     public var appIcon: String?
     public var toolbar = ToolbarLayout()
+    /// What the address field shows: the site name or the whole address, and which parts are quieter.
+    public var address = AddressStyle()
     public var start = StartPage()
     public var search: SearchEngine = .duckduckgo
     public var blocking = true
@@ -64,6 +66,7 @@ public struct Preferences: Codable, Equatable, Sendable {
         transparency = min(1, max(0, (try? c.decodeIfPresent(Double.self, forKey: .transparency)) ?? d.transparency))
         appIcon = try? c.decodeIfPresent(String.self, forKey: .appIcon)
         toolbar = (try? c.decodeIfPresent(ToolbarLayout.self, forKey: .toolbar)) ?? d.toolbar
+        address = (try? c.decodeIfPresent(AddressStyle.self, forKey: .address)) ?? d.address
         start = (try? c.decodeIfPresent(StartPage.self, forKey: .start)) ?? d.start
         search = (try? c.decodeIfPresent(SearchEngine.self, forKey: .search)) ?? d.search
         blocking = try c.decodeIfPresent(Bool.self, forKey: .blocking) ?? d.blocking

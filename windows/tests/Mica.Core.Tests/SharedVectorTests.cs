@@ -59,6 +59,11 @@ public class SharedVectorTests
                 var global = new Preferences { Language = S("language") == "en" ? Language.En : Language.Ru, Lowercase = c["lowercase"]!.GetValue<bool>() };
                 var applied = look.AppliedTo(global);
                 return (applied.Language == Language.En ? "en" : "ru") + (applied.Lowercase ? "-low" : "-regular");
+            case "addressDisplay":
+                // Quieter parts are marked with a leading ~.
+                bool O(string key) => c[key]?.GetValue<bool>() ?? false;
+                var style = new AddressStyle { Full = O("full"), DimSubdomain = O("dimSubdomain"), DimPath = O("dimPath") };
+                return new JsonArray([.. AddressDisplay.Parts(S("url"), style).Select(p => (JsonNode)JsonValue.Create((p.Dim ? "~" : "") + p.Text))]);
             case "profileGlyph": return Profiles.LightGlyph(S("hex"), c["glyph"]?.GetValue<string>() switch { "light" => ProfileGlyph.Light, "dark" => ProfileGlyph.Dark, _ => ProfileGlyph.Auto }) ? "light" : "dark";
             default: throw new InvalidOperationException(section);
         }

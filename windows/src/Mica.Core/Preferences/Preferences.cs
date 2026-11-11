@@ -21,6 +21,8 @@ public sealed class Preferences
     public double Transparency { get; set; } = 0.55;
     public string? AppIcon { get; set; }
     public ToolbarLayout Toolbar { get; set; } = new();
+    /// <summary>What the address field shows: the site name or the whole address, and which parts are quieter.</summary>
+    public AddressStyle Address { get; set; } = new();
     public StartPage Start { get; set; } = new();
     public SearchEngine Search { get; set; } = SearchEngine.DuckDuckGo;
     public bool Blocking { get; set; } = true;
@@ -51,6 +53,7 @@ public sealed class Preferences
         Transparency = Math.Clamp(Transparency, 0, 1);
         SidebarWidth = Math.Clamp(SidebarWidth, SidebarMin, SidebarMax);
         Toolbar = (Toolbar ?? new()).Migrated();
+        Address ??= new();
         Start = (Start ?? new()).Sanitized();
         Clearing ??= new();
         EagerHosts ??= []; BlockingExceptions ??= [];
@@ -62,6 +65,7 @@ public sealed class Preferences
     {
         var copy = (Preferences)MemberwiseClone();
         copy.Toolbar = Toolbar.Clone();
+        copy.Address = Address.Copy();
         copy.Start = new StartPage { Wordmark = Start.Wordmark, Sections = [.. Start.Sections], FrequentCount = Start.FrequentCount, Shortcuts = Start.Shortcuts.Select(s => new StartShortcut { Id = s.Id, Title = s.Title, Url = s.Url }).ToList(), HiddenHosts = [.. Start.HiddenHosts] };
         copy.EagerHosts = [.. EagerHosts]; copy.BlockingExceptions = [.. BlockingExceptions]; copy.Clearing = Clearing.Copy();
         return copy;

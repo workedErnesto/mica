@@ -107,6 +107,215 @@
       "input" : "file:///Users/me/page.html"
     }
   ],
+  "addressDisplay" : [
+    {
+      "expect" : [
+        "sub.site.com"
+      ],
+      "url" : "https://sub.site.com/shoe"
+    },
+    {
+      "dimSubdomain" : true,
+      "expect" : [
+        "~sub.",
+        "site.com"
+      ],
+      "url" : "https://sub.site.com/shoe"
+    },
+    {
+      "dimSubdomain" : true,
+      "expect" : [
+        "site.com"
+      ],
+      "url" : "https://www.site.com/"
+    },
+    {
+      "dimPath" : true,
+      "dimSubdomain" : true,
+      "expect" : [
+        "~sub.",
+        "site.com",
+        "~/shoe"
+      ],
+      "full" : true,
+      "url" : "https://sub.site.com/shoe"
+    },
+    {
+      "dimPath" : true,
+      "expect" : [
+        "sub.site.com",
+        "~/shoe"
+      ],
+      "full" : true,
+      "url" : "https://sub.site.com/shoe"
+    },
+    {
+      "dimSubdomain" : true,
+      "expect" : [
+        "~sub.",
+        "site.com/shoe?size=42#top"
+      ],
+      "full" : true,
+      "url" : "https://sub.site.com/shoe?size=42#top"
+    },
+    {
+      "dimPath" : true,
+      "dimSubdomain" : true,
+      "expect" : [
+        "~www.",
+        "site.com"
+      ],
+      "full" : true,
+      "url" : "https://www.site.com/"
+    },
+    {
+      "dimPath" : true,
+      "dimSubdomain" : true,
+      "expect" : [
+        "~a.b.",
+        "example.co.uk:8443",
+        "~/x"
+      ],
+      "full" : true,
+      "url" : "https://a.b.example.co.uk:8443/x"
+    },
+    {
+      "dimSubdomain" : true,
+      "expect" : [
+        "shop.msk.ru"
+      ],
+      "url" : "https://shop.msk.ru/"
+    },
+    {
+      "dimPath" : true,
+      "dimSubdomain" : true,
+      "expect" : [
+        "co.uk"
+      ],
+      "full" : true,
+      "url" : "https://co.uk/"
+    },
+    {
+      "dimPath" : true,
+      "dimSubdomain" : true,
+      "expect" : [
+        "192.168.1.10:8080",
+        "~/admin"
+      ],
+      "full" : true,
+      "url" : "http://192.168.1.10:8080/admin"
+    },
+    {
+      "dimSubdomain" : true,
+      "expect" : [
+        "::1"
+      ],
+      "url" : "http://[::1]:3000/"
+    },
+    {
+      "dimPath" : true,
+      "dimSubdomain" : true,
+      "expect" : [
+        "[::1]:3000"
+      ],
+      "full" : true,
+      "url" : "http://[::1]:3000/"
+    },
+    {
+      "dimPath" : true,
+      "dimSubdomain" : true,
+      "expect" : [
+        "localhost:5173",
+        "~/app"
+      ],
+      "full" : true,
+      "url" : "http://localhost:5173/app"
+    },
+    {
+      "dimPath" : true,
+      "dimSubdomain" : true,
+      "expect" : [
+        "~ru.",
+        "wikipedia.org",
+        "~/wiki/Москва"
+      ],
+      "full" : true,
+      "url" : "https://ru.wikipedia.org/wiki/%D0%9C%D0%BE%D1%81%D0%BA%D0%B2%D0%B0"
+    },
+    {
+      "expect" : [
+        "site.com/a%20b%2Fc%E2%80%AE"
+      ],
+      "full" : true,
+      "url" : "https://site.com/a%20b%2Fc%E2%80%AE"
+    },
+    {
+      "expect" : [
+        "site.com/%FF%FE"
+      ],
+      "full" : true,
+      "url" : "https://site.com/%FF%FE"
+    },
+    {
+      "dimPath" : true,
+      "dimSubdomain" : true,
+      "expect" : [
+        "~mail.",
+        "site.com",
+        "~/inbox"
+      ],
+      "full" : true,
+      "url" : "https://user@mail.site.com/inbox"
+    },
+    {
+      "expect" : [
+        "отчёт.pdf"
+      ],
+      "url" : "file:///Users/me/Documents/%D0%BE%D1%82%D1%87%D1%91%D1%82.pdf"
+    },
+    {
+      "dimPath" : true,
+      "expect" : [
+        "/Users/me/Documents/report.pdf"
+      ],
+      "full" : true,
+      "url" : "file:///Users/me/Documents/report.pdf"
+    },
+    {
+      "dimSubdomain" : true,
+      "expect" : [
+        "Projects"
+      ],
+      "url" : "file:///Users/me/Projects/"
+    },
+    {
+      "dimPath" : true,
+      "dimSubdomain" : true,
+      "expect" : [
+        "about:blank"
+      ],
+      "full" : true,
+      "url" : "about:blank"
+    },
+    {
+      "expect" : [
+        "data:text/plain,hi"
+      ],
+      "full" : true,
+      "url" : "data:text/plain,hi"
+    },
+    {
+      "dimPath" : true,
+      "dimSubdomain" : true,
+      "expect" : [
+        "~ftp://files.",
+        "site.com",
+        "~/pub"
+      ],
+      "full" : true,
+      "url" : "ftp://files.site.com/pub"
+    }
+  ],
   "checksum" : [
     {
       "expect" : "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
