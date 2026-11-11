@@ -154,7 +154,7 @@ public sealed partial class ShellView : Grid
         var library = ShellState.Library(browser, look);
         var libraryText = library.ToJsonString();
         var open = browser.ShowSettings || browser.ShowOnboarding;
-        var settings = open ? ShellState.Settings(browser) : null;
+        var settings = open ? ShellState.Settings(browser, look) : null;
         var settingsText = settings?.ToJsonString();
         var state = ShellState.Build(browser, window, look, seed,
             libraryText == librarySent ? null : library,

@@ -118,7 +118,7 @@ public sealed partial class PasswordBridge(Tab tab)
                 {
                     var password = PasswordGenerator.Strong(max > 0 ? max : null);
                     presenting = true;
-                    var answer = await Dialogs.Ask(owner.Window, owner.Text("создать стойкий пароль?", "Создать стойкий пароль?"), password, [owner.Text("не сейчас", "Не сейчас"), owner.Text("использовать", "Использовать")]);
+                    var answer = await Dialogs.Ask(owner.Window, owner.Text("создать стойкий пароль?", "Создать стойкий пароль?"), password, [owner.Text("не сейчас", "Не сейчас"), owner.Text("использовать", "Использовать")], password: new PasswordCard(origin, Secret: password));
                     presenting = false;
                     if (answer == 1 && Origin.Of(core.Source) == origin) await Fill(core, null, password);
                 }
@@ -128,7 +128,7 @@ public sealed partial class PasswordBridge(Tab tab)
                     if (matches.Count == 0) return;
                     presenting = true;
                     var index = await DialogChoices.Choose(owner.Window, owner.Text("заполнить учётную запись?", "Заполнить учётную запись?"), origin,
-                        matches.Select(l => l.Username.Length == 0 ? owner.Text("без имени пользователя", "Без имени пользователя") : l.Username).ToList(), owner.Text("заполнить", "Заполнить"), owner.Text("не сейчас", "Не сейчас"));
+                        matches.Select(l => l.Username).ToList(), owner.Text("заполнить", "Заполнить"), owner.Text("не сейчас", "Не сейчас"), new PasswordCard(origin));
                     presenting = false;
                     if (index < 0 || Origin.Of(core.Source) != origin) return;
                     var login = matches[index];
@@ -147,7 +147,7 @@ public sealed partial class PasswordBridge(Tab tab)
                 await Task.Delay(1000);
                 if (owner.SelectedId != tab.Id || presenting) return;
                 presenting = true;
-                var answer = await Dialogs.Ask(owner.Window, owner.Text("сохранить пароль?", "Сохранить пароль?"), origin + (username.Length == 0 ? "" : "\n" + username), [owner.Text("не сейчас", "Не сейчас"), owner.Text("никогда для этого сайта", "Никогда для этого сайта"), owner.Text("сохранить", "Сохранить")]);
+                var answer = await Dialogs.Ask(owner.Window, owner.Text("сохранить пароль?", "Сохранить пароль?"), origin + (username.Length == 0 ? "" : "\n" + username), [owner.Text("не сейчас", "Не сейчас"), owner.Text("никогда для этого сайта", "Никогда для этого сайта"), owner.Text("сохранить", "Сохранить")], password: new PasswordCard(origin, Account: username));
                 presenting = false;
                 if (answer == 2) manager.Update(v => v.Save(origin, username, password));
                 else if (answer == 1) manager.Update(v => { if (!v.Never.Contains(origin)) v.Never.Add(origin); });

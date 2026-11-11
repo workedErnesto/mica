@@ -116,6 +116,12 @@ export function SiteIcon(site, size = 16, plain = false) {
     h('img', { src, alt: '', draggable: false, onError: () => { failed.add(src); invalidate(); } }));
 }
 
+/// SiteIcon on a list-row plate (`tiled` on macOS): a favicon at 60 % of the tile, a monogram fills the tile itself.
+export function SiteTile(site, size) {
+  if (!(site && site.icon && !failed.has(site.icon))) return Monogram(site && site.host, size);
+  return h('span', { class: 'lib-icon tiled', style: { width: size + 'px', height: size + 'px', 'border-radius': size * 0.3 + 'px' } }, SiteIcon(site, Math.round(size * 0.6)));
+}
+
 /// Progress ring driven by real progress, never spinning on its own.
 export function ProgressRing(progress, size = 16) {
   const r = (size - 2) / 2 - 1, length = 2 * Math.PI * r;

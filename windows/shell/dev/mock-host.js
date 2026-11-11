@@ -44,7 +44,7 @@ export class MockHost {
       },
       toolbarIsDefault: true,
       tabs, selectedId: tabs[0].id, closedCount: 1, panel: params.get('panel'), saving: null,
-      overlay: { commandBar: false, find: false, settings: params.has('settings'), onboarding: params.has('onboarding'), onboardingStep: 0, clearData: false, profilePrompt: null, alert: null, customizingToolbar: false, customizingStart: false, quitHold: null },
+      overlay: { commandBar: false, find: false, settings: params.has('settings'), onboarding: params.has('onboarding'), onboardingStep: 0, clearData: false, profilePrompt: null, alert: passwordAlert(params.get('password')), customizingToolbar: false, customizingStart: false, quitHold: null },
       start: { greeting: null, searchTitle: 'DuckDuckGo', isDefault: true, sections: [] },
       site: null, findResult: null, clearData: null,
       library: {},
@@ -109,7 +109,7 @@ export class MockHost {
       engines: [['duckDuckGo', 'DuckDuckGo', 'duckduckgo.com'], ['google', 'Google', 'google.com'], ['yandex', 'Яндекс', 'ya.ru'], ['kagi', 'Kagi', 'kagi.com'], ['bing', 'Bing', 'bing.com']].map(([id, title, host]) => ({ id, title, host })),
       search: 'duckDuckGo', blocking: true, blockerCount: 3512, blockerStatus: '', blockerUpdating: false, blockingExceptions: [],
       restore: true, lazyRestore: true, eagerHosts: [], notificationRequests: true, permissions: [{ origin: 'https://meet.example.com', capability: 'camera', decision: 'allow' }],
-      offerPasswords: true, fillPasswords: true, passwords: { logins: [{ id: 'l1', origin: 'https://github.com', username: 'whoa' }], never: [] },
+      offerPasswords: true, fillPasswords: true, passwords: { logins: [{ id: 'l1', origin: 'https://github.com', host: 'github.com', username: 'whoa' }, { id: 'l2', origin: 'https://www.moysklad.ru', host: 'www.moysklad.ru', username: '' }], never: [] },
       importer: { browsers: [{ id: 'chrome', name: 'Google Chrome', profiles: [{ path: 'Default', name: 'Default' }], selected: 'Default' }, { id: 'edge', name: 'Microsoft Edge', profiles: [{ path: 'Default', name: 'Default' }, { path: 'Profile 1', name: 'Work' }], selected: 'Default' }] },
       version: '0.3.0', engine: '142.0.3595.0', updateChecks: true, profileOpening: 'ask', editingProfile: s.profile.id,
       appIcons: [],
@@ -166,6 +166,7 @@ export class MockHost {
       case 'toolbar.addressWidth': s.prefs.toolbar.addressWidth = a.value; return done();
       case 'settings.open': s.overlay.settings = true; if (a.section) s.settings.section = a.section; return done();
       case 'settings.close': s.overlay.settings = false; return done();
+      case 'alert.answer': s.overlay.alert = null; return done();
       case 'settings.set': s.settings[a.key] = a.value; this.push(); return;
       case 'settings.search': s.settings.search = a.engine; this.push(); return;
       case 'onboarding.step': s.overlay.onboardingStep = a.step; return done();
@@ -200,4 +201,13 @@ export class MockHost {
       default: console.log('mock host: unhandled', message.name, a);
     }
   }
+}
+
+/// ?password=save|fill|generate opens the matching password question (ShellState builds it from Dialogs.Question).
+function passwordAlert(kind) {
+  const password = { origin: 'https://www.moysklad.ru', host: 'www.moysklad.ru' };
+  if (kind === 'save') return { id: 1, title: 'сохранить пароль?', text: '', buttons: ['не сейчас', 'никогда для этого сайта', 'сохранить'], cancel: 0, password: { ...password, account: 'admin@swarton' } };
+  if (kind === 'generate') return { id: 2, title: 'создать стойкий пароль?', text: '', buttons: ['не сейчас', 'использовать'], cancel: 0, password: { ...password, secret: 'hT4k-Wq9z-Lm2p-Vx7r' } };
+  if (kind === 'fill') return { id: 3, title: 'заполнить учётную запись?', text: '', buttons: ['не сейчас'], choices: ['admin@swarton', ''], cancel: 0, password };
+  return null;
 }

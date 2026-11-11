@@ -274,7 +274,7 @@ public static class ShellState
         return library;
     }
 
-    public static JsonObject Settings(BrowserModel browser)
+    public static JsonObject Settings(BrowserModel browser, Look look)
     {
         var store = browser.Store;
         var p = store.Preferences;
@@ -292,7 +292,12 @@ public static class ShellState
                     icons.Push(new JsonObject { ["id"] = icon.Id, ["title"] = browser.Text(icon.Low, icon.Regular), ["image"] = "https://mica.icons/app/" + icon.Id });
         var passwords = store.Passwords;
         var logins = new JsonArray();
-        foreach (var login in passwords.Vault.Logins.OrderBy(l => l.Origin, StringComparer.Ordinal)) logins.Push(new JsonObject { ["id"] = login.Id.ToString(), ["origin"] = login.Origin, ["username"] = login.Username });
+        foreach (var login in passwords.Vault.Logins.OrderBy(l => l.Origin, StringComparer.Ordinal))
+        {
+            var row = new JsonObject { ["id"] = login.Id.ToString(), ["origin"] = login.Origin, ["username"] = login.Username, ["host"] = login.Host };
+            Icon(row, browser.Favicons, login.Origin, look.Dark);
+            logins.Push(row);
+        }
         var importer = store.Importer;
         var browsers = new JsonArray();
         foreach (var profile in importer.Profiles)
@@ -378,6 +383,12 @@ public static class ShellState
                 ["id"] = q.Id, ["title"] = q.Title, ["text"] = q.Text, ["buttons"] = Strings(q.Buttons), ["destructive"] = q.Destructive,
                 ["choices"] = q.Choices is null ? null : Strings(q.Choices), ["fields"] = fields, ["cancel"] = 0,
             };
+            if (q.Password is { } card)
+            {
+                var password = new JsonObject { ["origin"] = card.Origin, ["host"] = AddressParser.Host(card.Origin) ?? card.Origin, ["account"] = card.Account, ["secret"] = card.Secret };
+                Icon(password, browser.Favicons, card.Origin, look.Dark);
+                alert["password"] = password;
+            }
         }
         var clear = store.Preferences.Clearing;
         var state = new JsonObject
