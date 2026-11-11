@@ -63,13 +63,13 @@ public static partial class AddressParser
         return FileExtensions.Contains(extension);
     }
 
-    public static bool Navigable(string? url)
+    public static bool Navigable(string? url, bool mainFrame = true)
     {
         if (url is null || !Uri.TryCreate(url, UriKind.Absolute, out var u)) return false;
         return u.Scheme.ToLowerInvariant() switch
         {
             "http" or "https" => u.Host.Length > 0 && u.UserInfo.Length == 0,
-            "about" => url == "about:blank",
+            "about" => url == "about:blank" || (!mainFrame && url == "about:srcdoc"),
             "blob" => true,
             _ => false,
         };

@@ -25,7 +25,7 @@ public static class SingleFilePage
 
     static string Key(string url) { var hash = url.IndexOf('#'); return hash < 0 ? url : url[..hash]; }
 
-    sealed class Attribute
+    internal sealed class Attribute
     {
         public required string Name;
         public required int RawStart, RawEnd;
@@ -34,7 +34,7 @@ public static class SingleFilePage
         public string? Replacement;
     }
 
-    sealed class Tag
+    internal sealed class Tag
     {
         public required string Name;
         public required int NameStart, NameEnd;
@@ -323,7 +323,7 @@ public static class SingleFilePage
         return (Trim(reference), Trim(b[j..semicolon]), Math.Min(b.Length, semicolon + 1));
     }
 
-    static Tag? ParseTag(string b, int start)
+    internal static Tag? ParseTag(string b, int start)
     {
         var n = b.Length;
         var j = start + 1;

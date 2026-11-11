@@ -7,6 +7,8 @@ swift build -c "$configuration"
 app_path="$PWD/build/mica.app"
 mkdir -p "$app_path/Contents/MacOS" "$app_path/Contents/Resources"
 cp ".build/$configuration/mica" "$app_path/Contents/MacOS/mica"
+mkdir -p "$app_path/Contents/Resources/Favicons"
+cp ../shared/favicons/*.png ../shared/favicons/NOTICE.txt "$app_path/Contents/Resources/Favicons/"
 cp ../shared/blocklist/blocklist.txt ../shared/blocklist/BLOCKLIST-NOTICE.txt "$app_path/Contents/Resources/"
 cp Resources/App/Info.plist "$app_path/Contents/Info.plist"
 for lang in en ru; do mkdir -p "$app_path/Contents/Resources/$lang.lproj"; cp "Resources/App/$lang.lproj/InfoPlist.strings" "$app_path/Contents/Resources/$lang.lproj/"; done

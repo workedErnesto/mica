@@ -15,6 +15,7 @@ final class SharedVectorTests: XCTestCase {
             case .external(let url): return "external:" + url.absoluteString
             case .rejected(let reason): return "rejected:" + reason
             }
+        case "navigation": return URL(string: c["url"] as! String).map { AddressParser.navigable($0, mainFrame: c["mainFrame"] as! Bool) } ?? false
         case "origin": return Origin.string(URL(string: c["url"] as! String)) ?? NSNull()
         case "localFile": return URL(string: c["url"] as! String).map(AddressParser.openableFile) ?? false
         case "version":
@@ -52,6 +53,10 @@ final class SharedVectorTests: XCTestCase {
             // Quieter parts are marked with a leading ~.
             let style = AddressStyle(full: c["full"] as? Bool ?? false, dimSubdomain: c["dimSubdomain"] as? Bool ?? false, dimPath: c["dimPath"] as? Bool ?? false)
             return AddressDisplay.parts(c["url"] as! String, style: style).map { ($0.dim ? "~" : "") + $0.text }
+        case "faviconRemote": return FaviconDiscovery.remoteURL(page: c["page"] as! String) ?? NSNull()
+        case "faviconCatalog": return FaviconDiscovery.bundledFile(page: c["page"] as! String) ?? NSNull()
+        case "faviconDiscovery":
+            return FaviconDiscovery.candidates(FaviconDiscovery.links(html: c["html"] as! String, page: c["page"] as! String).filter { $0.dark == (c["dark"] as? Bool ?? false) }, page: c["page"] as! String, fallback: c["fallback"] as? Bool ?? true)
         case "faviconTone":
             // "ink" when the glyph is redrawn in the shell's ink, "keep" when its own colour reads, "image" for icons that are not a glyph.
             let pixels = (c["pixels"] as! String).split(separator: " ").flatMap { token -> [UInt8] in

@@ -33,10 +33,11 @@ public enum AddressParser {
         guard path.hasPrefix("/"), !url.hasDirectoryPath, !path.hasSuffix("/") else { return false }
         return fileExtensions.contains(url.pathExtension.lowercased())
     }
-    public static func navigable(_ url: URL) -> Bool {
+    /// Inline srcdoc documents belong to a child frame; they are never top-level addresses.
+    public static func navigable(_ url: URL, mainFrame: Bool = true) -> Bool {
         switch url.scheme?.lowercased() {
         case "http", "https": return url.host?.isEmpty == false && url.user == nil && url.password == nil
-        case "about": return url.absoluteString == "about:blank"
+        case "about": return url.absoluteString == "about:blank" || (!mainFrame && url.absoluteString == "about:srcdoc")
         case "blob": return true
         default: return false
         }

@@ -245,6 +245,16 @@ public enum English {
     out['windows/shell/js/gen/strings.g.js'] = ('// ' + HEADER.format(src='strings/en.txt') + '\n'
         '// English interface text keyed by the regular Russian variant: [lowercase style, regular].\n'
         'export const english = ' + json.dumps(table, ensure_ascii=False, indent=0) + ';\n')
+    # A small offline icon catalog shared by both native hosts. The artwork stays in shared/favicons/.
+    favicon_sites = json.loads((shared / 'favicons/catalog.json').read_text())['sites']
+    favicon_files = {host: entry['file'] for host, entry in favicon_sites.items()}
+    for host, file in favicon_files.items():
+        if not re.fullmatch(r'[a-z0-9.-]+', host) or not re.fullmatch(r'[a-z0-9.-]+\.png', file):
+            sys.exit('invalid shared favicon catalog entry')
+        if not (shared / 'favicons' / file).is_file(): sys.exit('missing bundled favicon: ' + file)
+    head_icons = '// ' + HEADER.format(src='favicons/catalog.json') + '\n'
+    out['macos/Sources/MicaCore/Address/FaviconCatalog.swift'] = head_icons + 'public enum FaviconCatalog {\n    public static let files: [String: String] = [\n' + ''.join(f'        "{host}": "{file}",\n' for host, file in sorted(favicon_files.items())) + '    ]\n}\n'
+    out['windows/src/Mica.Core/Address/FaviconCatalog.g.cs'] = head_icons + 'namespace Mica.Core;\n\npublic static class FaviconCatalog\n{\n    public static readonly IReadOnlyDictionary<string, string> Files = new Dictionary<string, string>\n    {\n' + ''.join(f'        ["{host}"] = "{file}",\n' for host, file in sorted(favicon_files.items())) + '    };\n}\n'
     return out
 
 def main():

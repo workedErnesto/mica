@@ -1,0 +1,120 @@
+{
+  "sites": {
+    "claude.ai": {
+      "file": "claude.ai.png",
+      "source": "https://icons.duckduckgo.com/ip3/claude.ai.ico"
+    },
+    "chatgpt.com": {
+      "file": "chatgpt.com.png",
+      "source": "https://icons.duckduckgo.com/ip3/chatgpt.com.ico"
+    },
+    "github.com": {
+      "file": "github.com.png",
+      "source": "https://icons.duckduckgo.com/ip3/github.com.ico"
+    },
+    "gemini.google.com": {
+      "file": "gemini.google.com.png",
+      "source": "https://icons.duckduckgo.com/ip3/gemini.google.com.ico"
+    },
+    "notebooklm.google.com": {
+      "file": "notebooklm.google.com.png",
+      "source": "https://icons.duckduckgo.com/ip3/notebooklm.google.com.ico"
+    },
+    "mail.google.com": {
+      "file": "mail.google.com.png",
+      "source": "https://ssl.gstatic.com/ui/v1/icons/mail/rfr/gmail.ico"
+    },
+    "figma.com": {
+      "file": "figma.com.png",
+      "source": "https://icons.duckduckgo.com/ip3/figma.com.ico"
+    },
+    "pinterest.com": {
+      "file": "pinterest.com.png",
+      "source": "https://icons.duckduckgo.com/ip3/pinterest.com.ico"
+    },
+    "youtube.com": {
+      "file": "youtube.com.png",
+      "source": "https://icons.duckduckgo.com/ip3/youtube.com.ico"
+    },
+    "tracker.yandex.ru": {
+      "file": "tracker.yandex.ru.png",
+      "source": "https://icons.duckduckgo.com/ip3/tracker.yandex.ru.ico"
+    },
+    "my.firstvds.ru": {
+      "file": "my.firstvds.ru.png",
+      "source": "https://icons.duckduckgo.com/ip3/my.firstvds.ru.ico"
+    },
+    "footrue.com": {
+      "file": "footrue.com.png",
+      "source": "https://icons.duckduckgo.com/ip3/footrue.com.ico"
+    },
+    "google.com": {
+      "file": "google.com.png",
+      "source": "https://icons.duckduckgo.com/ip3/google.com.ico"
+    },
+    "duckduckgo.com": {
+      "file": "duckduckgo.com.png",
+      "source": "https://icons.duckduckgo.com/ip3/duckduckgo.com.ico"
+    },
+    "wikipedia.org": {
+      "file": "wikipedia.org.png",
+      "source": "https://icons.duckduckgo.com/ip3/wikipedia.org.ico"
+    },
+    "apple.com": {
+      "file": "apple.com.png",
+      "source": "https://icons.duckduckgo.com/ip3/apple.com.ico"
+    },
+    "reddit.com": {
+      "file": "reddit.com.png",
+      "source": "https://icons.duckduckgo.com/ip3/reddit.com.ico"
+    },
+    "notion.so": {
+      "file": "notion.so.png",
+      "source": "https://icons.duckduckgo.com/ip3/notion.so.ico"
+    },
+    "x.com": {
+      "file": "x.com.png",
+      "source": "https://icons.duckduckgo.com/ip3/x.com.ico"
+    },
+    "stackoverflow.com": {
+      "file": "stackoverflow.com.png",
+      "source": "https://icons.duckduckgo.com/ip3/stackoverflow.com.ico"
+    },
+    "outlook.live.com": {
+      "file": "outlook.live.com.png",
+      "source": "https://icons.duckduckgo.com/ip3/outlook.live.com.ico"
+    },
+    "proton.me": {
+      "file": "proton.me.png",
+      "source": "https://icons.duckduckgo.com/ip3/proton.me.ico"
+    },
+    "www.figma.com": {
+      "file": "figma.com.png",
+      "source": "https://icons.duckduckgo.com/ip3/figma.com.ico"
+    },
+    "www.youtube.com": {
+      "file": "youtube.com.png",
+      "source": "https://icons.duckduckgo.com/ip3/youtube.com.ico"
+    },
+    "www.github.com": {
+      "file": "github.com.png",
+      "source": "https://icons.duckduckgo.com/ip3/github.com.ico"
+    },
+    "www.pinterest.com": {
+      "file": "pinterest.com.png",
+      "source": "https://icons.duckduckgo.com/ip3/pinterest.com.ico"
+    },
+    "ru.pinterest.com": {
+      "file": "pinterest.com.png",
+      "source": "https://icons.duckduckgo.com/ip3/pinterest.com.ico"
+    },
+    "en.wikipedia.org": {
+      "file": "wikipedia.org.png",
+      "source": "https://icons.duckduckgo.com/ip3/wikipedia.org.ico"
+    },
+    "ru.wikipedia.org": {
+      "file": "wikipedia.org.png",
+      "source": "https://icons.duckduckgo.com/ip3/wikipedia.org.ico"
+    }
+  }
+}

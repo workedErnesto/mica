@@ -20,6 +20,7 @@ public class SharedVectorTests
             case "address":
                 var target = AddressParser.Resolve(S("input"), Engine());
                 return target.Kind switch { AddressKind.Web => "web:" + target.Value, AddressKind.External => "external:" + target.Value, _ => "rejected:" + target.Value };
+            case "navigation": return AddressParser.Navigable(S("url"), B("mainFrame"));
             case "origin": return Origin.Of(S("url"));
             case "localFile": return AddressParser.OpenableFile(S("url"));
             case "version":
@@ -64,6 +65,10 @@ public class SharedVectorTests
                 bool O(string key) => c[key]?.GetValue<bool>() ?? false;
                 var style = new AddressStyle { Full = O("full"), DimSubdomain = O("dimSubdomain"), DimPath = O("dimPath") };
                 return new JsonArray([.. AddressDisplay.Parts(S("url"), style).Select(p => (JsonNode)JsonValue.Create((p.Dim ? "~" : "") + p.Text))]);
+            case "faviconRemote": return FaviconDiscovery.RemoteURL(S("page"));
+            case "faviconCatalog": return FaviconDiscovery.BundledFile(S("page"));
+            case "faviconDiscovery":
+                return new JsonArray([.. FaviconDiscovery.Candidates(FaviconDiscovery.Links(S("html"), S("page")).Where(l => l.Dark == (c["dark"]?.GetValue<bool>() ?? false)), S("page"), c["fallback"]?.GetValue<bool>() ?? true).Select(s => (JsonNode)JsonValue.Create(s))]);
             case "faviconTone":
                 // "ink" when the glyph is redrawn in the shell's ink, "keep" when its own colour reads, "image" for icons that are not a glyph.
                 var pixels = S("pixels").Split(' ').SelectMany(t => { var v = Convert.ToUInt32(t, 16); return new[] { (byte)(v >> 24), (byte)(v >> 16), (byte)(v >> 8), (byte)v }; }).ToArray();

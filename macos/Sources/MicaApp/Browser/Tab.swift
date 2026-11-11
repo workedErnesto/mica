@@ -24,6 +24,8 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
     /// icon of the page's origin. Cleared when the tab moves to another origin.
     @Published var favicon: NSImage?
     private var faviconKey: String?
+    private var faviconBridge: FaviconBridge?
+    private var faviconRefresh: Task<Void, Never>?
     var webView: WKWebView?
     /// The start page of this tab already played its entrance; going back to the tab shows it at rest.
     var introduced = false
@@ -56,7 +58,10 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
         if configuration == nil && !owner.privateMode { passwordBridge = PasswordBridge(tab: self, controller: config.userContentController) }
         if configuration == nil { notifications = NotificationBridge(tab: self, controller: config.userContentController, privateMode: owner.privateMode, permissions: owner.store.permissions) }
         // A popup shares the opener's content controller, which already carries the context script and its handler.
-        if configuration == nil { ContextTargets.shared.install(in: config.userContentController) }
+        if configuration == nil {
+            ContextTargets.shared.install(in: config.userContentController)
+            faviconBridge = FaviconBridge(tab: self, controller: config.userContentController)
+        }
         let page = PageView(frame: .zero, configuration: config)
         page.tab = self
         let view: WKWebView = page
@@ -148,6 +153,8 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
     }
     func dispose() {
         observations.removeAll()
+        faviconRefresh?.cancel(); faviconRefresh = nil
+        if let faviconBridge, let controller = webView?.configuration.userContentController { faviconBridge.detach(from: controller); self.faviconBridge = nil }
         if let notifications, let controller = webView?.configuration.userContentController { notifications.detach(from: controller); self.notifications = nil }
         if passwordBridge != nil { webView?.configuration.userContentController.removeScriptMessageHandler(forName: "micaPasswords", contentWorld: .world(name: "mica.passwords")); passwordBridge = nil }
         webView?.stopLoading(); webView?.setCameraCaptureState(.none, completionHandler: nil); webView?.setMicrophoneCaptureState(.none, completionHandler: nil)
@@ -163,16 +170,18 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         secure = webView.url?.scheme == "https" && webView.hasOnlySecureContent && webView.serverTrust != nil
         owner?.store.record(self); owner?.store.scheduleSession()
-        if let page = webView.url, let favicons = owner?.favicons {
-            Task { [weak self, weak webView] in
-                guard let webView else { return }
-                let icon = await favicons.refresh(from: webView, page: page)
-                // A later navigation owns the tab icon by now; its own load reports its icon.
-                guard let self, self.webView === webView, webView.url == page else { return }
-                self.favicon = icon; self.faviconKey = Favicons.key(page)
-            }
-        }
+        refreshFavicon()
         if owner?.privateMode == false { owner?.store.extensions.controller.didChangeTabProperties([.title, .URL, .loading], for: self) }
+    }
+    func refreshFavicon() {
+        guard let webView, let page = webView.url, let favicons = owner?.favicons else { return }
+        faviconRefresh?.cancel()
+        faviconRefresh = Task { [weak self, weak webView] in
+            guard let webView else { return }
+            let icon = await favicons.refresh(from: webView, page: page)
+            guard !Task.isCancelled, let self, self.webView === webView, webView.url == page else { return }
+            self.favicon = icon; self.faviconKey = Favicons.key(page)
+        }
     }
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) { failed(error) }
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) { failed(error) }
@@ -195,7 +204,7 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
             return
         }
         if navigationAction.shouldPerformDownload { decisionHandler(.download); return }
-        if AddressParser.navigable(url) || owner?.store.extensions.controller.extensionContext(for: url) != nil {
+        if AddressParser.navigable(url, mainFrame: navigationAction.targetFrame?.isMainFrame != false) || owner?.store.extensions.controller.extensionContext(for: url) != nil {
             if navigationAction.modifierFlags.contains(.command), navigationAction.navigationType == .linkActivated {
                 owner?.open(url, background: !navigationAction.modifierFlags.contains(.shift)); decisionHandler(.cancel); return
             }

@@ -500,6 +500,163 @@
       "name" : "Слюды — Википедия.html"
     }
   ],
+  "faviconCatalog" : [
+    {
+      "expect" : "claude.ai.png",
+      "page" : "https://claude.ai/new"
+    },
+    {
+      "expect" : "github.com.png",
+      "page" : "https://www.github.com/project"
+    },
+    {
+      "expect" : "pinterest.com.png",
+      "page" : "https://ru.pinterest.com/"
+    },
+    {
+      "expect" : null,
+      "page" : "http://localhost/"
+    },
+    {
+      "expect" : null,
+      "page" : "https://github.com:8443/"
+    },
+    {
+      "expect" : null,
+      "page" : "https://not-in-catalog.example/"
+    }
+  ],
+  "faviconDiscovery" : [
+    {
+      "expect" : [
+        "https://example.com/brand.png",
+        "https://example.com/touch.png",
+        "https://example.com/favicon.ico"
+      ],
+      "html" : "<link href=\"/brand.png\" sizes=\"32x32\" rel=\"shortcut ICON\"><link rel=\"apple-touch-icon\" href=\"/touch.png\">",
+      "page" : "https://example.com/path/page?q=1"
+    },
+    {
+      "expect" : [
+        "https://cdn.example.com/icons/logo.png?a=1&b=2",
+        "https://example.com/favicon.ico"
+      ],
+      "html" : "<!-- <link rel=icon href=/fake.png> --><script>let s='<link rel=icon href=/fake2.png>'</script><BASE href='https://cdn.example.com/icons/'><link REL=icon href='logo.png?a=1&amp;b=2'>",
+      "page" : "https://example.com/a/"
+    },
+    {
+      "expect" : [
+        "https://example.com/light.png",
+        "https://example.com/favicon.ico"
+      ],
+      "html" : "<link rel=\"icon\" href=\"/dark.png\" media=\"(prefers-color-scheme: dark)\"><link rel=\"icon\" href=\"/light.png\" media=\"(prefers-color-scheme: light)\">",
+      "page" : "https://example.com/"
+    },
+    {
+      "dark" : true,
+      "expect" : [
+        "https://example.com/dark.png"
+      ],
+      "fallback" : false,
+      "html" : "<link rel=\"icon\" href=\"/dark.png\" media=\"(prefers-color-scheme: dark)\"><link rel=\"icon\" href=\"/light.png\">",
+      "page" : "https://example.com/"
+    },
+    {
+      "expect" : [
+        "data:image/png;base64,YQ==",
+        "http://localhost:8512/favicon.ico"
+      ],
+      "html" : "<link rel=icon href=\"javascript:alert(1)\"><link rel=icon href=\"file:///tmp/x.png\"><link rel=icon href=\"data:image/png;base64,YQ==\">",
+      "page" : "http://localhost:8512/a"
+    },
+    {
+      "expect" : [
+        "https://example.com/best.png",
+        "https://example.com/large.png",
+        "https://example.com/vector.svg?x=1",
+        "https://example.com/small.ico",
+        "https://example.com/favicon.ico"
+      ],
+      "html" : "<link rel=icon href=\"/large.png\" sizes=\"192x192\"><link rel=icon href=\"/small.ico\" sizes=\"16x16\"><link rel=icon href=\"/best.png\" sizes=\"32x32\"><link rel=icon href=\"/best.png\"><link rel=icon href=\"/vector.svg?x=1\" sizes=\"any\">",
+      "page" : "https://example.com/"
+    },
+    {
+      "expect" : [
+        "https://cdn.example.com/apple.png",
+        "https://example.com/favicon.ico"
+      ],
+      "html" : "<link rel=stylesheet href=\"/not-icon.css\"><title>&lt;link rel=icon href=/fake.png&gt;</title><link rel=\"apple-touch-icon-precomposed\" href=\"//cdn.example.com/apple.png\">",
+      "page" : "https://example.com/"
+    },
+    {
+      "expect" : [
+        "https://example.com/favicon.ico"
+      ],
+      "html" : "<link rel=icon href=\"/bad.png\"",
+      "page" : "https://example.com/path"
+    },
+    {
+      "expect" : [
+        "https://example.com:8443/favicon.ico"
+      ],
+      "html" : "",
+      "page" : "https://user:secret@example.com:8443/path?token=x"
+    }
+  ],
+  "faviconRemote" : [
+    {
+      "expect" : "https://icons.duckduckgo.com/ip3/some-public-site.com.ico",
+      "page" : "https://user:pass@some-public-site.com/private/form?token=secret#data"
+    },
+    {
+      "expect" : "https://icons.duckduckgo.com/ip3/claude.ai.ico",
+      "page" : "https://claude.ai/new"
+    },
+    {
+      "expect" : null,
+      "page" : "http://localhost:8512/app"
+    },
+    {
+      "expect" : null,
+      "page" : "http://127.0.0.1/"
+    },
+    {
+      "expect" : null,
+      "page" : "http://[::1]/"
+    },
+    {
+      "expect" : null,
+      "page" : "http://router/"
+    },
+    {
+      "expect" : null,
+      "page" : "http://nas.local/"
+    },
+    {
+      "expect" : null,
+      "page" : "https://some.internal/"
+    },
+    {
+      "expect" : null,
+      "page" : "https://private.example/"
+    },
+    {
+      "expect" : null,
+      "page" : "https://site.com:8443/"
+    },
+    {
+      "expect" : null,
+      "page" : "file:///tmp/a.html"
+    },
+    {
+      "expect" : "https://icons.duckduckgo.com/ip3/xn--e1afmkfd.xn--p1ai.ico",
+      "page" : "https://xn--e1afmkfd.xn--p1ai/"
+    },
+    {
+      "expect" : "https://icons.duckduckgo.com/ip3/www.example.org.ico",
+      "page" : "https://www.example.org/"
+    }
+  ],
   "faviconTone" : [
     {
       "background" : "#FFFFFF",
@@ -734,6 +891,88 @@
     {
       "expect" : null,
       "hex" : "zzzzzz"
+    }
+  ],
+  "navigation" : [
+    {
+      "expect" : false,
+      "mainFrame" : true,
+      "url" : "about:srcdoc"
+    },
+    {
+      "expect" : true,
+      "mainFrame" : false,
+      "url" : "about:srcdoc"
+    },
+    {
+      "expect" : false,
+      "mainFrame" : true,
+      "url" : "about:srcdoc#other"
+    },
+    {
+      "expect" : false,
+      "mainFrame" : false,
+      "url" : "about:srcdoc#other"
+    },
+    {
+      "expect" : true,
+      "mainFrame" : true,
+      "url" : "about:blank"
+    },
+    {
+      "expect" : true,
+      "mainFrame" : false,
+      "url" : "about:blank"
+    },
+    {
+      "expect" : true,
+      "mainFrame" : true,
+      "url" : "https://challenges.cloudflare.com/"
+    },
+    {
+      "expect" : true,
+      "mainFrame" : false,
+      "url" : "https://challenges.cloudflare.com/"
+    },
+    {
+      "expect" : false,
+      "mainFrame" : true,
+      "url" : "file:///etc/passwd"
+    },
+    {
+      "expect" : false,
+      "mainFrame" : false,
+      "url" : "file:///etc/passwd"
+    },
+    {
+      "expect" : false,
+      "mainFrame" : true,
+      "url" : "javascript:alert(1)"
+    },
+    {
+      "expect" : false,
+      "mainFrame" : false,
+      "url" : "javascript:alert(1)"
+    },
+    {
+      "expect" : false,
+      "mainFrame" : true,
+      "url" : "data:text/html,hello"
+    },
+    {
+      "expect" : false,
+      "mainFrame" : false,
+      "url" : "data:text/html,hello"
+    },
+    {
+      "expect" : true,
+      "mainFrame" : true,
+      "url" : "blob:https://example.com/id"
+    },
+    {
+      "expect" : true,
+      "mainFrame" : false,
+      "url" : "blob:https://example.com/id"
     }
   ],
   "notification" : [

@@ -93,7 +93,12 @@ public sealed partial class Tab : Observable
         settings.IsReputationCheckingRequired = true;
         core.Profile.PreferredTrackingPreventionLevel = CoreWebView2TrackingPreventionLevel.Balanced;
         core.NavigationStarting += OnNavigationStarting;
-        core.FrameNavigationStarting += (_, e) => { if (Uri.TryCreate(e.Uri, UriKind.Absolute, out var frame) && frame.IsFile) e.Cancel = true; };
+        core.FrameNavigationStarting += (_, e) =>
+        {
+            // srcdoc is a child document used by challenges and editors, not an external protocol.
+            if (AddressParser.Navigable(e.Uri, mainFrame: false)) return;
+            if (Uri.TryCreate(e.Uri, UriKind.Absolute, out var frame) && frame.IsFile) e.Cancel = true;
+        };
         core.ContentLoading += (_, _) => { Progress = 0.45; Notify(); };
         core.DOMContentLoaded += (_, _) => { Progress = 0.75; Notify(); };
         core.NavigationCompleted += OnNavigationCompleted;
@@ -412,12 +417,14 @@ public sealed partial class Tab : Observable
 /// their own (macOS Favicons). The normal profile keeps a PNG per key in %LOCALAPPDATA%\mica\Favicons and reads it
 /// lazily for restored tabs; incognito windows own a separate instance that stays in memory. The shell shows an icon
 /// through https://mica.icons/&lt;key&gt;, which ShellView answers from here.</summary>
-public sealed class Favicons
+public sealed partial class Favicons
 {
     public const int ByteLimit = 1_000_000;
     readonly string? directory;
     readonly Dictionary<string, Entry> icons = [];
     readonly HashSet<string> probed = [];
+    readonly Dictionary<string, Task> diskReads = [];
+    readonly SemaphoreSlim diskIO = new(1);
     /// <summary>PNG bytes, a version that changes with them, and for a neutral one-colour glyph (FaviconTone) its luminance.</summary>
     public sealed record Entry(byte[] Png, int Version, double? Glyph);
     int generation, version;
@@ -437,12 +444,17 @@ public sealed class Favicons
     }
 
     /// <summary>The stored icon of the page's origin. A missing icon schedules a disk read and raises Changed later.</summary>
-    public Entry? Icon(string? url) => Key(url) is { } key ? IconFor(key) : null;
+    public Entry? Icon(string? url)
+    {
+        var icon = Key(url) is { } key ? IconFor(key) : null;
+        if (icon is null) Prefetch(url);
+        return icon;
+    }
 
     public Entry? IconFor(string key)
     {
         if (icons.TryGetValue(key, out var entry)) return entry;
-        if (File(key) is { } file && probed.Add(key)) _ = LoadAsync(key, file, generation);
+        if (File(key) is { } file && probed.Add(key)) diskReads[key] = LoadAsync(key, file, generation);
         return null;
     }
 
@@ -450,9 +462,15 @@ public sealed class Favicons
     {
         try
         {
-            var bytes = await Task.Run(() => System.IO.File.Exists(file) ? System.IO.File.ReadAllBytes(file) : null);
+            byte[]? bytes;
+            await diskIO.WaitAsync();
+            try { bytes = await Task.Run(() => System.IO.File.Exists(file) ? System.IO.File.ReadAllBytes(file) : null); }
+            finally { diskIO.Release(); }
             if (bytes is null || expected != generation || icons.ContainsKey(key)) return;
-            icons[key] = new Entry(bytes, ++version, await Measure(bytes));
+            bytes = await Normalize(bytes);
+            var glyph = await Measure(bytes);
+            if (expected != generation || icons.ContainsKey(key)) return;
+            icons[key] = new Entry(bytes, ++version, glyph);
             Changed?.Invoke();
         }
         catch (Exception e) { Diagnostics.Log.Error(e); }
@@ -462,13 +480,22 @@ public sealed class Favicons
     {
         if (Key(url) is not { } key) return false;
         var expected = generation;
+        png = await Normalize(png);
         double? glyph = null;
         try { glyph = await Measure(png); } catch (Exception e) { Diagnostics.Log.Error(e); }
         if (expected != generation) return false;
         icons[key] = new Entry(png, ++version, glyph); probed.Add(key);
         Changed?.Invoke();
         if (File(key) is { } file && directory is { } folder)
-            await Task.Run(() => { try { Directory.CreateDirectory(folder); System.IO.File.WriteAllBytes(file, png); } catch (IOException) { } catch (UnauthorizedAccessException) { } });
+        {
+            await diskIO.WaitAsync();
+            try
+            {
+                if (expected == generation)
+                    await Task.Run(() => { try { Directory.CreateDirectory(folder); System.IO.File.WriteAllBytes(file, png); } catch (IOException) { } catch (UnauthorizedAccessException) { } });
+            }
+            finally { diskIO.Release(); }
+        }
         return true;
     }
 
@@ -476,9 +503,18 @@ public sealed class Favicons
     public void Clear()
     {
         generation++;
+        cancellation.Cancel(); cancellation.Dispose(); cancellation = new();
+        loadingIcons.Clear(); attempted.Clear(); diskReads.Clear();
         icons.Clear(); probed.Clear();
-        if (directory is not null) try { Directory.Delete(directory, true); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+        _ = ClearDiskAsync();
         Changed?.Invoke();
+    }
+
+    async Task ClearDiskAsync()
+    {
+        await diskIO.WaitAsync();
+        try { if (directory is not null) await Task.Run(() => { try { Directory.Delete(directory, true); } catch (IOException) { } catch (UnauthorizedAccessException) { } }); }
+        finally { diskIO.Release(); }
     }
 
     string? File(string key)
