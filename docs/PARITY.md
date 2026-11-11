@@ -47,7 +47,8 @@
 | Каталог Firefox Add-ons | проверено | нет | Пакеты для Gecko на Chromium не ставятся |
 | Масштаб страницы | pageZoom WebKit | CSS zoom | В WinUI WebView2 нет коэффициента масштаба; Ctrl+колесо остаётся масштабом Chromium |
 | Поиск на странице | проверено | написано | Find API WebView2 |
-| Печать | проверено | написано | ShowPrintUI WebView2 |
+| Печать | проверено | написано | ShowPrintUI WebView2. macOS: печать идёт через `runModal`, прежний `run()` WebKit не завершал |
+| Сохранение страницы: PDF, PNG, JPEG, HTML | проверено | написано | Место: macOS развёрнутое NSSavePanel, Windows FileSavePicker, оба на «Загрузках». Общие правила в ядре и векторы `pageFileName`, `pageImage`, `availableName`, `webAddress`, `singleFilePage`. PDF: macOS через систему печати в файл, Windows `PrintToPdfAsync` (A4 в метрических регионах, иначе Letter). Картинки: macOS растеризует `createPDF` всей страницы, Windows DevTools `Page.captureScreenshot` с `captureBeyondViewport`. HTML: копия документа из скрипта, файлы macOS берёт из веб-архива WebKit, Windows из `Page.getResourceTree` и `Page.getResourceContent`. Вкладка с файлом вместо страницы: macOS `startDownload`, Windows ссылка `download` в странице, во встроенном PDF-просмотрщике WebView2 скрипт не работает. В живом приложении Windows не запускалось |
 | Обновления | DMG и SHA-256 | установщик и SHA-256 | |
 | Установщик | DMG | mica Setup | |
 | Favicon вкладок | проверено | написано | Ключ сохранённой иконки: хост и нестандартный порт; вкладка показывает иконку текущей страницы. macOS читает ссылки на иконки страницы при каждой загрузке и скачивает без cookie; WebView2 отдаёт иконку сам (`FaviconChanged`), PNG хранится в размере WebView2 |

@@ -9,7 +9,7 @@ final class DownloadItem: NSObject, ObservableObject, Identifiable, WKDownloadDe
     weak var manager: DownloadManager?
     weak var tab: Tab?
     @Published var name = ""
-    @Published var state: DownloadState = .choosing { didSet { scheduleSave() } }
+    @Published var state: DownloadState = .choosing { didSet { scheduleSave(); if saving { manager?.objectWillChange.send() } } }
     @Published var fraction = 0.0
     @Published var bytes: Int64 = 0
     @Published var total: Int64 = 0
@@ -68,6 +68,28 @@ final class DownloadItem: NSObject, ObservableObject, Identifiable, WKDownloadDe
             }
         }
         scoped = destination?.startAccessingSecurityScopedResource() ?? false
+    }
+    /// A page mica writes itself (PageSaver) rather than a WKDownload: the row shows it while the file is made.
+    var saving = false
+    /// Makes the saved page again into the same file; the retry button calls it.
+    var saveAgain: (() -> Void)?
+    var work: Task<Void, Never>?
+    init(saving name: String, destination: URL, tab: Tab, manager: DownloadManager) {
+        id = UUID(); self.manager = manager; self.tab = tab; date = Date(); saving = true
+        super.init()
+        self.name = name; self.destination = destination; state = .running; fraction = 0.05
+    }
+    func savingFinished() {
+        guard state == .running else { return }
+        bookmark = try? destination?.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil)
+        let length = (try? destination?.resourceValues(forKeys: [.fileSizeKey]))??.fileSize ?? 0
+        bytes = Int64(length); total = bytes; failure = nil
+        state = .complete; fraction = 1
+        celebrate()
+    }
+    func savingFailed(_ error: Error) {
+        guard state == .running else { return }
+        failure = error.localizedDescription; state = .failed
     }
     init(download: WKDownload, manager: DownloadManager, tab: Tab) {
         id = UUID(); self.manager = manager; self.tab = tab; date = Date()
@@ -137,10 +159,11 @@ final class DownloadItem: NSObject, ObservableObject, Identifiable, WKDownloadDe
         self.resumeData = resumeData; releaseScope(); manager?.persist(self)
     }
     func cancel() {
-        state = .cancelled; observation = nil
+        state = .cancelled; observation = nil; work?.cancel(); work = nil
         download?.cancel { [weak self] data in self?.resumeData = data; self?.download = nil; self?.releaseScope() }
     }
     func retry() {
+        if let saveAgain { saveAgain(); return }
         guard let browser = manager?.browser else { return }
         tab = tab ?? browser.selected
         tab?.makeWebView()

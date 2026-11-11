@@ -190,6 +190,7 @@ public static class AppMenu
             MenuEntry.Item(s.Text("очистить историю…", "Очистить историю…"), () => Commands.Run(b, "clearData"), "trash", shortcut: K("clearData")),
             MenuEntry.Separator,
             MenuEntry.Item(s.Text("найти на странице", "Найти на странице"), () => Commands.Run(b, "find"), "text.magnifyingglass", enabled: tab?.Core is not null, shortcut: K("find")),
+            MenuEntry.Item(s.Text("сохранить страницу как…", "Сохранить страницу как…"), () => Commands.Run(b, "save"), "square.and.arrow.down", enabled: PageSaver.CanSave(tab), shortcut: K("save")),
             MenuEntry.Item(s.Text("печать…", "Печать…"), () => Commands.Run(b, "print"), "printer", enabled: tab?.Core is not null, shortcut: K("print")),
             MenuEntry.Item(s.Text("увеличить", "Увеличить"), () => Commands.Run(b, "zoomIn"), "plus", enabled: tab?.Core is not null, shortcut: K("zoomIn")),
             MenuEntry.Item(s.Text("уменьшить", "Уменьшить"), () => Commands.Run(b, "zoomOut"), "minus", enabled: tab?.Core is not null, shortcut: K("zoomOut")),

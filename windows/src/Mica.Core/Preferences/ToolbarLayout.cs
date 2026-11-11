@@ -1,7 +1,7 @@
 namespace Mica.Core;
 
 /// <summary>Controls the user can place in the top bar or at the bottom of the sidebar.</summary>
-public enum ToolbarControl { Sidebar, Back, Forward, Reload, NewTab, Bookmarks, History, Downloads, Extensions, Incognito, Settings, Profile }
+public enum ToolbarControl { Sidebar, Back, Forward, Reload, NewTab, Bookmarks, History, Downloads, Extensions, Incognito, Settings, Profile, Save }
 
 /// <summary>Zones of the top bar run from the window edge to the address field.</summary>
 public enum ToolbarZone { Leading, LeadingInner, TrailingInner, Trailing, Sidebar, Hidden }
@@ -15,7 +15,8 @@ public sealed class ToolbarLayout
 
     public List<ToolbarControl> Leading { get; set; } = [ToolbarControl.Sidebar, ToolbarControl.Back, ToolbarControl.Forward, ToolbarControl.Reload];
     public List<ToolbarControl> LeadingInner { get; set; } = [];
-    public List<ToolbarControl> TrailingInner { get; set; } = [];
+    /// <summary>Saving acts on the page shown, so by default it sits right after the address of that page.</summary>
+    public List<ToolbarControl> TrailingInner { get; set; } = [ToolbarControl.Save];
     public List<ToolbarControl> Trailing { get; set; } = [];
     public List<ToolbarControl> Sidebar { get; set; } = [ToolbarControl.Profile, ToolbarControl.Bookmarks, ToolbarControl.History, ToolbarControl.Downloads, ToolbarControl.Extensions, ToolbarControl.Incognito, ToolbarControl.Settings];
     public double AddressWidth { get; set; } = 560;

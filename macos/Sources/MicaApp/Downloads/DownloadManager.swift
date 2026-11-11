@@ -32,6 +32,12 @@ final class DownloadManager: ObservableObject {
         if let item = items.first { persist(item) }
         browser?.panel = .downloads
     }
+    /// A page mica saves itself. The panel opens when the file is ready: opening it at once would narrow the page
+    /// while it is being captured. Until then the save button shows the progress.
+    func add(saved item: DownloadItem) {
+        items.insert(item, at: 0)
+        persist(item)
+    }
     /// Takes a finished, failed or cancelled download off the list. The file itself stays where it was saved.
     func remove(_ item: DownloadItem) {
         guard !item.active else { return }

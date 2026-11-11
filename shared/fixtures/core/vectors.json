@@ -316,6 +316,51 @@
       "url" : "ftp://files.site.com/pub"
     }
   ],
+  "availableName" : [
+    {
+      "expect" : "Слюды — Википедия.pdf",
+      "name" : "Слюды — Википедия.pdf",
+      "taken" : [
+
+      ]
+    },
+    {
+      "expect" : "a (2).pdf",
+      "name" : "a.pdf",
+      "taken" : [
+        "a.pdf"
+      ]
+    },
+    {
+      "expect" : "a (3).pdf",
+      "name" : "a.pdf",
+      "taken" : [
+        "a.pdf",
+        "a (2).pdf"
+      ]
+    },
+    {
+      "expect" : "page (2)",
+      "name" : "page",
+      "taken" : [
+        "page"
+      ]
+    },
+    {
+      "expect" : "v1.2 (2).png",
+      "name" : "v1.2.png",
+      "taken" : [
+        "v1.2.png"
+      ]
+    },
+    {
+      "expect" : ".hidden (2)",
+      "name" : ".hidden",
+      "taken" : [
+        ".hidden"
+      ]
+    }
+  ],
   "checksum" : [
     {
       "expect" : "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -449,6 +494,10 @@
     {
       "expect" : "other",
       "name" : "image.jpeg.part"
+    },
+    {
+      "expect" : "document",
+      "name" : "Слюды — Википедия.html"
     }
   ],
   "faviconTone" : [
@@ -782,6 +831,136 @@
       "url" : "not a url"
     }
   ],
+  "pageFileName" : [
+    {
+      "expect" : "Слюды — Википедия.pdf",
+      "format" : "pdf",
+      "title" : "Слюды — Википедия",
+      "url" : "https://ru.wikipedia.org/wiki/x"
+    },
+    {
+      "expect" : "TCP-IP a guide draft-v2.png",
+      "format" : "png",
+      "title" : "TCP/IP: a \"guide\" <draft>|v2?*",
+      "url" : "https://example.com/"
+    },
+    {
+      "expect" : "example.com.jpg",
+      "format" : "jpeg",
+      "title" : "   ",
+      "url" : "https://www.example.com:8080/a?b#c"
+    },
+    {
+      "expect" : "docs.example.org.html",
+      "format" : "html",
+      "title" : "",
+      "url" : "https://user:pw@Docs.Example.org/"
+    },
+    {
+      "expect" : "page.html",
+      "format" : "html",
+      "title" : "",
+      "url" : null
+    },
+    {
+      "expect" : "line one evil.pdf",
+      "format" : "pdf",
+      "title" : "\tline\none‮evil  ",
+      "url" : "https://e.com/"
+    },
+    {
+      "expect" : "hidden.pdf",
+      "format" : "pdf",
+      "title" : "...hidden...",
+      "url" : "https://e.com/"
+    },
+    {
+      "expect" : "_con.png",
+      "format" : "png",
+      "title" : "con",
+      "url" : "https://e.com/"
+    },
+    {
+      "expect" : "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.pdf",
+      "format" : "pdf",
+      "title" : "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "url" : "https://e.com/"
+    },
+    {
+      "expect" : "[1].pdf",
+      "format" : "pdf",
+      "title" : "",
+      "url" : "http://[::1]:3000/"
+    },
+    {
+      "expect" : "👩‍💻 notes.pdf",
+      "format" : "pdf",
+      "title" : "👩‍💻 notes",
+      "url" : "https://e.com/"
+    }
+  ],
+  "pageImage" : [
+    {
+      "expect" : [
+        2357,
+        16384
+      ],
+      "height" : 8339,
+      "scale" : 2,
+      "width" : 1200
+    },
+    {
+      "expect" : [
+        1200,
+        800
+      ],
+      "height" : 800,
+      "scale" : 1,
+      "width" : 1200
+    },
+    {
+      "expect" : [
+        589,
+        16384
+      ],
+      "height" : 40000,
+      "scale" : 2,
+      "width" : 1440
+    },
+    {
+      "expect" : [
+        8000,
+        8000
+      ],
+      "height" : 10000,
+      "scale" : 2,
+      "width" : 10000
+    },
+    {
+      "expect" : [
+        1747,
+        16384
+      ],
+      "height" : 12000,
+      "scale" : 2,
+      "width" : 1280
+    },
+    {
+      "expect" : null,
+      "height" : 100,
+      "scale" : 2,
+      "width" : 0
+    },
+    {
+      "expect" : [
+        1126,
+        6000
+      ],
+      "height" : 2000.25,
+      "scale" : 3,
+      "width" : 375.5
+    }
+  ],
   "period" : [
     {
       "expect" : 3600,
@@ -947,6 +1126,77 @@
       "input" : "https://news.ycombinator.com"
     }
   ],
+  "singleFilePage" : [
+    {
+      "base" : "https://e.com/dir/page.html",
+      "expect" : "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>T</title><style media=\"screen\">@media print {\nh1{font-family:x;src:url(\"data:font/woff2;base64,d09GMg==\") format('woff2')}\n}\nbody{background:url(\"data:image/png;base64,iVBORwECAw==\")} /* url(x.png) */ .a{content:\"url(no)\"}</style><link rel=\"icon\" href=\"data:application/octet-stream;base64,iVBORwECAw==\"></head><body><img src=\"data:image/png;base64,iVBORwECAw==\" alt=\"a &amp; b\"><img src=\"https://e.com/dir/missing.png\"><a href=\"#top\">top</a><a href=\"https://e.com/dir/other.html?x=1&amp;y=2\">o</a><div style=\"background:url(&quot;data:image/png;base64,iVBORwECAw==&quot;)\"></div><!-- <img src=\"a.png\"> --><iframe src=\"https://e.com/dir/frame.html\"></iframe></body></html>",
+      "html" : "<!DOCTYPE html><html><head><meta charset=\"windows-1251\"><base href=\"https://e.com/dir/\"><title>T</title><script>alert(1)</script><link rel=\"preload\" href=\"f.woff2\"><link rel=\"stylesheet\" href=\"s.css\" media=\"screen\"><link rel=\"icon\" href=\"/favicon.png\"></head><body onload=\"go()\"><img src=\"https://e.com/dir/a.png\" srcset=\"a2.png 2x\" alt=\"a &amp; b\"><img src=\"missing.png\"><a href=\"#top\">top</a><a href=\"other.html?x=1&amp;y=2\">o</a><div style=\"background:url('a.png')\"></div><!-- <img src=\"a.png\"> --><iframe src=\"frame.html\"></iframe></body></html>",
+      "resources" : [
+        {
+          "mime" : "text/css; charset=utf-8",
+          "text" : "@import url(\"base.css\") print;\nbody{background:url(img/bg.png)} /* url(x.png) */ .a{content:\"url(no)\"}",
+          "url" : "https://e.com/dir/s.css"
+        },
+        {
+          "mime" : "text/css",
+          "text" : "h1{font-family:x;src:url('../font.woff2') format('woff2')}",
+          "url" : "https://e.com/dir/base.css"
+        },
+        {
+          "base64" : "iVBORwECAw==",
+          "mime" : "image/png",
+          "url" : "https://e.com/dir/img/bg.png"
+        },
+        {
+          "base64" : "d09GMg==",
+          "mime" : "font/woff2",
+          "url" : "https://e.com/font.woff2"
+        },
+        {
+          "base64" : "iVBORwECAw==",
+          "mime" : "image/png",
+          "url" : "https://e.com/dir/a.png"
+        },
+        {
+          "base64" : "iVBORwECAw==",
+          "mime" : "",
+          "url" : "https://e.com/favicon.png"
+        }
+      ]
+    },
+    {
+      "base" : "https://e.com/",
+      "expect" : "<html><head><meta charset=\"utf-8\"><style>.x{background-image:url(\"data:image/png;base64,iVBORwECAw==\")}</style></head><body><svg><use href=\"#i\"></use><image href=\"data:image/png;base64,iVBORwECAw==\"/></svg><p>a</p><video poster=\"https://e.com/v.jpg\" src=\"https://e.com/v.mp4\"></video></body></html>",
+      "html" : "<html><head><style>.x{background-image:URL( \"/p.png\" )}</style><meta http-equiv=\"Content-Security-Policy\" content=\"img-src 'self'\"></head><body><svg><use href=\"#i\"></use><image href=\"/p.png\"/></svg><script src=\"x.js\"></script><p>a</p><video poster=\"/v.jpg\" src=\"/v.mp4\"></video></body></html>",
+      "resources" : [
+        {
+          "base64" : "iVBORwECAw==",
+          "mime" : "image/png",
+          "url" : "https://e.com/p.png"
+        }
+      ]
+    },
+    {
+      "base" : "https://e.com/",
+      "expect" : "<meta charset=\"utf-8\"><p>no head &lt;img src=\"a.png\"&gt;</p>",
+      "html" : "<p>no head &lt;img src=\"a.png\"&gt;</p>",
+      "resources" : [
+
+      ]
+    },
+    {
+      "base" : "https://e.com/",
+      "expect" : "<html><head><meta charset=\"utf-8\"></head><body><style>@import url(\"https://e.com/loop.css\"); i{color:red}</style></body></html>",
+      "html" : "<html><head></head><body><style>@import \"loop.css\";</style></body></html>",
+      "resources" : [
+        {
+          "mime" : "text/css",
+          "text" : "@import url(loop.css); i{color:red}",
+          "url" : "https://e.com/loop.css"
+        }
+      ]
+    }
+  ],
   "version" : [
     {
       "a" : "0.3.0",
@@ -992,6 +1242,118 @@
       "a" : " v2 ",
       "b" : "2.0.0",
       "expect" : 0
+    }
+  ],
+  "webAddress" : [
+    {
+      "base" : "http://a/b/c/d;p?q",
+      "expect" : "g:h",
+      "ref" : "g:h"
+    },
+    {
+      "base" : "http://a/b/c/d;p?q",
+      "expect" : "http://a/b/c/g",
+      "ref" : "g"
+    },
+    {
+      "base" : "http://a/b/c/d;p?q",
+      "expect" : "http://a/b/c/g",
+      "ref" : "./g"
+    },
+    {
+      "base" : "http://a/b/c/d;p?q",
+      "expect" : "http://a/b/c/g/",
+      "ref" : "g/"
+    },
+    {
+      "base" : "http://a/b/c/d;p?q",
+      "expect" : "http://a/g",
+      "ref" : "/g"
+    },
+    {
+      "base" : "http://a/b/c/d;p?q",
+      "expect" : "http://g",
+      "ref" : "//g"
+    },
+    {
+      "base" : "http://a/b/c/d;p?q",
+      "expect" : "http://a/b/c/d;p?y",
+      "ref" : "?y"
+    },
+    {
+      "base" : "http://a/b/c/d;p?q",
+      "expect" : "http://a/b/c/g?y",
+      "ref" : "g?y"
+    },
+    {
+      "base" : "http://a/b/c/d;p?q",
+      "expect" : "http://a/b/c/d;p?q#s",
+      "ref" : "#s"
+    },
+    {
+      "base" : "http://a/b/c/d;p?q",
+      "expect" : "http://a/b/c/d;p?q",
+      "ref" : ""
+    },
+    {
+      "base" : "http://a/b/c/d;p?q",
+      "expect" : "http://a/b/c/",
+      "ref" : "."
+    },
+    {
+      "base" : "http://a/b/c/d;p?q",
+      "expect" : "http://a/b/",
+      "ref" : ".."
+    },
+    {
+      "base" : "http://a/b/c/d;p?q",
+      "expect" : "http://a/",
+      "ref" : "../.."
+    },
+    {
+      "base" : "http://a/b/c/d;p?q",
+      "expect" : "http://a/g",
+      "ref" : "../../../g"
+    },
+    {
+      "base" : "http://a/b/c/d;p?q",
+      "expect" : "http://a/g",
+      "ref" : "/./g"
+    },
+    {
+      "base" : "http://a/b/c/d;p?q",
+      "expect" : "http://a/b/c/y",
+      "ref" : "g;x=1/../y"
+    },
+    {
+      "base" : "https://cdn.example.com/css/site.css",
+      "expect" : "https://cdn.example.com/fonts/a.woff2?v=3#iefix",
+      "ref" : "../fonts/a.woff2?v=3#iefix"
+    },
+    {
+      "base" : "https://example.com",
+      "expect" : "https://example.com/img.png",
+      "ref" : "img.png"
+    },
+    {
+      "base" : "https://example.com/a/",
+      "expect" : "https://example.com/b c.png",
+      "ref" : "  /b c.png  "
+    },
+    {
+      "base" : "HTTPS://Example.com/x",
+      "expect" : "data:image/png;base64,AAAA",
+      "ref" : "data:image/png;base64,AAAA"
+    },
+    {
+      "base" : "relative/only",
+      "expect" : null,
+      "ref" : "x.png"
+    },
+    {
+      "base" : "https://e.com/a/b",
+      "expect" : "https://cdn.e.com/c",
+      "ref" : "//cdn.e.com/c"
     }
   ]
 }

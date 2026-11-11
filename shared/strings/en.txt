@@ -675,3 +675,13 @@ www и всё, что стоит перед доменом⟩www and everything 
 Всё, что после домена: /shoes, ?size и #⟩everything after the domain: /shoes, ?size and #⟩Everything after the domain: /shoes, ?size and #
 Домен сайта всегда остаётся основным цветом, по нему видно, чей это адрес.⟩the site’s domain always keeps the main colour, it shows whose address this is.⟩The site’s domain always keeps the main colour, it shows whose address this is.
 Пример адресной строки⟩address bar sample⟩Address bar sample
+Сохранить страницу⟩save page⟩Save Page
+Сохранить страницу как…⟩save page as…⟩Save Page As…
+Картинка PNG⟩PNG image⟩PNG image
+Картинка JPEG⟩JPEG image⟩JPEG image
+Сохраняется⟩saving⟩Saving
+Не удалось сохранить страницу⟩could not save the page⟩Could not save the page
+Картинка⟩image⟩Image
+Видео⟩video⟩Video
+Архив⟩archive⟩Archive
+Документ⟩document⟩Document

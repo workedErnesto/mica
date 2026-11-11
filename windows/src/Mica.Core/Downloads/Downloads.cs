@@ -27,7 +27,7 @@ public static class DownloadKinds
         (DownloadKind.Image, ["jpg", "jpeg", "png", "gif", "webp", "heic", "heif", "avif", "bmp", "tif", "tiff", "svg", "ico", "raw", "dng", "cr2", "nef", "arw"]),
         (DownloadKind.Video, ["mp4", "m4v", "mov", "webm", "mkv", "avi", "wmv", "flv", "mpg", "mpeg", "3gp", "ts", "m2ts"]),
         (DownloadKind.Archive, ["zip", "rar", "7z", "tar", "gz", "tgz", "bz2", "tbz", "xz", "txz", "zst", "lz", "lzma", "cab", "dmg", "iso", "pkg"]),
-        (DownloadKind.Document, ["pdf", "doc", "docx", "odt", "rtf", "txt", "md", "pages", "xls", "xlsx", "ods", "csv", "numbers", "ppt", "pptx", "odp", "key", "epub", "djvu", "fb2"]),
+        (DownloadKind.Document, ["pdf", "doc", "docx", "odt", "rtf", "txt", "md", "pages", "xls", "xlsx", "ods", "csv", "numbers", "ppt", "pptx", "odp", "key", "epub", "djvu", "fb2", "html", "htm"]),
     ];
 
     public static DownloadKind Of(string name)

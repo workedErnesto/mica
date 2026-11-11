@@ -64,12 +64,12 @@ final class FeatureTests: XCTestCase {
         t.shift(.reload, by: -1); XCTAssertEqual(t.leadingInner, [.reload, .back])
         let decoded = try JSONDecoder().decode(ToolbarLayout.self, from: JSONEncoder().encode(t))
         XCTAssertEqual(decoded, t)
-        // Layouts saved before the inner zones load with them empty.
+        // Layouts saved before the inner zones load with them empty, apart from the save button added later.
         let old = try JSONDecoder().decode(ToolbarLayout.self, from: Data(#"{"leading":["back"],"trailing":["settings"],"sidebar":[],"addressWidth":500}"#.utf8))
-        XCTAssertTrue(old.leadingInner.isEmpty && old.trailingInner.isEmpty)
+        XCTAssertTrue(old.leadingInner.isEmpty); XCTAssertEqual(old.trailingInner, [.save])
         // A duplicate across zones keeps the first, edge before inner.
         let dup = try JSONDecoder().decode(ToolbarLayout.self, from: Data(#"{"leading":["back"],"leadingInner":["back","reload"],"trailingInner":["reload"]}"#.utf8))
-        XCTAssertEqual(dup.leadingInner, [.reload]); XCTAssertTrue(dup.trailingInner.isEmpty)
+        XCTAssertEqual(dup.leadingInner, [.reload]); XCTAssertEqual(dup.trailingInner, [.save])
         // Without a sidebar the toggle disappears from every zone.
         var top = ToolbarLayout(); top.insert(.sidebar, in: .trailingInner)
         XCTAssertFalse(top.resolved(sidebarAvailable: false).trailingInner.contains(.sidebar))
