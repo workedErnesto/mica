@@ -3,7 +3,8 @@
 
 import { h, cx } from '../core/dom.js';
 import { T, keys, quoted, lang } from '../core/text.js';
-import { Button, Segmented, Switch, Group } from '../ui/controls.js';
+import { Button, Segmented, Switch, Group, SiteTile } from '../ui/controls.js';
+import { icon } from '../core/icons.js';
 import { ProfileMark } from '../ui/profile.js';
 import { springs, isReduced } from '../core/motion.js';
 import { state, ui, update, send } from './model.js';
@@ -88,6 +89,33 @@ function Alert(alert) {
       })));
 }
 
+/// A password question (PasswordPrompt on macOS): the site's icon with a key, the host, the account or the generated
+/// password on a plate, or the saved accounts as rows. Buttons: the last is the default, index 0 is "not now", the rest
+/// are quieter, in that order. Account choices come as raw user names, an empty one when the account has none.
+function PasswordAlert(alert) {
+  const card = alert.password, buttons = alert.buttons || [];
+  const answer = index => send('alert.answer', { id: alert.id, index });
+  const account = name => h('span', { class: 'account-line' }, icon('person', 12), h('span', { class: cx('clip', { muted: !name }) }, name || T("без имени пользователя", "Без имени пользователя")));
+  const order = buttons.length > 1 ? [buttons.length - 1, 0, ...buttons.map((_, i) => i).slice(1, -1)] : [0];
+  const choices = alert.choices || null;
+  return h('div', { class: 'prompt' },
+    h('span', { class: 'prompt-mark password-mark' },
+      SiteTile(card, 56),
+      h('span', { class: 'password-badge' }, icon('key', 10.5, 'semibold'))),
+    h('div', { class: 'prompt-title password-title' }, alert.title),
+    h('div', { class: 'prompt-text password-host clip', title: card.origin }, card.host),
+    choices
+      ? h('div', { class: 'password-plate choices' }, choices.map((choice, index) => h('button', {
+          class: 'account-choice press', type: 'button', key: index, 'data-default': index === 0 || null, onClick: () => answer(100 + index),
+        }, account(choice))))
+      : h('div', { class: 'password-plate' }, card.secret != null ? h('span', { class: 'mono selectable password-secret' }, card.secret) : account(card.account || '')),
+    h('div', { class: 'col', style: { gap: '8px', width: '100%' } },
+      order.map(index => Button(buttons[index], {
+        kind: choices ? 'secondary' : index === buttons.length - 1 ? 'primary' : index === 0 ? 'secondary' : 'ghost',
+        fill: true, autofocus: !choices && index === buttons.length - 1, onClick: () => answer(index), key: index,
+      }))));
+}
+
 /// The plate shown while the quit shortcut is held: its outline draws clockwise from the top over the hold time.
 function QuitHold() {
   return h('div', { class: 'quit-hold-layer', key: 'quit', 'aria-live': 'assertive', enter: 'pop', exit: { name: 'fade', float: false } },
@@ -118,7 +146,7 @@ export function Overlays() {
     o.onboarding ? Modal('onboarding', 860, 660, OnboardingView(Math.min(860, width - 48)), null) : null,
     o.clearData && state.clearData ? Modal('clear', 480, null, ClearData(), () => send('clearData.close')) : null,
     profile ? Modal('profile-prompt', 300, null, ProfilePrompt(profile), () => send('profilePrompt.close')) : null,
-    o.alert ? Modal('alert-' + o.alert.id, 320, null, Alert(o.alert), o.alert.cancel != null ? () => send('alert.answer', { id: o.alert.id, index: o.alert.cancel }) : null) : null,
+    o.alert ? Modal('alert-' + o.alert.id, o.alert.password ? 300 : 320, null, o.alert.password ? PasswordAlert(o.alert) : Alert(o.alert), o.alert.cancel != null ? () => send('alert.answer', { id: o.alert.id, index: o.alert.cancel }) : null) : null,
     o.quitHold ? QuitHold() : null,
   ];
 }

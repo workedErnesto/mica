@@ -29,9 +29,16 @@ final class BrowserModel: NSObject, ObservableObject, WKWebExtensionWindow {
     @Published var showSettings = false
     @Published var showClearData = false
     /// A window-level card (settings, onboarding, clearing data) covers the page; the web view takes no clicks meanwhile.
-    var modal: Bool { showSettings || showOnboarding || showClearData || profilePrompt != nil }
+    var modal: Bool { showSettings || showOnboarding || showClearData || profilePrompt != nil || passwordPrompt != nil }
     /// Profile chosen in the profile menu while mica still has to ask where to open it.
     @Published var profilePrompt: UUID?
+    /// Password question of the selected page (PasswordBridge); answered once, then closed.
+    @Published var passwordPrompt: PasswordRequest?
+    func answerPassword(_ answer: PasswordRequest.Answer) {
+        guard let request = passwordPrompt else { return }
+        passwordPrompt = nil
+        request.answer(answer)
+    }
     @Published var settingsSection: SettingsSection = .space
     /// Profile open in the profile editor of settings.
     @Published var editingProfile: UUID?

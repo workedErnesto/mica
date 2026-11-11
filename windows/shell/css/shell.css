@@ -515,4 +515,25 @@
 .about-intro { max-width: 520px; display: flex; flex-direction: column; gap: 12px; font-size: 13.5px; color: var(--text2); line-height: 1.45; }
 .about-intro p { margin: 0; }
 .facts { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--text2); line-height: 1.4; }
-.password-shown { font-size: 12.5px; margin-top: 4px; }
+.password-shown { font-size: 12.5px; margin-top: 4px; color: var(--ink); }
+/* Saved password rows (PasswordRow on macOS): icon tile, host over user name, icon actions at the end. */
+.setting.login-row { flex-wrap: nowrap; gap: 12px; }
+.login-host { font-size: 13px; font-weight: 500; color: var(--ink); }
+.login-user { font-size: 12px; color: var(--text2); }
+.login-user.muted { color: var(--text3); }
+.login-actions { display: flex; gap: 2px; flex: none; margin-left: auto; }
+/* Password questions (PasswordPrompt on macOS) */
+.password-mark { position: relative; display: flex; }
+.password-badge { position: absolute; right: -6px; bottom: -6px; width: 22px; height: 22px; border-radius: 7px; display: flex; align-items: center; justify-content: center;
+  background: var(--accent); color: var(--on-accent); box-shadow: 0 0 0 2px var(--canvas); }
+.prompt-title.password-title { margin-bottom: 4px; }
+.prompt-text.password-host { max-width: 100%; margin-bottom: 16px; }
+.password-plate { display: flex; align-items: center; width: 100%; min-height: 36px; padding: 0 12px; margin-bottom: 16px; border-radius: 10px; background: var(--track); text-align: left; }
+.password-plate.choices { flex-direction: column; align-items: stretch; gap: 2px; padding: 4px; }
+.account-line { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; font-size: 13px; color: var(--ink); }
+.account-line .glyph { color: var(--text3); flex: none; }
+.account-line .muted { color: var(--text3); }
+.account-choice { display: flex; align-items: center; height: 32px; padding: 0 8px; border-radius: 6px; --press: 0.98;
+  transition: transform var(--spring-press-ms) var(--spring-press), background-color var(--ease-hover); }
+.account-choice:hover, .account-choice:focus-visible { background: var(--hover); }
+.password-secret { width: 100%; padding: 10px 0; font-size: 13px; color: var(--ink); text-align: center; word-break: break-all; }

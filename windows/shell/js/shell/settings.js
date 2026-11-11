@@ -4,8 +4,8 @@
 import { h, cx } from '../core/dom.js';
 import { icon } from '../core/icons.js';
 import { T, keys, quoted, isLowercase, lang } from '../core/text.js';
-import { profileCatalog } from '../gen/tokens.g.js';
-import { Button, IconButton, Segmented, Switch, Slider, TextField, Group, Setting, Nav, Monogram, KeyHint, LinkRow } from '../ui/controls.js';
+import { profileCatalog, geometry } from '../gen/tokens.g.js';
+import { Button, IconButton, Segmented, Switch, Slider, TextField, Group, Setting, Nav, Monogram, KeyHint, LinkRow, SiteTile } from '../ui/controls.js';
 import { openPopover, closePopover } from '../ui/menu.js';
 import { ProfileMark } from '../ui/profile.js';
 import { request } from '../core/host.js';
@@ -332,6 +332,8 @@ function PermissionSettings() {
   ];
 }
 
+const ROW_ICON = geometry.chrome.rowIcon;
+
 function PasswordSettings() {
   const s = S(), p = s.passwords || { logins: [], never: [] };
   const query = local().passwordQuery || '';
@@ -345,16 +347,20 @@ function PasswordSettings() {
     p.status ? h('div', { class: 'lib-note selectable', key: 'status' }, p.status) : null,
     Group(T("сохранённые пароли", "Сохранённые пароли"), [
       h('div', { class: 'setting', key: 'search' }, h('div', { class: 'grow' }, TextField(T("поиск по сайту или имени", "Поиск по сайту или имени"), query, value => update(() => { local().passwordQuery = value; }), { symbol: 'magnifyingglass' }))),
-      logins.length ? logins.map(login => h('div', { class: 'setting', key: login.id },
-        h('div', { class: 'setting-labels' },
-          h('div', { class: 'setting-title selectable' }, login.origin),
-          h('div', { class: 'setting-detail selectable' }, login.username || T("без имени пользователя", "Без имени пользователя")),
-          p.revealed === login.id && p.secret ? h('div', { class: 'mono selectable password-shown', key: 'secret', enter: 'fade' }, p.secret) : null),
-        h('div', { class: 'setting-trailing' },
-          p.copied === login.id ? h('span', { class: 'value-label', key: 'copied', enter: 'fade' }, T("скопировано", "Скопировано")) : null,
-          Button(p.revealed === login.id ? T("скрыть", "Скрыть") : T("показать", "Показать"), { compact: true, onClick: () => send('passwords.reveal', { id: login.id }) }),
-          Button(T("копировать", "Копировать"), { compact: true, onClick: () => send('passwords.copy', { id: login.id }) }),
-          Button(T("удалить", "Удалить"), { compact: true, kind: 'destructive', onClick: () => send('passwords.remove', { id: login.id }) }))))
+      logins.length ? logins.map(login => {
+        const revealed = p.revealed === login.id && p.secret, copied = p.copied === login.id;
+        // PasswordRow on macOS: the site's icon and host, the user name, the password once revealed; icon actions at the end.
+        return h('div', { class: 'setting login-row', key: login.id },
+          SiteTile(login, ROW_ICON),
+          h('div', { class: 'setting-labels' },
+            h('div', { class: 'login-host clip', title: login.origin }, login.host || login.origin),
+            h('div', { class: cx('login-user clip selectable', { muted: !login.username }) }, login.username || T("без имени пользователя", "Без имени пользователя")),
+            revealed ? h('div', { class: 'mono selectable password-shown', key: 'secret', enter: 'fade' }, p.secret) : null),
+          h('div', { class: 'login-actions' },
+            IconButton(revealed ? 'eye.slash' : 'eye', revealed ? T("скрыть", "Скрыть") : T("показать", "Показать"), { selected: !!revealed, onClick: () => send('passwords.reveal', { id: login.id }) }),
+            IconButton(copied ? 'checkmark' : 'square.on.square', copied ? T("скопировано", "Скопировано") : T("копировать", "Копировать"), { onClick: () => send('passwords.copy', { id: login.id }) }),
+            IconButton('trash', T("удалить", "Удалить"), { onClick: () => send('passwords.remove', { id: login.id }) })));
+      })
         : h('div', { class: 'setting muted', key: 'none' }, T("пароли не найдены", "Пароли не найдены")),
     ], { key: 'saved' }),
     Group(T("сайты без сохранения", "Сайты без сохранения"), p.never.length

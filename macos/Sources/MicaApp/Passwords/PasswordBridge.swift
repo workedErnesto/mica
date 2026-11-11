@@ -37,25 +37,15 @@ final class PasswordBridge: NSObject, WKScriptMessageHandler {
             let maximum = body["max"] as? Int ?? -1
             if isNew, owner.store.preferences.offerPasswords, maximum < 0 || maximum >= 8 {
                 let password = PasswordGenerator.strong(maxLength: maximum > 0 ? maximum : nil)
-                let alert = NSAlert(); alert.messageText = owner.text("создать стойкий пароль?", "Создать стойкий пароль?")
-                alert.informativeText = password
-                alert.addButton(withTitle: owner.text("использовать", "Использовать")); alert.addButton(withTitle: owner.text("не сейчас", "Не сейчас"))
-                present(alert, owner: owner) { [weak self, weak view] result in
-                    guard result == .alertFirstButtonReturn, let self, let view, Origin.string(view.url) == origin else { return }
+                present(.generate(password: password), origin: origin, owner: owner) { [weak self, weak view] answer in
+                    guard case .use = answer, let self, let view, Origin.string(view.url) == origin else { return }
                     self.fill(view, username: nil, password: password)
                 }
             } else if !isNew, owner.store.preferences.fillPasswords {
                 let matches = owner.store.passwords.vault.matches(for: origin)
                 guard !matches.isEmpty else { return }
-                let alert = NSAlert(); alert.messageText = owner.text("заполнить учётную запись?", "Заполнить учётную запись?")
-                alert.informativeText = origin
-                let popup = NSPopUpButton(frame: NSRect(x: 0, y: 0, width: 280, height: 26))
-                popup.addItems(withTitles: matches.map { $0.username.isEmpty ? owner.text("без имени пользователя", "Без имени пользователя") : $0.username })
-                alert.accessoryView = popup
-                alert.addButton(withTitle: owner.text("заполнить", "Заполнить")); alert.addButton(withTitle: owner.text("не сейчас", "Не сейчас"))
-                present(alert, owner: owner) { [weak self, weak view] result in
-                    guard result == .alertFirstButtonReturn, let self, let view, Origin.string(view.url) == origin, matches.indices.contains(popup.indexOfSelectedItem) else { return }
-                    let login = matches[popup.indexOfSelectedItem]
+                present(.fill(matches), origin: origin, owner: owner) { [weak self, weak view] answer in
+                    guard case .fill(let login) = answer, let self, let view, Origin.string(view.url) == origin else { return }
                     self.fill(view, username: login.username, password: login.password)
                     owner.store.passwords.update { vault in if let index = vault.logins.firstIndex(where: { $0.id == login.id }) { vault.logins[index].used = Date() } }
                 }
@@ -72,20 +62,23 @@ final class PasswordBridge: NSObject, WKScriptMessageHandler {
             // A form submission alone cannot prove that authentication succeeded.
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self, weak owner] in
                 guard let self, let owner, !self.presenting, owner.selectedID == tab.id else { return }
-                let alert = NSAlert(); alert.messageText = owner.text("сохранить пароль?", "Сохранить пароль?")
-                alert.informativeText = origin + (username.isEmpty ? "" : "\n" + username)
-                alert.addButton(withTitle: owner.text("сохранить", "Сохранить")); alert.addButton(withTitle: owner.text("не сейчас", "Не сейчас")); alert.addButton(withTitle: owner.text("никогда для этого сайта", "Никогда для этого сайта"))
-                self.present(alert, owner: owner) { result in
-                    if result == .alertFirstButtonReturn { manager.update { $0.save(origin: origin, username: username, password: password) } }
-                    else if result == .alertThirdButtonReturn { manager.update { if !$0.never.contains(origin) { $0.never.append(origin) } } }
+                self.present(.save(username: username), origin: origin, owner: owner) { answer in
+                    switch answer {
+                    case .save: manager.update { $0.save(origin: origin, username: username, password: password) }
+                    case .never: manager.update { if !$0.never.contains(origin) { $0.never.append(origin) } }
+                    default: break
+                    }
                 }
             }
         }
     }
-    private func present(_ alert: NSAlert, owner: BrowserModel, completion: @escaping (NSApplication.ModalResponse) -> Void) {
-        guard let window = owner.controller?.window, window.attachedSheet == nil else { return }
+    /// The card waits for its answer; another overlay or a system sheet on the window means mica does not ask now.
+    /// The page gives up keyboard focus meanwhile so Return and Esc reach the card, as they reached the sheet before.
+    private func present(_ kind: PasswordRequest.Kind, origin: String, owner: BrowserModel, completion: @escaping (PasswordRequest.Answer) -> Void) {
+        guard let window = owner.controller?.window, window.attachedSheet == nil, !owner.modal, !owner.commandBar else { return }
         presenting = true
-        alert.beginSheetModal(for: window) { [weak self] result in self?.presenting = false; completion(result) }
+        window.makeFirstResponder(nil)
+        owner.passwordPrompt = PasswordRequest(origin: origin, kind: kind) { [weak self] answer in self?.presenting = false; completion(answer) }
     }
     private func fill(_ view: WKWebView, username: String?, password: String) {
         Task { _ = try? await view.callAsyncJavaScript("return globalThis.micaFill(username, password)", arguments: ["username": username as Any? ?? NSNull(), "password": password], in: nil, contentWorld: world) }

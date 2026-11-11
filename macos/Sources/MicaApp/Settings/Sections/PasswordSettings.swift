@@ -35,23 +35,22 @@ struct PasswordSettings: View {
                     Text(browser.text("пароли не найдены", "Пароли не найдены")).foregroundStyle(Palette.text3).padding(14)
                 }
                 ForEach(results) { login in
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(login.origin).font(.system(size: 13, weight: .medium)).textSelection(.enabled)
-                        Text(login.username.isEmpty ? browser.text("без имени пользователя", "Без имени пользователя") : login.username).foregroundStyle(Palette.text2).textSelection(.enabled)
-                        if revealed == login.id { Text(login.password).textSelection(.enabled) }
-                        HStack {
-                            Button(revealed == login.id ? browser.text("скрыть", "Скрыть") : browser.text("показать", "Показать")) {
-                                if revealed == login.id { revealed = nil }
-                                else { Task { if await passwords.authenticate() { revealed = login.id } } }
-                            }
-                            Button(browser.text("копировать", "Копировать")) {
-                                Task { if await passwords.authenticate() { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(login.password, forType: .string); copied = login.id } }
-                            }
-                            Button(browser.text("удалить", "Удалить")) { deleting = login }
-                            if copied == login.id { Text(browser.text("скопировано", "Скопировано")).foregroundStyle(Palette.text3) }
-                        }.buttonStyle(MButtonStyle(kind: .secondary, compact: true))
-                    }.padding(14).frame(maxWidth: .infinity, alignment: .leading)
-                    Rectangle().fill(Palette.hairline).frame(height: 1)
+                    PasswordRow(login: login, browser: browser, revealed: revealed == login.id, copied: copied == login.id,
+                                reveal: {
+                                    if revealed == login.id { withMotion(Motion.quick) { revealed = nil } }
+                                    else { Task { if await passwords.authenticate() { withMotion(Motion.quick) { revealed = login.id } } } }
+                                },
+                                copy: {
+                                    Task {
+                                        guard await passwords.authenticate() else { return }
+                                        NSPasteboard.general.clearContents(); NSPasteboard.general.setString(login.password, forType: .string)
+                                        withMotion(Motion.quick) { copied = login.id }
+                                        try? await Task.sleep(for: .seconds(1.6))
+                                        if copied == login.id { withMotion(Motion.quick) { copied = nil } }
+                                    }
+                                },
+                                remove: { deleting = login })
+                        .transition(.opacity)
                 }
             }
             SettingsGroup(title: browser.text("сайты без сохранения", "Сайты без сохранения")) {
@@ -69,5 +68,46 @@ struct PasswordSettings: View {
             Button(browser.text("удалить", "Удалить"), role: .destructive) { passwords.update { $0.logins.removeAll { $0.id == login.id } }; if revealed == login.id { revealed = nil }; deleting = nil }
             Button(browser.text("отмена", "Отмена"), role: .cancel) { deleting = nil }
         } message: { login in Text(login.origin + "\n" + login.username) }
+    }
+}
+
+/// A saved account: the site's icon and host, the user name under it, the password once revealed.
+/// Show, copy and remove are icon buttons at the trailing edge, like the other list rows of settings.
+private struct PasswordRow: View {
+    let login: SavedLogin
+    @ObservedObject var browser: BrowserModel
+    let revealed: Bool
+    let copied: Bool
+    let reveal: () -> Void
+    let copy: () -> Void
+    let remove: () -> Void
+    var body: some View {
+        VStack(spacing: 0) {
+            Rectangle().fill(Palette.hairline).frame(height: 1).padding(.leading, 14)
+            HStack(alignment: .center, spacing: Space.normal) {
+                SiteIcon(url: URL(string: login.origin), favicons: browser.favicons, size: Chrome.rowIcon, tiled: true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(login.host).font(.system(size: 13, weight: .medium)).foregroundStyle(Palette.ink)
+                        .lineLimit(1).truncationMode(.middle).help(login.origin)
+                    Text(login.username.isEmpty ? browser.text("без имени пользователя", "Без имени пользователя") : login.username)
+                        .font(.system(size: 12)).foregroundStyle(login.username.isEmpty ? Palette.text3 : Palette.text2)
+                        .lineLimit(1).truncationMode(.middle).textSelection(.enabled)
+                    if revealed {
+                        Text(login.password).font(.system(size: 12.5, design: .monospaced)).foregroundStyle(Palette.ink)
+                            .textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+                            .padding(.top, 2)
+                            .transition(.opacity)
+                    }
+                }
+                Spacer(minLength: Space.small)
+                HStack(spacing: 2) {
+                    IconButton(symbol: revealed ? "eye.slash" : "eye", label: revealed ? browser.text("скрыть", "Скрыть") : browser.text("показать", "Показать"), selected: revealed, action: reveal)
+                    IconButton(symbol: copied ? "checkmark" : "square.on.square", label: copied ? browser.text("скопировано", "Скопировано") : browser.text("копировать", "Копировать"), action: copy)
+                        .contentTransition(.symbolEffect(.replace))
+                    IconButton(symbol: "trash", label: browser.text("удалить", "Удалить"), action: remove)
+                }
+            }
+            .padding(.horizontal, 14).padding(.vertical, 10)
+        }
     }
 }
