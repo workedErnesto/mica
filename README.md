@@ -152,6 +152,8 @@ scripts/install.sh
 
 Скрипт запускает тесты, собирает release и устанавливает приложение в «Программы». Чтобы только собрать приложение, выполните `scripts/build.sh release`. Результат: `macos/build/mica.app`.
 
+По умолчанию сборка подписывается ad-hoc, и после каждой установки связка ключей заново спрашивает пароль для ключа хранилища паролей. Чтобы macOS запомнила «Разрешать всегда», подпишите сборку постоянным сертификатом: создайте бесплатный Apple Development в Xcode (Settings, Accounts, Manage Certificates) и запишите его имя или SHA-1 из `security find-identity -v -p codesigning` в `macos/signing.local` (файл не попадает в git) или в переменную `MICA_SIGN_IDENTITY`.
+
 <details>
 <summary><strong>Стек и сборка Windows</strong></summary>
 
