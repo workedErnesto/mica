@@ -139,6 +139,53 @@ public static partial class Shortcuts
 
     public static void Remove(string path) { try { if (File.Exists(path)) File.Delete(path); } catch (IOException) { } }
 
+    /// <summary>Folder of the shortcuts pinned to the taskbar for the current user.</summary>
+    public static string PinnedFolder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Microsoft", "Internet Explorer", "Quick Launch", "User Pinned", "TaskBar");
+
+    /// <summary>Shortcuts to mica that show its icon while it is closed: Start menu, desktop and taskbar pins.</summary>
+    public static IEnumerable<string> ToApp()
+    {
+        yield return InstallLayout.StartMenuShortcut;
+        yield return InstallLayout.DesktopShortcut;
+        if (Directory.Exists(PinnedFolder)) foreach (var pin in Directory.EnumerateFiles(PinnedFolder, "*.lnk")) yield return pin;
+    }
+
+    /// <summary>Points an existing shortcut to `target` at another icon (macOS sets the bundle's Finder icon for the
+    /// same reason). Shortcuts to other programs and missing files are left alone. Returns whether the file changed.</summary>
+    public static bool SetIcon(string path, string target, string icon, int index)
+    {
+        if (!File.Exists(path)) return false;
+        var clsid = new Guid("00021401-0000-0000-C000-000000000046");
+        var iid = typeof(IShellLinkW).GUID;
+        Marshal.ThrowExceptionForHR(CoCreateInstance(clsid, 0, 1, iid, out var pointer));
+        var wrappers = new StrategyBasedComWrappers();
+        var link = (IShellLinkW)wrappers.GetOrCreateObjectForComInstance(pointer, CreateObjectFlags.None);
+        Marshal.Release(pointer);
+        var file = (IPersistFile)link;
+        file.Load(path, 0);
+        const int length = 32768;
+        var buffer = Marshal.AllocHGlobal(length * 2);
+        try
+        {
+            link.GetPath(buffer, length, 0, 0);
+            var linked = Marshal.PtrToStringUni(buffer) ?? "";
+            if (linked.Length == 0 || !string.Equals(Path.GetFullPath(linked), Path.GetFullPath(target), StringComparison.OrdinalIgnoreCase)) return false;
+            link.GetIconLocation(buffer, length, out var current);
+            if (current == index && string.Equals(Marshal.PtrToStringUni(buffer), icon, StringComparison.OrdinalIgnoreCase)) return false;
+        }
+        finally { Marshal.FreeHGlobal(buffer); }
+        link.SetIconLocation(icon, index);
+        file.Save(path, true);
+        SHChangeNotify(0x00002000 /* SHCNE_UPDATEITEM */, 0x0005 /* SHCNF_PATHW */, path, 0);
+        return true;
+    }
+
+    /// <summary>Asks Explorer and the taskbar to drop cached icons after shortcuts changed.</summary>
+    public static void RefreshIcons() => SHChangeNotify(0x08000000 /* SHCNE_ASSOCCHANGED */, 0 /* SHCNF_IDLIST */, null, 0);
+
+    [LibraryImport("shell32.dll", StringMarshalling = StringMarshalling.Utf16)]
+    private static partial void SHChangeNotify(int eventId, uint flags, string? item1, nint item2);
+
     [LibraryImport("ole32.dll")]
     private static partial int CoCreateInstance(in Guid clsid, nint outer, uint context, in Guid iid, out nint result);
 

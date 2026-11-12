@@ -180,4 +180,5 @@ public sealed partial class ShellView : Grid
     }
 
     public void FocusShell() => view.Focus(FocusState.Programmatic);
+    public bool HasFocus => view.FocusState != FocusState.Unfocused;
 }

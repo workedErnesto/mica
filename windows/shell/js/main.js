@@ -10,7 +10,7 @@ import { openAppMenu, openSaveMenu } from './shell/topbar.js';
 import { focusStartField } from './shell/start.js';
 import { prepareCommandBar } from './shell/command.js';
 import { focusFind } from './shell/page.js';
-import { coversPage, layout as currentLayout } from './shell/model.js';
+import { coversPage, keepsPageKeyboard, layout as currentLayout } from './shell/model.js';
 import { keymap } from './gen/tokens.g.js';
 
 // Window shortcuts from shared/keymap.json. The shell sees them while it has the keyboard and hands them to the host,
@@ -102,6 +102,7 @@ function report() {
   const payload = {
     page: rect ? [rect.left, rect.top, rect.width, rect.height] : null,
     covered: coversPage(),
+    keepPage: keepsPageKeyboard(),
     caption: state.overlay.customizingToolbar || document.documentElement.hasAttribute('data-dragging') ? [] : caption,
     passthrough,
     radius: 10,
@@ -137,6 +138,7 @@ window.addEventListener('keydown', event => {
     if (state && state.overlay.commandBar) { send('commandBar', { on: false }); event.preventDefault(); return; }
     if (state && state.overlay.customizingToolbar) { send('customize.toolbar', { on: false }); event.preventDefault(); return; }
     if (state && state.overlay.find) { send('find.close'); event.preventDefault(); return; }
+    if (state && state.overlay.passwordOffer) { send('passwords.offer', { index: -1 }); event.preventDefault(); return; }
   }
   if (event.key === 'Enter' && state && (state.overlay.profilePrompt || state.overlay.alert)) {
     const button = document.querySelector('.modal [data-default]');

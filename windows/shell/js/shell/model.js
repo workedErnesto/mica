@@ -41,7 +41,13 @@ export function modalOpen() {
 /// Something of the shell is drawn over the page area, so the host must put the shell above the page.
 export function coversPage() {
   const o = state.overlay;
-  return modalOpen() || o.commandBar || o.customizingToolbar || !!ui.menu || !!ui.popover || !!o.quitHold;
+  return modalOpen() || o.commandBar || o.customizingToolbar || !!ui.menu || !!ui.popover || !!o.quitHold || !!o.passwordOffer;
+}
+
+/// Only the password offer is over the page: the shell goes above it, but the page keeps the keyboard.
+export function keepsPageKeyboard() {
+  const o = state.overlay;
+  return !!o.passwordOffer && !(modalOpen() || o.commandBar || o.customizingToolbar || !!ui.menu || !!ui.popover || !!o.quitHold);
 }
 
 export function toolbarItems() {

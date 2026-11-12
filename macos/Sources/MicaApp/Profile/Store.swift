@@ -12,7 +12,7 @@ final class Store: ObservableObject {
     lazy var websiteDataStore: WKWebsiteDataStore = ProcessInfo.processInfo.arguments.contains("--qa") ? WKWebsiteDataStore(forIdentifier: UUID(uuidString: "4931E497-3225-4DAD-A8E3-87D4038B84EE")!) : .default()
     /// Application-wide preferences. The part a profile owns (ProfileLook) is read through `prefs(for:)`; its copy here
     /// only seeds the standard profile when preferences from a build before profiles are first loaded.
-    @Published var preferences: Preferences { didSet { schedulePreferences(); if oldValue.appIcon != preferences.appIcon { AppIcons.apply(preferences.appIcon); flushPreferences(); AppIcons.announce() }; if oldValue.blocking != preferences.blocking || oldValue.blockingExceptions != preferences.blockingExceptions { Task { await blocker.rebuild() } }; if oldValue.blocking != preferences.blocking { Task { await ublock.startBuiltin() } } else if oldValue.blockingExceptions != preferences.blockingExceptions { Task { await ublock.rebuild() } } } }
+    @Published var preferences: Preferences { didSet { schedulePreferences(); if oldValue.appIcon != preferences.appIcon { AppIcons.apply(preferences.appIcon); flushPreferences(); AppIcons.announce(preferences.appIcon) }; if oldValue.blocking != preferences.blocking || oldValue.blockingExceptions != preferences.blockingExceptions { Task { await blocker.rebuild() } }; if oldValue.blocking != preferences.blocking { Task { await ublock.startBuiltin() } } else if oldValue.blockingExceptions != preferences.blockingExceptions { Task { await ublock.rebuild() } } } }
     /// The standard profile first. Each window shows one of them; deleting a profile moves its windows to the standard one.
     @Published var profiles: [Profile] { didSet { scheduleProfiles(); for window in windows { window.applyProfile() }; updateTextStyle() } }
     /// Language and case of text that belongs to no window (the menu bar, alerts without a window, extension and update
@@ -171,6 +171,7 @@ final class Store: ObservableObject {
     func start() async {
         applyAppearance()
         AppIcons.apply(preferences.appIcon)
+        AppIcons.announce(preferences.appIcon)
         // Left by builds that wrote the icon onto the bundle through a picked-file bookmark.
         UserDefaults.standard.removeObject(forKey: "bundleIconBookmark")
         await blocker.rebuild()

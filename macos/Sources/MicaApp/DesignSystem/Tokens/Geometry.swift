@@ -21,6 +21,16 @@ enum Chrome {
     static let rowIcon: CGFloat = 30
     /// Width reserved for the Windows caption buttons (minimize, maximize, close), measured from the right edge.
     static let captionInset: CGFloat = 138
+    /// Password offer anchored to a sign-in field of the page: width, narrowed to the page minus two gutters.
+    static let offerWidth: CGFloat = 280
+    /// Space between the sign-in field and its password offer, above the field or below it when there is no room.
+    static let offerGap: CGFloat = 6
+    /// Caption line of the password offer (saved passwords, strong password).
+    static let offerHeader: CGFloat = 24
+    /// One choice of the password offer: an account or the generated password, a title over a detail line.
+    static let offerRow: CGFloat = 36
+    /// Hairline and the quiet "never for this site" row under a generated password offer.
+    static let offerFooter: CGFloat = 29
 }
 
 /// Spacing scale.

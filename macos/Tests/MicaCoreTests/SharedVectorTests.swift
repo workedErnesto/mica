@@ -80,6 +80,46 @@ final class SharedVectorTests: XCTestCase {
             }
             return SingleFilePage.build(html: c["html"] as! String, base: c["base"] as! String, resources: resources)
         case "profileGlyph": return Profiles.lightGlyph(on: c["hex"] as! String, glyph: ProfileGlyph(rawValue: c["glyph"] as? String ?? "auto") ?? .auto) ? "light" : "dark"
+        case "passwordOffer":
+            // Saved logins carry seconds since 2026 for their update and last use, so the order is defined.
+            var vault = Vault()
+            vault.never = c["never"] as? [String] ?? []
+            for item in c["logins"] as! [[String: Any]] {
+                var login = SavedLogin(origin: item["origin"] as! String, username: item["username"] as! String, password: "p", created: Date(timeIntervalSince1970: 1_767_225_600))
+                login.updated = Date(timeIntervalSince1970: 1_767_225_600 + (item["updated"] as! NSNumber).doubleValue)
+                login.used = (item["used"] as? NSNumber).map { Date(timeIntervalSince1970: 1_767_225_600 + $0.doubleValue) }
+                vault.logins.append(login)
+            }
+            switch PasswordOffer.decide(vault: vault, origin: c["origin"] as! String, isNew: c["new"] as! Bool, maxLength: c["max"] as! Int,
+                                        offerPasswords: c["offerPasswords"] as? Bool ?? true, fillPasswords: c["fillPasswords"] as? Bool ?? true) {
+            case nil: return "none"
+            case .generate: return "generate"
+            case .fill(let logins): return "fill:" + logins.map(\.username).joined(separator: ",")
+            }
+        case "passwordOfferSession":
+            // Events as "focus:1", "click:1", "input:1", "blur:1", "dismiss", "accept", "leave"; visibility after each.
+            var session = PasswordOfferSession()
+            return (c["events"] as! [String]).map { text -> Bool in
+                let parts = text.split(separator: ":"), id = parts.count > 1 ? Int(parts[1])! : 0
+                switch parts[0] {
+                case "focus": session.apply(.focus(id))
+                case "click": session.apply(.click(id))
+                case "input": session.apply(.input(id))
+                case "blur": session.apply(.blur(id))
+                case "dismiss": session.apply(.dismiss)
+                case "accept": session.apply(.accept)
+                default: session.apply(.leave)
+                }
+                return session.visible
+            }
+        case "passwordOfferPlace":
+            func size(_ key: String) -> CGSize { let v = (c[key] as! [NSNumber]).map(\.doubleValue); return CGSize(width: v[0], height: v[1]) }
+            let f = (c["field"] as! [NSNumber]).map(\.doubleValue)
+            let view = size("view")
+            let field = PasswordOfferPlacement.viewRect(css: CGRect(x: f[0], y: f[1], width: f[2], height: f[3]), innerWidth: (c["innerWidth"] as! NSNumber).doubleValue, viewWidth: view.width)
+            guard let placed = PasswordOfferPlacement.place(field: field, bounds: view, panel: size("panel"), gap: (c["gap"] as! NSNumber).doubleValue, margin: (c["margin"] as! NSNumber).doubleValue) else { return NSNull() }
+            let r = placed.frame
+            return [Double(r.minX), Double(r.minY), Double(r.width), Double(r.height), placed.edge.rawValue] as [Any]
         default: XCTFail("unknown section \(section)"); return NSNull()
         }
     }

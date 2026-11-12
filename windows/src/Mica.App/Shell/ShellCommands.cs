@@ -238,6 +238,10 @@ public static class ShellCommands
                     store.Passwords.Update(v => v.Logins.RemoveAll(l => l.Id == removedLogin));
                 break;
             case "passwords.removeNever": if (Str(a, "origin") is { } never) store.Passwords.Update(v => v.Never.Remove(never)); break;
+            // The offer beside a sign-in field: a row index, or -1 for "not now" (Esc, a click on the page).
+            case "passwords.offer":
+                if (b.PasswordOffer is { } offer && b.Tabs.FirstOrDefault(t => t.Id == offer.Tab) is { } offerTab) offerTab.PasswordOffers.Choose((int)Num(a, "index", -1));
+                break;
 
             // Data transfer
             case "import.run":

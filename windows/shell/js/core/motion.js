@@ -74,6 +74,9 @@ const presets = {
   'slide-bottom': { from: { opacity: 0, translate: '0 100%' }, spring: 'panel' },
   'slide-leading': { from: { opacity: 0, translate: '-100% 0' }, spring: 'panel' },
   'slide-trailing': { from: { opacity: 0, translate: '100% 0' }, spring: 'panel' },
+  // Password offer beside a field (PasswordOfferPanel): popScale and 4 px from the field's side, with opacity.
+  'offer-above': { from: { opacity: 0, translate: '0 4px', scale: tokens.popScale }, spring: 'snappy' },
+  'offer-below': { from: { opacity: 0, translate: '0 -4px', scale: tokens.popScale }, spring: 'snappy' },
   // ModalCard: scale 0.97 with opacity.
   modal: { from: { opacity: 0, scale: 0.97 }, spring: 'snappy' },
   // Command bar: scale 0.97 from the top edge and 6 px down.

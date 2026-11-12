@@ -199,4 +199,17 @@ final class CoreTests: XCTestCase {
         var q = Preferences(); q.appIcon = "base-blue"; q.toolbar.place(.newTab, in: .trailing); q.start.shortcuts = [StartShortcut(title: "GitHub", url: URL(string: "https://github.com")!)]
         XCTAssertEqual(try JSONDecoder().decode(Preferences.self, from: JSONEncoder().encode(q)), q)
     }
+    func testDockIconMessage() {
+        let app = "/Applications/mica.app"
+        XCTAssertEqual(DockIcon.message(icon: "kitty-kuromi", bundle: app), "kitty-kuromi:/Applications/mica.app")
+        XCTAssertEqual(DockIcon.message(icon: nil, bundle: app + "/"), "base-original:/Applications/mica.app")
+        XCTAssertEqual(DockIcon.message(icon: "../x", bundle: app), "base-original:/Applications/mica.app")
+        XCTAssertEqual(DockIcon.icon(in: DockIcon.message(icon: "base-dark", bundle: app), bundle: app), "base-dark")
+        XCTAssertEqual(DockIcon.icon(in: "base-dark:/Applications/./mica.app/", bundle: app), "base-dark")
+        XCTAssertNil(DockIcon.icon(in: "base-dark:/Users/me/mica/macos/build/mica.app", bundle: app), "another copy of mica")
+        XCTAssertNil(DockIcon.icon(in: "base-dark", bundle: app))
+        XCTAssertNil(DockIcon.icon(in: "base-dark:", bundle: app))
+        for bad in ["", "../../etc", "Base-Dark", "a/b", String(repeating: "a", count: 65)] { XCTAssertNil(DockIcon.icon(in: bad + ":" + app, bundle: app), bad) }
+        XCTAssertEqual(DockIcon.icon(in: "base-dark:/Volumes/My: Disk/mica.app", bundle: "/Volumes/My: Disk/mica.app"), "base-dark", "a colon in the path")
+    }
 }

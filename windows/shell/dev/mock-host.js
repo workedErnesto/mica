@@ -44,7 +44,7 @@ export class MockHost {
       },
       toolbarIsDefault: true,
       tabs, selectedId: tabs[0].id, closedCount: 1, panel: params.get('panel'), saving: null,
-      overlay: { commandBar: false, find: false, settings: params.has('settings'), onboarding: params.has('onboarding'), onboardingStep: 0, clearData: false, profilePrompt: null, alert: passwordAlert(params.get('password')), customizingToolbar: false, customizingStart: false, quitHold: null },
+      overlay: { commandBar: false, find: false, settings: params.has('settings'), onboarding: params.has('onboarding'), onboardingStep: 0, clearData: false, profilePrompt: null, alert: passwordAlert(params.get('password')), passwordOffer: passwordOffer(params.get('offer')), customizingToolbar: false, customizingStart: false, quitHold: null },
       start: { greeting: null, searchTitle: 'DuckDuckGo', isDefault: true, sections: [] },
       site: null, findResult: null, clearData: null,
       library: {},
@@ -168,6 +168,7 @@ export class MockHost {
       case 'settings.close': s.overlay.settings = false; return done();
       case 'alert.answer': s.overlay.alert = null; return done();
       case 'settings.hosts': if (a.key === 'eagerHosts' || a.key === 'blockingExceptions') s.prefs[a.key] = a.hosts; return done();
+      case 'passwords.offer': s.overlay.passwordOffer = null; return done();
       case 'settings.set': s.settings[a.key] = a.value; this.push(); return;
       case 'settings.search': s.settings.search = a.engine; this.push(); return;
       case 'onboarding.step': s.overlay.onboardingStep = a.step; return done();
@@ -204,11 +205,17 @@ export class MockHost {
   }
 }
 
-/// ?password=save|fill|generate opens the matching password question (ShellState builds it from Dialogs.Question).
+/// ?password=save opens the question after a sign-in (ShellState builds it from Dialogs.Question).
 function passwordAlert(kind) {
   const password = { origin: 'https://www.moysklad.ru', host: 'www.moysklad.ru' };
   if (kind === 'save') return { id: 1, title: 'сохранить пароль?', text: '', buttons: ['не сейчас', 'никогда для этого сайта', 'сохранить'], cancel: 0, password: { ...password, account: 'admin@swarton' } };
-  if (kind === 'generate') return { id: 2, title: 'создать стойкий пароль?', text: '', buttons: ['не сейчас', 'использовать'], cancel: 0, password: { ...password, secret: 'hT4k-Wq9z-Lm2p-Vx7r' } };
-  if (kind === 'fill') return { id: 3, title: 'заполнить учётную запись?', text: '', buttons: ['не сейчас'], choices: ['admin@swarton', ''], cancel: 0, password };
+  return null;
+}
+
+/// ?offer=fill|generate shows the offer beside a sign-in field, as if the field sat at 320, 300 in the window.
+function passwordOffer(kind) {
+  const page = [268, 52, 900, 700], base = { page, edge: 'above', selected: null, visibleRows: 4 };
+  if (kind === 'fill') return { ...base, kind: 'fill', frame: [320, 186, 280, 108], rows: [{ username: 'admin@swarton', host: 'www.moysklad.ru' }, { username: '', host: 'www.moysklad.ru' }], password: null };
+  if (kind === 'generate') return { ...base, kind: 'generate', frame: [320, 193, 280, 101], rows: [], password: 'hT4k-Wq9z-Lm2p-Vx7r' };
   return null;
 }

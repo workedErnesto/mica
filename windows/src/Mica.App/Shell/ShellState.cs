@@ -366,6 +366,28 @@ public static class ShellState
         return r.Problems.Count == 0 ? text : text + ". " + string.Join(". ", r.Problems);
     }
 
+    /// <summary>The offer beside a sign-in field (PasswordOfferPanel on macOS), in window DIPs. Left out while a window
+    /// overlay, the command bar or a question covers the page, or another tab is selected.</summary>
+    static JsonObject? PasswordOffer(BrowserModel browser, Look look)
+    {
+        if (browser.PasswordOffer is not { } o || o.Tab != browser.SelectedId || browser.Modal || browser.CommandBar || browser.CustomizingToolbar || browser.Questions.Count > 0) return null;
+        static JsonArray Rect(OfferRect r) => new(r.X, r.Y, r.Width, r.Height);
+        var rows = new JsonArray();
+        foreach (var login in o.Offer.Logins)
+        {
+            var row = new JsonObject { ["username"] = login.Username, ["host"] = login.Host };
+            Icon(row, browser.Favicons, login.Origin, look.Dark);
+            rows.Push(row);
+        }
+        return new JsonObject
+        {
+            ["kind"] = o.Offer.Kind == PasswordOfferKind.Fill ? "fill" : "generate",
+            ["frame"] = Rect(o.Frame), ["page"] = Rect(o.Page), ["edge"] = o.Edge == OfferEdge.Above ? "above" : "below",
+            ["rows"] = rows, ["password"] = o.Offer.Kind == PasswordOfferKind.Generate ? o.Password : null,
+            ["visibleRows"] = Mica.Core.PasswordOffer.VisibleRows, ["selected"] = o.Selected,
+        };
+    }
+
     /// <summary>The whole snapshot. <paramref name="library"/> and <paramref name="settings"/> are left out when null:
     /// the shell keeps what it received before.</summary>
     public static JsonObject Build(BrowserModel browser, BrowserWindow window, Look look, int seed, JsonObject? library, JsonObject? settings)
@@ -399,7 +421,7 @@ public static class ShellState
             else if (q.Password is null && Appearance.AppIcons.Png(appIcon) is not null) alert["mark"] = "https://mica.icons/app/" + appIcon;
             if (q.Password is { } card)
             {
-                var password = new JsonObject { ["origin"] = card.Origin, ["host"] = AddressParser.Host(card.Origin) ?? card.Origin, ["account"] = card.Account, ["secret"] = card.Secret };
+                var password = new JsonObject { ["origin"] = card.Origin, ["host"] = AddressParser.Host(card.Origin) ?? card.Origin, ["account"] = card.Account };
                 Icon(password, browser.Favicons, card.Origin, look.Dark);
                 alert["password"] = password;
             }
@@ -436,6 +458,7 @@ public static class ShellState
                 ["clearData"] = browser.ShowClearData, ["profilePrompt"] = browser.ProfilePrompt?.ToString(), ["alert"] = alert,
                 ["customizingToolbar"] = browser.CustomizingToolbar, ["customizingStart"] = browser.CustomizingStart,
                 ["quitHold"] = browser.QuitHolding ? QuitHold.Duration : null,
+                ["passwordOffer"] = PasswordOffer(browser, look),
             },
             ["start"] = Start(browser, look, seed),
             ["site"] = Site(browser),

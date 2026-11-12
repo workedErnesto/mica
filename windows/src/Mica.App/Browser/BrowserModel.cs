@@ -39,6 +39,10 @@ public sealed partial class BrowserModel : Observable
     bool quitHolding;
     /// <summary>Questions of this window waiting for an answer in the shell, the first one shown (Dialogs).</summary>
     public List<Dialogs.Question> Questions { get; } = [];
+    /// <summary>The password offer beside a sign-in field of the selected page (PasswordBridge); the shell draws it
+    /// over the page while the page keeps the keyboard.</summary>
+    public Passwords.OfferView? PasswordOffer { get => passwordOffer; set { passwordOffer = value; Notify(); } }
+    Passwords.OfferView? passwordOffer;
     public void Touch() => Notify();
     /// <summary>Profile open in the profile editor of settings.</summary>
     public Guid? EditingProfile { get; set; }

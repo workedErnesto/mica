@@ -17,12 +17,15 @@ for lang in en ru; do mkdir -p "$app_path/Contents/Resources/$lang.lproj"; cp "R
 if [[ -f Resources/App/mica.icns ]]; then cp Resources/App/mica.icns "$app_path/Contents/Resources/"; fi
 rm -rf "$app_path/Contents/Resources/AppIcons"
 if [[ -d Resources/AppIcons ]]; then mkdir -p "$app_path/Contents/Resources/AppIcons"; cp Resources/AppIcons/*.heic Resources/AppIcons/NOTICE.txt "$app_path/Contents/Resources/AppIcons/"; fi
+# A bundle that ran keeps the Finder icon its Dock tile plug-in set; codesign refuses to sign such a bundle root.
+rm -f "$app_path/Icon"$'\r'
+xattr -d com.apple.FinderInfo "$app_path" 2>/dev/null || true
 plugin="$app_path/Contents/PlugIns/MicaDockTile.docktileplugin"
 rm -rf "$app_path/Contents/PlugIns"
 mkdir -p "$plugin/Contents/MacOS"
 cp Sources/MicaDockTile/Info.plist "$plugin/Contents/Info.plist"
 optimization=$([[ "$configuration" == "release" ]] && echo -O || echo -Onone)
-swiftc $optimization -parse-as-library -module-name MicaDockTile -target "$(uname -m)-apple-macos15.4" -emit-executable -Xlinker -bundle Sources/MicaDockTile/MicaDockTile.swift -o "$plugin/Contents/MacOS/MicaDockTile"
+swiftc $optimization -parse-as-library -module-name MicaDockTile -target "$(uname -m)-apple-macos15.4" -emit-executable -Xlinker -bundle Sources/MicaDockTile/MicaDockTile.swift Sources/MicaCore/Preferences/DockIcon.swift -o "$plugin/Contents/MacOS/MicaDockTile"
 # A stable identity (Apple Development of a Personal Team) keeps the designated requirement and the keychain
 # partition (team ID) the same across builds, so "Always Allow" for the password vault key survives reinstalls.
 # Ad-hoc signing ties both to the build hash: every install asked for the login keychain password again.

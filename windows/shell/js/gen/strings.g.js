@@ -105,25 +105,9 @@ export const english = {
 "confirm access to the password",
 "Confirm access to the password"
 ],
-"Создать стойкий пароль?": [
-"generate a strong password?",
-"Generate a strong password?"
-],
-"Использовать": [
-"use",
-"Use"
-],
 "Не сейчас": [
 "not now",
 "Not now"
-],
-"Заполнить учётную запись?": [
-"fill an account?",
-"Fill an account?"
-],
-"Заполнить": [
-"fill",
-"Fill"
 ],
 "Сохранить пароль?": [
 "save password?",
@@ -132,6 +116,22 @@ export const english = {
 "Никогда для этого сайта": [
 "never for this site",
 "Never for this site"
+],
+"Предложение пароля": [
+"password suggestion",
+"Password suggestion"
+],
+"Предложение пароля. Стрелка вниз выбирает, Esc закрывает": [
+"password suggestion. down arrow chooses, Esc closes",
+"Password suggestion. Down arrow chooses, Esc closes"
+],
+"Новый пароль": [
+"new password",
+"New password"
+],
+"Использовать стойкий пароль": [
+"use strong password",
+"Use strong password"
 ],
 "Ищем браузеры на этом Mac": [
 "looking for browsers on this Mac",
