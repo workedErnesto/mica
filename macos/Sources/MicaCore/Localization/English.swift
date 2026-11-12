@@ -40,13 +40,13 @@ macOS попросит открыть папку данных браузера. 
 Сайты без сохранения⟩sites excluded from saving⟩Sites excluded from saving
 Исключений нет⟩no excluded sites⟩No excluded sites
 Подтвердите доступ к паролю⟩confirm access to the password⟩Confirm access to the password
-Создать стойкий пароль?⟩generate a strong password?⟩Generate a strong password?
-Использовать⟩use⟩Use
 Не сейчас⟩not now⟩Not now
-Заполнить учётную запись?⟩fill an account?⟩Fill an account?
-Заполнить⟩fill⟩Fill
 Сохранить пароль?⟩save password?⟩Save password?
 Никогда для этого сайта⟩never for this site⟩Never for this site
+Предложение пароля⟩password suggestion⟩Password suggestion
+Предложение пароля. Стрелка вниз выбирает, Esc закрывает⟩password suggestion. down arrow chooses, Esc closes⟩Password suggestion. Down arrow chooses, Esc closes
+Новый пароль⟩new password⟩New password
+Использовать стойкий пароль⟩use strong password⟩Use strong password
 Ищем браузеры на этом Mac⟩looking for browsers on this Mac⟩Looking for browsers on this Mac
 Доступные профили не найдены. Можно выбрать папку профиля или файл экспорта⟩no accessible profiles found. choose a profile folder or an export file⟩No accessible profiles found. Choose a profile folder or an export file
 Выбрать папку профиля…⟩choose a profile folder…⟩Choose a profile folder…

@@ -15,6 +15,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// neither opens a window that the restored session buries nor duplicates one.
     private var started = false
     private var pendingURLs: [URL] = []
+    /// The chosen icon before the first window, so the Dock does not show the bundle icon while the session restores.
+    func applicationWillFinishLaunching(_ notification: Notification) { AppIcons.apply(store.preferences.appIcon) }
     func applicationDidFinishLaunching(_ notification: Notification) {
         store.notifier.start()
         buildMenu()
@@ -121,7 +123,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         prepareQuit(); return .terminateNow
     }
-    func prepareQuit() { store.flushPreferences(); store.sessionWork?.cancel(); store.flushSession(); store.shuttingDown = true; for window in store.windows { window.model.downloads.cancelAll() } }
+    func prepareQuit() { AppIcons.announce(store.preferences.appIcon); store.flushPreferences(); store.sessionWork?.cancel(); store.flushSession(); store.shuttingDown = true; for window in store.windows { window.model.downloads.cancelAll() } }
     @objc func performCommand(_ sender: NSMenuItem) {
         let browser = store.active
         switch sender.representedObject as? String {

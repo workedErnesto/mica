@@ -1316,6 +1316,713 @@
       "width" : 375.5
     }
   ],
+  "passwordOffer" : [
+    {
+      "expect" : "fill:carol,alice,bob",
+      "logins" : [
+        {
+          "origin" : "https://accounts.example.com",
+          "updated" : 10,
+          "username" : "alice"
+        },
+        {
+          "origin" : "https://accounts.example.com",
+          "updated" : 20,
+          "used" : 5,
+          "username" : "bob"
+        },
+        {
+          "origin" : "https://accounts.example.com",
+          "updated" : 1,
+          "used" : 30,
+          "username" : "carol"
+        },
+        {
+          "origin" : "https://example.com",
+          "updated" : 40,
+          "username" : "dave"
+        }
+      ],
+      "max" : -1,
+      "new" : false,
+      "origin" : "https://accounts.example.com"
+    },
+    {
+      "expect" : "fill:dave",
+      "logins" : [
+        {
+          "origin" : "https://accounts.example.com",
+          "updated" : 10,
+          "username" : "alice"
+        },
+        {
+          "origin" : "https://accounts.example.com",
+          "updated" : 20,
+          "used" : 5,
+          "username" : "bob"
+        },
+        {
+          "origin" : "https://accounts.example.com",
+          "updated" : 1,
+          "used" : 30,
+          "username" : "carol"
+        },
+        {
+          "origin" : "https://example.com",
+          "updated" : 40,
+          "username" : "dave"
+        }
+      ],
+      "max" : -1,
+      "new" : false,
+      "origin" : "https://example.com"
+    },
+    {
+      "expect" : "none",
+      "logins" : [
+        {
+          "origin" : "https://accounts.example.com",
+          "updated" : 10,
+          "username" : "alice"
+        },
+        {
+          "origin" : "https://accounts.example.com",
+          "updated" : 20,
+          "used" : 5,
+          "username" : "bob"
+        },
+        {
+          "origin" : "https://accounts.example.com",
+          "updated" : 1,
+          "used" : 30,
+          "username" : "carol"
+        },
+        {
+          "origin" : "https://example.com",
+          "updated" : 40,
+          "username" : "dave"
+        }
+      ],
+      "max" : -1,
+      "new" : false,
+      "origin" : "https://www.example.com"
+    },
+    {
+      "expect" : "none",
+      "logins" : [
+        {
+          "origin" : "https://accounts.example.com",
+          "updated" : 10,
+          "username" : "alice"
+        },
+        {
+          "origin" : "https://accounts.example.com",
+          "updated" : 20,
+          "used" : 5,
+          "username" : "bob"
+        },
+        {
+          "origin" : "https://accounts.example.com",
+          "updated" : 1,
+          "used" : 30,
+          "username" : "carol"
+        },
+        {
+          "origin" : "https://example.com",
+          "updated" : 40,
+          "username" : "dave"
+        }
+      ],
+      "max" : -1,
+      "new" : false,
+      "origin" : "http://accounts.example.com"
+    },
+    {
+      "expect" : "none",
+      "fillPasswords" : false,
+      "logins" : [
+        {
+          "origin" : "https://accounts.example.com",
+          "updated" : 10,
+          "username" : "alice"
+        },
+        {
+          "origin" : "https://accounts.example.com",
+          "updated" : 20,
+          "used" : 5,
+          "username" : "bob"
+        },
+        {
+          "origin" : "https://accounts.example.com",
+          "updated" : 1,
+          "used" : 30,
+          "username" : "carol"
+        },
+        {
+          "origin" : "https://example.com",
+          "updated" : 40,
+          "username" : "dave"
+        }
+      ],
+      "max" : -1,
+      "new" : false,
+      "origin" : "https://accounts.example.com"
+    },
+    {
+      "expect" : "generate",
+      "logins" : [
+
+      ],
+      "max" : -1,
+      "new" : true,
+      "origin" : "https://accounts.example.com"
+    },
+    {
+      "expect" : "generate",
+      "logins" : [
+
+      ],
+      "max" : 8,
+      "new" : true,
+      "origin" : "https://accounts.example.com"
+    },
+    {
+      "expect" : "none",
+      "logins" : [
+
+      ],
+      "max" : 7,
+      "new" : true,
+      "origin" : "https://accounts.example.com"
+    },
+    {
+      "expect" : "none",
+      "logins" : [
+
+      ],
+      "max" : 0,
+      "new" : true,
+      "origin" : "https://accounts.example.com"
+    },
+    {
+      "expect" : "none",
+      "logins" : [
+
+      ],
+      "max" : -1,
+      "new" : true,
+      "offerPasswords" : false,
+      "origin" : "https://accounts.example.com"
+    },
+    {
+      "expect" : "none",
+      "logins" : [
+
+      ],
+      "max" : -1,
+      "never" : [
+        "https://accounts.example.com"
+      ],
+      "new" : true,
+      "origin" : "https://accounts.example.com"
+    },
+    {
+      "expect" : "fill:carol,alice,bob",
+      "logins" : [
+        {
+          "origin" : "https://accounts.example.com",
+          "updated" : 10,
+          "username" : "alice"
+        },
+        {
+          "origin" : "https://accounts.example.com",
+          "updated" : 20,
+          "used" : 5,
+          "username" : "bob"
+        },
+        {
+          "origin" : "https://accounts.example.com",
+          "updated" : 1,
+          "used" : 30,
+          "username" : "carol"
+        },
+        {
+          "origin" : "https://example.com",
+          "updated" : 40,
+          "username" : "dave"
+        }
+      ],
+      "max" : -1,
+      "never" : [
+        "https://accounts.example.com"
+      ],
+      "new" : false,
+      "origin" : "https://accounts.example.com"
+    },
+    {
+      "expect" : "generate",
+      "fillPasswords" : false,
+      "logins" : [
+        {
+          "origin" : "https://accounts.example.com",
+          "updated" : 10,
+          "username" : "alice"
+        },
+        {
+          "origin" : "https://accounts.example.com",
+          "updated" : 20,
+          "used" : 5,
+          "username" : "bob"
+        },
+        {
+          "origin" : "https://accounts.example.com",
+          "updated" : 1,
+          "used" : 30,
+          "username" : "carol"
+        },
+        {
+          "origin" : "https://example.com",
+          "updated" : 40,
+          "username" : "dave"
+        }
+      ],
+      "max" : 64,
+      "new" : true,
+      "origin" : "https://accounts.example.com"
+    }
+  ],
+  "passwordOfferPlace" : [
+    {
+      "expect" : [
+        100,
+        193,
+        280,
+        101,
+        "above"
+      ],
+      "field" : [
+        100,
+        300,
+        240,
+        36
+      ],
+      "gap" : 6,
+      "innerWidth" : 1000,
+      "margin" : 8,
+      "panel" : [
+        280,
+        101
+      ],
+      "view" : [
+        1000,
+        700
+      ]
+    },
+    {
+      "expect" : [
+        100,
+        82,
+        280,
+        101,
+        "below"
+      ],
+      "field" : [
+        100,
+        40,
+        240,
+        36
+      ],
+      "gap" : 6,
+      "innerWidth" : 1000,
+      "margin" : 8,
+      "panel" : [
+        280,
+        101
+      ],
+      "view" : [
+        1000,
+        700
+      ]
+    },
+    {
+      "expect" : [
+        712,
+        193,
+        280,
+        101,
+        "above"
+      ],
+      "field" : [
+        900,
+        300,
+        200,
+        36
+      ],
+      "gap" : 6,
+      "innerWidth" : 1000,
+      "margin" : 8,
+      "panel" : [
+        280,
+        101
+      ],
+      "view" : [
+        1000,
+        700
+      ]
+    },
+    {
+      "expect" : [
+        8,
+        193,
+        280,
+        101,
+        "above"
+      ],
+      "field" : [
+        -50,
+        300,
+        200,
+        36
+      ],
+      "gap" : 6,
+      "innerWidth" : 1000,
+      "margin" : 8,
+      "panel" : [
+        280,
+        101
+      ],
+      "view" : [
+        1000,
+        700
+      ]
+    },
+    {
+      "expect" : [
+        100,
+        32,
+        280,
+        180,
+        "below"
+      ],
+      "field" : [
+        100,
+        90,
+        240,
+        36
+      ],
+      "gap" : 6,
+      "innerWidth" : 1000,
+      "margin" : 8,
+      "panel" : [
+        280,
+        180
+      ],
+      "view" : [
+        1000,
+        220
+      ]
+    },
+    {
+      "expect" : [
+        100,
+        8,
+        280,
+        180,
+        "below"
+      ],
+      "field" : [
+        100,
+        20,
+        240,
+        36
+      ],
+      "gap" : 6,
+      "innerWidth" : 1000,
+      "margin" : 8,
+      "panel" : [
+        280,
+        180
+      ],
+      "view" : [
+        1000,
+        150
+      ]
+    },
+    {
+      "expect" : null,
+      "field" : [
+        100,
+        -60,
+        240,
+        36
+      ],
+      "gap" : 6,
+      "innerWidth" : 1000,
+      "margin" : 8,
+      "panel" : [
+        280,
+        101
+      ],
+      "view" : [
+        1000,
+        700
+      ]
+    },
+    {
+      "expect" : null,
+      "field" : [
+        100,
+        700,
+        240,
+        36
+      ],
+      "gap" : 6,
+      "innerWidth" : 1000,
+      "margin" : 8,
+      "panel" : [
+        280,
+        101
+      ],
+      "view" : [
+        1000,
+        700
+      ]
+    },
+    {
+      "expect" : [
+        100,
+        22,
+        280,
+        101,
+        "below"
+      ],
+      "field" : [
+        100,
+        -20,
+        240,
+        36
+      ],
+      "gap" : 6,
+      "innerWidth" : 1000,
+      "margin" : 8,
+      "panel" : [
+        280,
+        101
+      ],
+      "view" : [
+        1000,
+        700
+      ]
+    },
+    {
+      "expect" : [
+        8,
+        193,
+        184,
+        101,
+        "above"
+      ],
+      "field" : [
+        100,
+        300,
+        240,
+        36
+      ],
+      "gap" : 6,
+      "innerWidth" : 200,
+      "margin" : 8,
+      "panel" : [
+        280,
+        101
+      ],
+      "view" : [
+        200,
+        700
+      ]
+    },
+    {
+      "expect" : [
+        100,
+        143,
+        280,
+        101,
+        "above"
+      ],
+      "field" : [
+        80,
+        200,
+        160,
+        30
+      ],
+      "gap" : 6,
+      "innerWidth" : 800,
+      "margin" : 8,
+      "panel" : [
+        280,
+        101
+      ],
+      "view" : [
+        1000,
+        700
+      ]
+    },
+    {
+      "expect" : [
+        64,
+        53,
+        280,
+        101,
+        "above"
+      ],
+      "field" : [
+        80,
+        200,
+        160,
+        30
+      ],
+      "gap" : 6,
+      "innerWidth" : 1250,
+      "margin" : 8,
+      "panel" : [
+        280,
+        101
+      ],
+      "view" : [
+        1000,
+        700
+      ]
+    },
+    {
+      "expect" : [
+        100,
+        222,
+        280,
+        72,
+        "above"
+      ],
+      "field" : [
+        100,
+        300,
+        240,
+        36
+      ],
+      "gap" : 6,
+      "innerWidth" : 1000,
+      "margin" : 8,
+      "panel" : [
+        280,
+        72
+      ],
+      "view" : [
+        1000,
+        700
+      ]
+    }
+  ],
+  "passwordOfferSession" : [
+    {
+      "events" : [
+        "focus:1",
+        "dismiss",
+        "blur:1",
+        "focus:2"
+      ],
+      "expect" : [
+        true,
+        false,
+        false,
+        true
+      ]
+    },
+    {
+      "events" : [
+        "focus:1",
+        "dismiss",
+        "click:1"
+      ],
+      "expect" : [
+        true,
+        false,
+        true
+      ]
+    },
+    {
+      "events" : [
+        "focus:1",
+        "dismiss",
+        "focus:1"
+      ],
+      "expect" : [
+        true,
+        false,
+        false
+      ]
+    },
+    {
+      "events" : [
+        "focus:1",
+        "input:1",
+        "click:1",
+        "input:1"
+      ],
+      "expect" : [
+        true,
+        false,
+        true,
+        false
+      ]
+    },
+    {
+      "events" : [
+        "focus:1",
+        "focus:2",
+        "blur:1",
+        "blur:2"
+      ],
+      "expect" : [
+        true,
+        true,
+        true,
+        false
+      ]
+    },
+    {
+      "events" : [
+        "focus:1",
+        "accept",
+        "leave",
+        "focus:2"
+      ],
+      "expect" : [
+        true,
+        false,
+        false,
+        true
+      ]
+    },
+    {
+      "events" : [
+        "blur:3",
+        "dismiss",
+        "click:4"
+      ],
+      "expect" : [
+        false,
+        false,
+        true
+      ]
+    },
+    {
+      "events" : [
+        "focus:1",
+        "input:2"
+      ],
+      "expect" : [
+        true,
+        true
+      ]
+    }
+  ],
   "period" : [
     {
       "expect" : 3600,

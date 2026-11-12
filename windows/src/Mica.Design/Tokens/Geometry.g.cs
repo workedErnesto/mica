@@ -20,6 +20,16 @@ public static class Chrome
     public const double RowIcon = 30;
     /// <summary>Width reserved for the Windows caption buttons (minimize, maximize, close), measured from the right edge.</summary>
     public const double CaptionInset = 138;
+    /// <summary>Password offer anchored to a sign-in field of the page: width, narrowed to the page minus two gutters.</summary>
+    public const double OfferWidth = 280;
+    /// <summary>Space between the sign-in field and its password offer, above the field or below it when there is no room.</summary>
+    public const double OfferGap = 6;
+    /// <summary>Caption line of the password offer (saved passwords, strong password).</summary>
+    public const double OfferHeader = 24;
+    /// <summary>One choice of the password offer: an account or the generated password, a title over a detail line.</summary>
+    public const double OfferRow = 36;
+    /// <summary>Hairline and the quiet "never for this site" row under a generated password offer.</summary>
+    public const double OfferFooter = 29;
 }
 
 /// <summary>Spacing scale.</summary>

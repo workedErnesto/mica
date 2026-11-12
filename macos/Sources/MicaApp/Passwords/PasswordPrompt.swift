@@ -2,11 +2,11 @@ import AppKit
 import SwiftUI
 import MicaCore
 
-/// A password question of the page: save what was just typed, use a generated password, or fill a saved account.
-/// Shown in this window's ModalCard instead of a system sheet, composed like the profile prompt.
+/// The question after a sign-in form was sent: save what was just typed. Shown in this window's ModalCard, composed
+/// like the profile prompt. Filling and generating are offered beside the field instead (PasswordOfferPanel).
 struct PasswordRequest: Identifiable, Equatable {
-    enum Kind { case save(username: String), generate(password: String), fill([SavedLogin]) }
-    enum Answer { case save, never, use, fill(SavedLogin), later }
+    enum Kind { case save(username: String) }
+    enum Answer { case save, never, later }
     let id = UUID()
     let origin: String
     let kind: Kind
@@ -47,8 +47,6 @@ struct PasswordPrompt: View {
     private var title: String {
         switch request.kind {
         case .save: return browser.text("сохранить пароль?", "Сохранить пароль?")
-        case .generate: return browser.text("создать стойкий пароль?", "Создать стойкий пароль?")
-        case .fill: return browser.text("заполнить учётную запись?", "Заполнить учётную запись?")
         }
     }
 
@@ -72,23 +70,6 @@ struct PasswordPrompt: View {
             plate {
                 AccountLine(name: username, browser: browser).padding(.horizontal, 12).frame(height: 36)
             }
-        case .generate(let password):
-            plate {
-                Text(password)
-                    .font(.system(size: 13, design: .monospaced)).foregroundStyle(Palette.ink)
-                    .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
-                    .frame(maxWidth: .infinity).padding(.horizontal, 12).padding(.vertical, 10)
-            }
-        case .fill(let logins):
-            plate {
-                VStack(spacing: 2) {
-                    ForEach(Array(logins.enumerated()), id: \.element.id) { index, login in
-                        AccountChoice(login: login, browser: browser) { answer(.fill(login)) }
-                            .keyboardShortcut(index == 0 ? .defaultAction : nil)
-                    }
-                }
-                .padding(4)
-            }
         }
     }
 
@@ -101,14 +82,6 @@ struct PasswordPrompt: View {
                 .buttonStyle(MButtonStyle(kind: .secondary, fill: true)).keyboardShortcut(.cancelAction)
             Button(browser.text("никогда для этого сайта", "Никогда для этого сайта")) { answer(.never) }
                 .buttonStyle(MButtonStyle(kind: .ghost, fill: true))
-        case .generate:
-            Button(browser.text("использовать", "Использовать")) { answer(.use) }
-                .buttonStyle(MButtonStyle(kind: .primary, fill: true)).keyboardShortcut(.defaultAction)
-            Button(browser.text("не сейчас", "Не сейчас")) { answer(.later) }
-                .buttonStyle(MButtonStyle(kind: .secondary, fill: true)).keyboardShortcut(.cancelAction)
-        case .fill:
-            Button(browser.text("не сейчас", "Не сейчас")) { answer(.later) }
-                .buttonStyle(MButtonStyle(kind: .secondary, fill: true)).keyboardShortcut(.cancelAction)
         }
     }
 
@@ -134,24 +107,5 @@ private struct AccountLine: View {
                 .lineLimit(1).truncationMode(.middle)
             Spacer(minLength: 0)
         }
-    }
-}
-
-/// One saved account of the site; a click fills it.
-private struct AccountChoice: View {
-    let login: SavedLogin
-    @ObservedObject var browser: BrowserModel
-    let action: () -> Void
-    @State private var hover = false
-    var body: some View {
-        Button(action: action) {
-            AccountLine(name: login.username, browser: browser)
-                .padding(.horizontal, 8).frame(height: 32)
-                .background(RoundedRectangle(cornerRadius: Radius.row - 4, style: .continuous).fill(hover ? Palette.hover : .clear))
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(PressStyle(scale: 0.98))
-        .onHover { hover = $0 }
-        .animation(Motion.hover, value: hover)
     }
 }

@@ -60,6 +60,8 @@ public sealed partial class Tab : Observable
     }
     internal int BlockedRequestCount { get; private set; }
     readonly Passwords.PasswordBridge passwords;
+    /// <summary>The password offer beside a field of this tab's page; the shell sends the choices here.</summary>
+    public Passwords.PasswordBridge PasswordOffers => passwords;
 
     public SavedTab Saved => new() { Id = Id, Url = Url, Title = Title, Pinned = Pinned };
 
@@ -117,7 +119,7 @@ public sealed partial class Tab : Observable
             if (AddressParser.Navigable(e.Uri, mainFrame: false)) return;
             if (Uri.TryCreate(e.Uri, UriKind.Absolute, out var frame) && frame.IsFile) e.Cancel = true;
         };
-        core.ContentLoading += (_, _) => { Progress = 0.45; Notify(); };
+        core.ContentLoading += (_, _) => { passwords.Leave(); Progress = 0.45; Notify(); };
         core.DOMContentLoaded += (_, _) => { Progress = 0.75; Notify(); };
         core.NavigationCompleted += OnNavigationCompleted;
         core.SourceChanged += (_, _) => { fileHistoryNavigation = false; if (Core is { } c && c.Source.Length > 0 && c.Source != "about:blank") Url = c.Source; Notify(); Owner?.Store.ScheduleSession(); };

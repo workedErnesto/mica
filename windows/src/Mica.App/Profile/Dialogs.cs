@@ -3,8 +3,8 @@ namespace Mica.App;
 /// <summary>Questions and messages (macOS NSAlert sheets), drawn by the window's shell as a mica card: title, text,
 /// optional fields or choices and buttons. One question per window is shown at a time, the rest wait in order.
 /// Buttons keep their order: the first is the cancelling choice, the last the default one.</summary>
-/// <summary>What a password question is about: the site, the account to save (empty: no user name) or the generated password.</summary>
-public sealed record PasswordCard(string Origin, string? Account = null, string? Secret = null);
+/// <summary>What the password question after a sign-in is about: the site and the account to save (empty: no user name).</summary>
+public sealed record PasswordCard(string Origin, string? Account = null);
 
 public static class Dialogs
 {
@@ -70,24 +70,5 @@ public static class Dialogs
     {
         var (index, values) = await Present(window, new Question { Title = title, Text = host, Buttons = [cancel, ok], Fields = [(userLabel, "", false), (passwordLabel, "", true)] });
         return index == 1 && values.Length == 2 ? (values[0], values[1]) : null;
-    }
-}
-
-public static class DialogChoices
-{
-    /// <summary>One of several options (an account to fill); -1 when cancelled.</summary>
-    public static async Task<int> Choose(BrowserWindow? window, string title, string detail, IReadOnlyList<string> options, string ok, string cancel, PasswordCard? password = null)
-    {
-        var owner = window?.Model ?? Store.Shared.Active;
-        if (owner is null) return -1;
-        var question = new Dialogs.Question { Title = title, Text = detail, Buttons = [cancel], Choices = options, Password = password };
-        owner.Questions.Add(question);
-        owner.Touch();
-        try
-        {
-            var (index, _) = await question.Answer.Task;
-            return index >= 100 && index - 100 < options.Count ? index - 100 : -1;
-        }
-        finally { owner.Questions.Remove(question); owner.Touch(); }
     }
 }

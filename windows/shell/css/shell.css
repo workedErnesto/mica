@@ -533,11 +533,37 @@
 .prompt-title.password-title { margin-bottom: 4px; }
 .prompt-text.password-host { max-width: 100%; margin-bottom: 16px; }
 .password-plate { display: flex; align-items: center; width: 100%; min-height: 36px; padding: 0 12px; margin-bottom: 16px; border-radius: 10px; background: var(--track); text-align: left; }
-.password-plate.choices { flex-direction: column; align-items: stretch; gap: 2px; padding: 4px; }
 .account-line { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; font-size: 13px; color: var(--ink); }
 .account-line .glyph { color: var(--text3); flex: none; }
 .account-line .muted { color: var(--text3); }
-.account-choice { display: flex; align-items: center; height: 32px; padding: 0 8px; border-radius: 6px; --press: 0.98;
-  transition: transform var(--spring-press-ms) var(--spring-press), background-color var(--ease-hover); }
-.account-choice:hover, .account-choice:focus-visible { background: var(--hover); }
-.password-secret { width: 100%; padding: 10px 0; font-size: 13px; color: var(--ink); text-align: center; word-break: break-all; }
+/* Password offer beside a sign-in field (PasswordOfferPanel on macOS): raised like the shell menus, radius panel with
+   panel padding, so rows take radius row. Placed by the host; the catcher over the page dismisses it. */
+.offer-catch { position: fixed; z-index: 640; }
+.offer {
+  position: fixed; z-index: 650; display: flex; flex-direction: column; padding: var(--radius-panel-padding); border-radius: var(--radius-panel);
+  background: var(--raised); box-shadow: inset 0 0 0 1px var(--hairline), var(--shadow-menu);
+}
+.offer.above { transform-origin: 50% 100%; }
+.offer.below { transform-origin: 50% 0%; }
+.offer-caption { flex: none; height: var(--chrome-offer-header); line-height: var(--chrome-offer-header); padding: 0 10px; font-size: 11px; font-weight: 500; color: var(--text3); }
+.offer-rows { display: flex; flex-direction: column; }
+.offer-rows.scroll { height: calc(var(--chrome-offer-row) * 4); overflow-y: auto; }
+.offer-row {
+  display: flex; align-items: center; gap: 10px; flex: none; height: var(--chrome-offer-row); padding: 0 8px; border-radius: var(--radius-row); text-align: left; --press: 0.98;
+  transition: transform var(--spring-press-ms) var(--spring-press), background-color var(--ease-hover);
+}
+.offer-row:hover, .offer-footer:hover { background: var(--hover); }
+.offer-row.highlighted, .offer-footer.highlighted { background: var(--pressed); }
+.offer-lines { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.offer-title { font-size: 13px; color: var(--ink); }
+.offer-title.muted { color: var(--text3); }
+.offer-detail { font-size: 11px; color: var(--text2); }
+.offer-detail .mono { font-size: 11.5px; }
+.offer-key { display: flex; align-items: center; justify-content: center; flex: none; width: 24px; height: 24px; border-radius: 7.2px; background: var(--track); color: var(--text2); }
+.offer-hairline { margin: 0 4px; }
+.offer-footer {
+  flex: none; height: calc(var(--chrome-offer-footer) - 3px); margin-top: 2px; padding: 0 10px; border-radius: var(--radius-row); text-align: left;
+  font-size: 12px; color: var(--text2); --press: 0.98; transition: transform var(--spring-press-ms) var(--spring-press), background-color var(--ease-hover), color var(--ease-hover);
+}
+.offer-footer:hover, .offer-footer.highlighted { color: var(--ink); }
+.offer-hint { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

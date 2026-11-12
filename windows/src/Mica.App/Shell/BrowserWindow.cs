@@ -29,8 +29,10 @@ public sealed partial class BrowserWindow : Window
     readonly ShellView shell;
     DesktopAcrylicController? acrylic;
     SystemBackdropConfiguration? backdropConfiguration;
-    bool closingConfirmed, quitting, covered;
+    bool closingConfirmed, quitting, covered, keepPage;
     Windows.Foundation.Rect? pageRect;
+    /// <summary>Where the page sits in the window, in DIPs, as the shell last reported it.</summary>
+    public Windows.Foundation.Rect? PageRect => pageRect;
     double pageRadius = Radius.Card;
     Tab? shownTab;
 
@@ -199,14 +201,20 @@ public sealed partial class BrowserWindow : Window
         Arrange();
         if (sizeChanged) ClipPage();
         var cover = layout.TryGetProperty("covered", out var c) && c.ValueKind == JsonValueKind.True;
-        if (cover != covered)
+        // Only the password offer is over the page: the shell goes above it, but the page keeps the keyboard so typing
+        // in the field goes on.
+        var keep = cover && layout.TryGetProperty("keepPage", out var k) && k.ValueKind == JsonValueKind.True;
+        if (cover != covered || keep != keepPage)
         {
-            covered = cover;
+            var wasKept = keepPage;
+            covered = cover; keepPage = keep;
             // While the shell draws over the page it goes above the page layer; the page shows through its hole.
             Canvas.SetZIndex(shell, covered ? 1 : 0);
             Canvas.SetZIndex(pages, covered ? 0 : 1);
             pages.IsHitTestVisible = !covered;
-            if (covered) shell.FocusShell(); else FocusContent();
+            if (covered && !keepPage) shell.FocusShell();
+            else if (!covered && !wasKept) FocusContent();
+            else if (!covered) FocusContent(onlyFromShell: true);
         }
         Regions(layout);
     }
@@ -230,8 +238,11 @@ public sealed partial class BrowserWindow : Window
 
     /// <summary>A page that appears or comes back from under an overlay takes the keyboard, as in Safari, so edit
     /// shortcuts and keyboard scrolling reach it without a click; otherwise the shell has it.</summary>
-    void FocusContent()
+    void FocusContent(bool onlyFromShell = false)
     {
+        // After the password offer the page normally still has the keyboard; it moved to the shell only when the offer
+        // itself was clicked.
+        if (onlyFromShell && !shell.HasFocus) return;
         if (!covered && shownTab?.WebView is { Visibility: Visibility.Visible } view) view.Focus(FocusState.Programmatic);
         else shell.FocusShell();
     }

@@ -3,9 +3,9 @@ import SwiftUI
 import ImageIO
 import MicaCore
 
-/// Dock icons converted from the Orbit pack (scripts/app-icons.swift). They change the app's icon in the Dock and
-/// the app switcher, and in a Dock kept tile after quitting through the plug-in; nothing inside the window uses them
-/// except the picker.
+/// Dock icons converted from the Orbit pack (scripts/app-icons.swift). While mica runs they change its icon in the Dock
+/// and the app switcher; the Dock tile plug-in keeps the choice on a quit mica's tile and on the bundle for Finder and
+/// Launchpad. Nothing inside the window uses them except the picker.
 @MainActor
 enum AppIcons {
     struct Icon: Identifiable { let id: String; let low: String; let regular: String }
@@ -29,10 +29,15 @@ enum AppIcons {
     static func apply(_ id: String?) {
         NSApp.applicationIconImage = image(id)
     }
-    /// Tells the Dock tile plug-in (Sources/MicaDockTile/MicaDockTile.swift) to reread the choice, so a Dock kept icon matches
-    /// after mica quits. mica never writes to its own bundle: Finder and Launchpad keep the standard icon.
-    static func announce() {
-        DistributedNotificationCenter.default().postNotificationName(Notification.Name("app.mica.browser.appIconChanged"), object: nil, userInfo: nil, deliverImmediately: true)
+    /// Tells the Dock tile plug-in (Sources/MicaDockTile/MicaDockTile.swift) the choice. It draws it on the tile of a quit
+    /// mica and sets it as the Finder icon of the bundle (Finder, Launchpad, Spotlight, the Dock at launch). mica cannot
+    /// write the bundle itself: a sandboxed write quarantines it. Sent at launch too, because an install or update
+    /// replaces the bundle and the plug-in may have missed a change while the Dock was not running it.
+    /// QA runs (the UI tour flips icons) leave the bundle alone.
+    static func announce(_ id: String?) {
+        guard !ProcessInfo.processInfo.arguments.contains("--qa") else { return }
+        let message = DockIcon.message(icon: id, bundle: Bundle.main.bundlePath)
+        DistributedNotificationCenter.default().postNotificationName(Notification.Name(DockIcon.notification), object: message, userInfo: nil, deliverImmediately: true)
     }
     private static var thumbnails: [String: NSImage] = [:]
     /// Small decoded copies for the picker, so it never holds 24 full-size images.

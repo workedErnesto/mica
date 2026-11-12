@@ -92,31 +92,65 @@ function Alert(alert) {
       })));
 }
 
-/// A password question (PasswordPrompt on macOS): the site's icon with a key, the host, the account or the generated
-/// password on a plate, or the saved accounts as rows. Buttons: the last is the default, index 0 is "not now", the rest
-/// are quieter, in that order. Account choices come as raw user names, an empty one when the account has none.
+/// The question after a sign-in form was sent (PasswordPrompt on macOS): the site's icon with a key, the host, the
+/// account on a plate. Buttons: the last is the default, index 0 is "not now", the rest are quieter, in that order.
 function PasswordAlert(alert) {
   const card = alert.password, buttons = alert.buttons || [];
   const answer = index => send('alert.answer', { id: alert.id, index });
-  const account = name => h('span', { class: 'account-line' }, icon('person', 12), h('span', { class: cx('clip', { muted: !name }) }, name || T("без имени пользователя", "Без имени пользователя")));
   const order = buttons.length > 1 ? [buttons.length - 1, 0, ...buttons.map((_, i) => i).slice(1, -1)] : [0];
-  const choices = alert.choices || null;
   return h('div', { class: 'prompt' },
     h('span', { class: 'prompt-mark password-mark' },
       SiteTile(card, 56),
       h('span', { class: 'password-badge' }, icon('key', 10.5, 'semibold'))),
     h('div', { class: 'prompt-title password-title' }, alert.title),
     h('div', { class: 'prompt-text password-host clip', title: card.origin }, card.host),
-    choices
-      ? h('div', { class: 'password-plate choices' }, choices.map((choice, index) => h('button', {
-          class: 'account-choice press', type: 'button', key: index, 'data-default': index === 0 || null, onClick: () => answer(100 + index),
-        }, account(choice))))
-      : h('div', { class: 'password-plate' }, card.secret != null ? h('span', { class: 'mono selectable password-secret' }, card.secret) : account(card.account || '')),
+    h('div', { class: 'password-plate' },
+      h('span', { class: 'account-line' }, icon('person', 12), h('span', { class: cx('clip', { muted: !card.account }) }, card.account || T("без имени пользователя", "Без имени пользователя")))),
     h('div', { class: 'col', style: { gap: '8px', width: '100%' } },
       order.map(index => Button(buttons[index], {
-        kind: choices ? 'secondary' : index === buttons.length - 1 ? 'primary' : index === 0 ? 'secondary' : 'ghost',
-        fill: true, autofocus: !choices && index === buttons.length - 1, onClick: () => answer(index), key: index,
+        kind: index === buttons.length - 1 ? 'primary' : index === 0 ? 'secondary' : 'ghost',
+        fill: true, autofocus: index === buttons.length - 1, onClick: () => answer(index), key: index,
       }))));
+}
+
+/// The offer beside a sign-in field (PasswordOfferPanel on macOS), at the frame the host placed it. The shell sits above
+/// the page while it shows, but the page keeps the keyboard: its script forwards the arrows, Enter and Esc. A press or a
+/// wheel turn on the page dismisses the offer for this focus of the field; the page under the shell cannot take it.
+function PasswordOffer(offer) {
+  const choose = index => send('passwords.offer', { index });
+  const [x, y, width, height] = offer.frame, [px, py, pw, ph] = offer.page;
+  const fill = offer.kind === 'fill';
+  const noName = T("без имени пользователя", "Без имени пользователя");
+  const useTitle = T("использовать стойкий пароль", "Использовать стойкий пароль");
+  const row = (index, lead, title, detail, label, muted) => h('button', {
+    class: cx('offer-row press', { highlighted: offer.selected === index }), type: 'button', key: 'row-' + index,
+    'aria-label': label, 'aria-selected': offer.selected === index ? 'true' : 'false', role: 'option', onClick: () => choose(index),
+  }, lead, h('span', { class: 'offer-lines' }, h('span', { class: cx('offer-title clip', { muted }) }, title), h('span', { class: 'offer-detail clip' }, detail)));
+  const rows = fill
+    ? offer.rows.map((r, index) => row(index, SiteTile(r, 24), r.username || noName, r.host, (r.username || noName) + ', ' + r.host, !r.username))
+    : [row(0, h('span', { class: 'offer-key' }, icon('key', 11.5, 'semibold')), useTitle, h('span', { class: 'mono' }, offer.password), useTitle, false)];
+  return [
+    h('div', {
+      class: 'offer-catch', key: 'offer-catch', style: { left: px + 'px', top: py + 'px', width: pw + 'px', height: ph + 'px' },
+      onPointerDown: () => choose(-1), onWheel: () => choose(-1),
+    }),
+    h('div', {
+      class: cx('offer', offer.edge), key: 'password-offer', role: 'listbox', 'aria-label': T("предложение пароля", "Предложение пароля"),
+      style: { left: x + 'px', top: y + 'px', width: width + 'px', height: height + 'px' },
+      enter: 'offer-' + offer.edge, exit: { name: 'fade', float: false },
+      onKeyDown: event => { if (event.key === 'Escape') { choose(-1); event.stopPropagation(); } },
+    },
+      h('div', { class: 'offer-caption clip' }, fill ? T("сохранённые пароли", "Сохранённые пароли") : T("новый пароль", "Новый пароль")),
+      h('div', { class: cx('offer-rows', { scroll: fill && offer.rows.length > offer.visibleRows }) }, rows),
+      fill ? null : [
+        h('div', { class: 'hairline offer-hairline', key: 'hairline' }),
+        h('button', {
+          class: cx('offer-footer press', { highlighted: offer.selected === 1 }), type: 'button', key: 'never', role: 'option',
+          'aria-selected': offer.selected === 1 ? 'true' : 'false', onClick: () => choose(1),
+        }, T("никогда для этого сайта", "Никогда для этого сайта")),
+      ],
+      h('div', { class: 'offer-hint', role: 'status', 'aria-live': 'polite', key: 'hint' }, T("предложение пароля. стрелка вниз выбирает, Esc закрывает", "Предложение пароля. Стрелка вниз выбирает, Esc закрывает"))),
+  ];
 }
 
 /// The plate shown while the quit shortcut is held: its outline draws clockwise from the top over the hold time.
@@ -150,6 +184,7 @@ export function Overlays() {
     o.clearData && state.clearData ? Modal('clear', 480, null, ClearData(), () => send('clearData.close')) : null,
     profile ? Modal('profile-prompt', 300, null, ProfilePrompt(profile), () => send('profilePrompt.close')) : null,
     o.alert ? Modal('alert-' + o.alert.id, o.alert.password ? 300 : 320, null, o.alert.password ? PasswordAlert(o.alert) : Alert(o.alert), o.alert.cancel != null ? () => send('alert.answer', { id: o.alert.id, index: o.alert.cancel }) : null) : null,
+    o.passwordOffer && !o.alert ? PasswordOffer(o.passwordOffer) : null,
     o.quitHold ? QuitHold() : null,
   ];
 }

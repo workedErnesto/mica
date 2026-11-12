@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -8,8 +9,8 @@ using Mica.Design;
 namespace Mica.App.Appearance;
 
 /// <summary>App icons from the Orbit pack, converted from macOS HEIC to ICO and PNG in shared/icons/app. On Windows a
-/// chosen icon shows on the taskbar and in Alt+Tab for open windows; shortcuts keep the standard icon (macOS: Finder
-/// and Launchpad keep it too).</summary>
+/// chosen icon shows on the taskbar and in Alt+Tab for open windows, and on mica's Start menu, desktop and taskbar
+/// shortcuts while it is closed (macOS: Dock tile plug-in and the bundle's Finder icon).</summary>
 public static class AppIcons
 {
     public sealed record Icon(string Id, string Low, string Regular);
@@ -32,5 +33,29 @@ public static class AppIcons
     {
         var path = Ico(store.Preferences.AppIcon) ?? Path.Combine(AppContext.BaseDirectory, "Assets", "mica.ico");
         foreach (var window in store.Windows) window.AppWindow.SetIcon(path);
+        ApplyToShortcuts(store.Preferences.AppIcon);
+    }
+
+    /// <summary>The Start menu, desktop and taskbar pins show the choice while mica is closed. The standard choice
+    /// points back at mica.exe, as the installer writes them; an update recreates the Start menu shortcut, and the
+    /// next launch applies the choice again. Runs off the UI thread: the shell may be slow to answer.</summary>
+    static void ApplyToShortcuts(string? id)
+    {
+        if (Program.QA || !OperatingSystem.IsWindows() || Environment.ProcessPath is not { } exe) return;
+        var ico = id is null || id == Standard ? null : Ico(id);
+        _ = Task.Run(() =>
+        {
+            var changed = false;
+            try
+            {
+                foreach (var link in Mica.Install.Shortcuts.ToApp())
+                {
+                    try { changed |= Mica.Install.Shortcuts.SetIcon(link, exe, ico ?? exe, 0); }
+                    catch (Exception e) when (e is COMException or IOException or UnauthorizedAccessException or InvalidCastException) { Diagnostics.Log.Error(e); }
+                }
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { Diagnostics.Log.Error(e); }
+            if (changed) Mica.Install.Shortcuts.RefreshIcons();
+        });
     }
 }

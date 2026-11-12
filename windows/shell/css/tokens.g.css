@@ -177,6 +177,11 @@
   --chrome-lights-inset: 84px;
   --chrome-row-icon: 30px;
   --chrome-caption-inset: 138px;
+  --chrome-offer-width: 280px;
+  --chrome-offer-gap: 6px;
+  --chrome-offer-header: 24px;
+  --chrome-offer-row: 36px;
+  --chrome-offer-footer: 29px;
   --space-micro: 4px;
   --space-small: 8px;
   --space-normal: 12px;

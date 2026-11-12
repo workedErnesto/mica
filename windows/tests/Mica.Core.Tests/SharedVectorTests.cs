@@ -87,6 +87,40 @@ public class SharedVectorTests
                     r["text"] is { } text ? System.Text.Encoding.UTF8.GetBytes(text.GetValue<string>()) : Convert.FromBase64String(r["base64"]!.GetValue<string>())));
                 return SingleFilePage.Build(S("html"), S("base"), resources);
             case "profileGlyph": return Profiles.LightGlyph(S("hex"), c["glyph"]?.GetValue<string>() switch { "light" => ProfileGlyph.Light, "dark" => ProfileGlyph.Dark, _ => ProfileGlyph.Auto }) ? "light" : "dark";
+            case "passwordOffer":
+                // Saved logins carry seconds since 2026 for their update and last use, so the order is defined.
+                var start2026 = DateTimeOffset.FromUnixTimeSeconds(1_767_225_600);
+                var vault = new Vault { Never = c["never"]?.AsArray().Select(x => x!.GetValue<string>()).ToList() ?? [] };
+                foreach (var item in c["logins"]!.AsArray())
+                    vault.Logins.Add(new SavedLogin
+                    {
+                        Origin = item!["origin"]!.GetValue<string>(), Username = item["username"]!.GetValue<string>(), Password = "p", Created = start2026,
+                        Updated = start2026.AddSeconds(item["updated"]!.GetValue<double>()), Used = item["used"] is { } used ? start2026.AddSeconds(used.GetValue<double>()) : null,
+                    });
+                var offer = PasswordOffer.Decide(vault, S("origin"), B("new"), I("max"), c["offerPasswords"]?.GetValue<bool>() ?? true, c["fillPasswords"]?.GetValue<bool>() ?? true);
+                return offer is null ? "none" : offer.Kind == PasswordOfferKind.Generate ? "generate" : "fill:" + string.Join(",", offer.Logins.Select(l => l.Username));
+            case "passwordOfferSession":
+                // Events as "focus:1", "click:1", "input:1", "blur:1", "dismiss", "accept", "leave"; visibility after each.
+                var session = new PasswordOfferSession();
+                var shown = new JsonArray();
+                foreach (var text in c["events"]!.AsArray().Select(x => x!.GetValue<string>()))
+                {
+                    var parts = text.Split(':');
+                    var id = parts.Length > 1 ? int.Parse(parts[1]) : 0;
+                    session.Apply(parts[0] switch
+                    {
+                        "focus" => PasswordOfferEvent.Focus, "click" => PasswordOfferEvent.Click, "input" => PasswordOfferEvent.Input, "blur" => PasswordOfferEvent.Blur,
+                        "dismiss" => PasswordOfferEvent.Dismiss, "accept" => PasswordOfferEvent.Accept, _ => PasswordOfferEvent.Leave,
+                    }, id);
+                    shown.Add(session.Visible);
+                }
+                return shown;
+            case "passwordOfferPlace":
+                double[] N(string key) => c[key]!.AsArray().Select(x => x!.GetValue<double>()).ToArray();
+                var f = N("field"); var viewSize = N("view"); var panelSize = N("panel");
+                var fieldRect = PasswordOfferPlacement.ViewRect(new OfferRect(f[0], f[1], f[2], f[3]), c["innerWidth"]!.GetValue<double>(), viewSize[0]);
+                var placed = PasswordOfferPlacement.Place(fieldRect, viewSize[0], viewSize[1], panelSize[0], panelSize[1], c["gap"]!.GetValue<double>(), c["margin"]!.GetValue<double>());
+                return placed is { } p2 ? new JsonArray(p2.Frame.X, p2.Frame.Y, p2.Frame.Width, p2.Frame.Height, p2.Edge == OfferEdge.Above ? "above" : "below") : null;
             default: throw new InvalidOperationException(section);
         }
     }

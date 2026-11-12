@@ -10,7 +10,12 @@ export const geometry = {
     "lightsStep": 20,
     "lightsInset": 84,
     "rowIcon": 30,
-    "captionInset": 138
+    "captionInset": 138,
+    "offerWidth": 280,
+    "offerGap": 6,
+    "offerHeader": 24,
+    "offerRow": 36,
+    "offerFooter": 29
   },
   "space": {
     "micro": 4,

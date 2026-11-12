@@ -191,6 +191,7 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
         if owner?.privateMode == false { owner?.store.extensions.controller.didChangeTabProperties([.loading, .URL], for: self) }
     }
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        passwordBridge?.leave()
         if favicon != nil, Favicons.key(webView.url) != faviconKey { favicon = nil; faviconKey = nil }
     }
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
