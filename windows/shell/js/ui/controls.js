@@ -77,8 +77,8 @@ export function Slider(value, range, onChange, { label = '', disabled = false, k
 }
 
 /// MTextField. `value` and `onInput` keep the text in the caller's state.
-export function TextField(placeholder, value, onInput, { symbol, prominent = false, autofocus = false, onSubmit, onEscape, key, type = 'text', cls, maxLength, readOnly } = {}) {
-  return h('div', { class: cx('field', { prominent }, cls), key },
+export function TextField(placeholder, value, onInput, { symbol, prominent = false, selectionStyle = false, autofocus = false, onSubmit, onEscape, key, type = 'text', cls, maxLength, readOnly } = {}) {
+  return h('div', { class: cx('field', { prominent, selection: selectionStyle }, cls), key },
     symbol ? icon(symbol, 12) : null,
     h('input', {
       type, value, placeholder, 'aria-label': placeholder, spellcheck: false, autocomplete: 'off', maxlength: maxLength || null, readOnly: readOnly || null,

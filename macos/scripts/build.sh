@@ -10,6 +10,8 @@ cp ".build/$configuration/mica" "$app_path/Contents/MacOS/mica"
 mkdir -p "$app_path/Contents/Resources/Favicons"
 cp ../shared/favicons/*.png ../shared/favicons/NOTICE.txt "$app_path/Contents/Resources/Favicons/"
 cp ../shared/blocklist/blocklist.txt ../shared/blocklist/BLOCKLIST-NOTICE.txt "$app_path/Contents/Resources/"
+rm -rf "$app_path/Contents/Resources/Blocking"
+cp -R ../shared/blocking "$app_path/Contents/Resources/Blocking"
 cp Resources/App/Info.plist "$app_path/Contents/Info.plist"
 for lang in en ru; do mkdir -p "$app_path/Contents/Resources/$lang.lproj"; cp "Resources/App/$lang.lproj/InfoPlist.strings" "$app_path/Contents/Resources/$lang.lproj/"; done
 if [[ -f Resources/App/mica.icns ]]; then cp Resources/App/mica.icns "$app_path/Contents/Resources/"; fi

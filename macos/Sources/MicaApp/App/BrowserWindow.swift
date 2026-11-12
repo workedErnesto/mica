@@ -98,6 +98,7 @@ final class BrowserWindow: NSWindowController, NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
         let store = model.store
         if !model.privateMode { store.extensions.controller.didCloseWindow(model) }
+        model.cancelAlerts()
         model.dispose()
         store.windows.removeAll { $0 === self }
         if !store.shuttingDown { store.scheduleSession() }

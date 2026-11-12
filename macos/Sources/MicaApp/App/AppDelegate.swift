@@ -31,6 +31,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 try? String(seconds).write(to: store.root.appendingPathComponent("startup-seconds.txt"), atomically: true, encoding: .utf8)
                 // QA only: open a page in the first tab, so a check can start from it without typing.
                 if let argument = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--open=") }), let url = URL(string: String(argument.dropFirst("--open=".count))) { openIncoming([url]) }
+                if ProcessInfo.processInfo.arguments.contains(where: { $0.hasPrefix("--ublock-check") }) { Task { await UBlockCheck.run(store: store) } }
+                // QA only: the regular install of a package from disk, with its confirmation card, without the file panel.
+                if let argument = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--install-extension=") }) { let path = String(argument.dropFirst("--install-extension=".count)); Task { await store.extensions.install(URL(fileURLWithPath: path)) } }
                 if let argument = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--benchmark=") }), let count = Int(argument.dropFirst("--benchmark=".count)), [0, 1, 10].contains(count) { await Benchmark.run(store: store, count: count) }
             }
             if ProcessInfo.processInfo.arguments.contains("--ui-tour") && ProcessInfo.processInfo.arguments.contains("--qa") { await UITour.run(store: store) }

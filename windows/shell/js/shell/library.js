@@ -213,7 +213,8 @@ function InstalledExtension(record) {
       Switch(record.enabled, () => send('extension.toggle', { id: record.id }), { label: record.name })),
     record.warning ? h('div', { class: 'ext-note' }, record.warning) : null,
     record.error ? h('div', { class: 'ext-note danger selectable' }, record.error) : null,
-    h('div', { class: 'ext-meta selectable' }, 'API: ' + (record.permissions || []).join(', ')),
+    h('div', { class: 'hairline' }),
+    (record.permissions || []).length ? h('div', { class: 'ext-meta selectable' }, 'API: ' + record.permissions.join(', ')) : null,
     h('div', { class: 'ext-meta selectable' }, T("сайты: ", "Сайты: ") + ((record.hosts || []).length ? record.hosts.join(', ') : T("доступ не выдан", "доступ не выдан"))));
 }
 

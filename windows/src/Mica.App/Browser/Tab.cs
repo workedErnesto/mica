@@ -40,6 +40,24 @@ public sealed partial class Tab : Observable
     bool fileHistoryNavigation;
     readonly HashSet<string> openedFiles = new(StringComparer.OrdinalIgnoreCase);
     bool blockingFilterInstalled;
+    string? filterScriptId;
+    readonly SemaphoreSlim filterScripts = new(1);
+    public async Task RefreshUBlockAsync()
+    {
+        await filterScripts.WaitAsync();
+        try
+        {
+            if (Core is not { } core || Owner is not { } owner) return;
+            ApplyBlocking();
+            var script = owner.Store.Preferences.Blocking ? owner.Store.UBlock.Script : "";
+            var next = script.Length == 0 ? null : await core.AddScriptToExecuteOnDocumentCreatedAsync(script);
+            if (Core != core) return;
+            if (filterScriptId is { } previous) core.RemoveScriptToExecuteOnDocumentCreated(previous);
+            filterScriptId = next;
+        }
+        catch (Exception e) { Diagnostics.Log.Error(e); }
+        finally { filterScripts.Release(); }
+    }
     internal int BlockedRequestCount { get; private set; }
     readonly Passwords.PasswordBridge passwords;
 
@@ -120,6 +138,7 @@ public sealed partial class Tab : Observable
         core.WebMessageReceived += (_, e) => passwords.Received(e);
         core.FaviconChanged += OnFaviconChanged;
         ApplyBlocking();
+        await RefreshUBlockAsync();
         if (!owner.PrivateMode) await passwords.InstallAsync(core);
         if (pendingUrl is { } url) { pendingUrl = null; core.Navigate(url); }
         Notify();
@@ -140,8 +159,19 @@ public sealed partial class Tab : Observable
         if (AddressParser.OpenableFile(Url)) OpenFile(Url); else Load(Url);
     }
 
+    int filterNavigation;
     public void Load(string url)
     {
+        var navigation = ++filterNavigation;
+        if (Owner is { } waitingOwner && waitingOwner.Store.Preferences.Blocking && !waitingOwner.Store.UBlock.Prepared) {
+            Url = url;
+            _ = WaitForFilters();
+            async Task WaitForFilters() {
+                while (Owner is { } owner && !owner.Store.UBlock.Prepared && navigation == filterNavigation) await Task.Delay(50);
+                if (Owner != null && navigation == filterNavigation && Url == url) Load(url);
+            }
+            return;
+        }
         if (!AddressParser.Navigable(url)) return;
         pendingFile = null;
         Error = null; Failure = null; Secure = false; Phase = TabPhase.Live;
@@ -221,8 +251,19 @@ public sealed partial class Tab : Observable
     void OnResourceRequested(CoreWebView2 sender, CoreWebView2WebResourceRequestedEventArgs e)
     {
         var store = Owner?.Store;
-        if (store is null || e.ResourceContext == CoreWebView2WebResourceContext.Document) return;
-        if (store.Blocker.ShouldBlock(e.Request.Uri, sender.Source))
+        if (store is null || !store.Preferences.Blocking) return;
+        var type = e.ResourceContext switch {
+            CoreWebView2WebResourceContext.Document => "document", CoreWebView2WebResourceContext.Script => "script",
+            CoreWebView2WebResourceContext.Image => "image", CoreWebView2WebResourceContext.Stylesheet => "style-sheet",
+            CoreWebView2WebResourceContext.Font => "font", CoreWebView2WebResourceContext.Media => "media",
+            CoreWebView2WebResourceContext.XmlHttpRequest or CoreWebView2WebResourceContext.Fetch => "fetch",
+            CoreWebView2WebResourceContext.Websocket => "websocket", CoreWebView2WebResourceContext.Ping => "ping", _ => "other"
+        };
+        var top = Url ?? sender.Source;
+        var mainFrame = type == "document" && e.Request.Uri.Split('#')[0] == top.Split('#')[0];
+        var block = store.UBlock.Rules?.ShouldBlock(e.Request.Uri, top, type, mainFrame, store.Preferences.BlockingExceptions)
+            ?? (type != "document" && store.Blocker.ShouldBlock(e.Request.Uri, top));
+        if (block)
         {
             e.Response = store.Engine.Environment?.CreateWebResourceResponse(null, 403, "Blocked by mica", "");
             if (e.Response is not null) BlockedRequestCount++;
@@ -348,13 +389,13 @@ public sealed partial class Tab : Observable
             switch (e.Kind)
             {
                 case CoreWebView2ScriptDialogKind.Alert:
-                    await Dialogs.Ask(owner.Window, title, e.Message, ["OK"]); e.Accept(); break;
+                    await Dialogs.Ask(owner.Window, title, e.Message, ["OK"], site: e.Uri); e.Accept(); break;
                 case CoreWebView2ScriptDialogKind.Confirm:
                 case CoreWebView2ScriptDialogKind.Beforeunload:
-                    if (await Dialogs.Ask(owner.Window, title, e.Kind == CoreWebView2ScriptDialogKind.Beforeunload ? owner.Text("покинуть страницу? несохранённые изменения могут потеряться.", "Покинуть страницу? Несохранённые изменения могут потеряться.") : e.Message, [owner.Text("отмена", "Отмена"), "OK"]) == 1) e.Accept();
+                    if (await Dialogs.Ask(owner.Window, title, e.Kind == CoreWebView2ScriptDialogKind.Beforeunload ? owner.Text("покинуть страницу? несохранённые изменения могут потеряться.", "Покинуть страницу? Несохранённые изменения могут потеряться.") : e.Message, [owner.Text("отмена", "Отмена"), "OK"], site: e.Uri) == 1) e.Accept();
                     break;
                 case CoreWebView2ScriptDialogKind.Prompt:
-                    if (await Dialogs.Prompt(owner.Window, title, e.Message, e.DefaultText) is { } text) { e.ResultText = text; e.Accept(); }
+                    if (await Dialogs.Prompt(owner.Window, title, e.Message, e.DefaultText, e.Uri) is { } text) { e.ResultText = text; e.Accept(); }
                     break;
             }
         }
@@ -397,7 +438,7 @@ public sealed partial class Tab : Observable
     void DisposeWebView()
     {
         var view = WebView;
-        WebView = null; Core = null; initializing = null; blockingFilterInstalled = false;
+        WebView = null; Core = null; initializing = null; blockingFilterInstalled = false; filterScriptId = null;
         if (view is null) return;
         if (view.Parent is Panel parent) parent.Children.Remove(view);
         view.Close();
@@ -407,6 +448,7 @@ public sealed partial class Tab : Observable
     {
         Notifications.Notifier.Shared.RemoveFor(this);
         DisposeWebView();
+        filterNavigation++;
         Owner = null;
     }
 

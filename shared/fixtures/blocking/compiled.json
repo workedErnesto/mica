@@ -1,0 +1,55 @@
+{
+  "windows": [
+    {
+      "trigger": {
+        "url-filter": "^[^:]+://+([^:/]+\\.)?ads\\.example[:/]",
+        "load-type": [
+          "third-party"
+        ],
+        "resource-type": [
+          "script",
+          "image",
+          "style-sheet",
+          "font",
+          "media",
+          "fetch",
+          "websocket",
+          "ping",
+          "other",
+          "raw",
+          "svg-document"
+        ]
+      },
+      "action": {
+        "type": "block"
+      },
+      "host": "ads.example"
+    },
+    {
+      "trigger": {
+        "url-filter": "^[^:]+://+([^:/]+\\.)?ads\\.example/allowed\\.js",
+        "resource-type": [
+          "script"
+        ]
+      },
+      "action": {
+        "type": "ignore-previous-rules"
+      },
+      "host": "ads.example"
+    }
+  ],
+  "cosmetic": [
+    {
+      "trigger": {
+        "url-filter": ".*",
+        "if-domain": [
+          "*news.test"
+        ]
+      },
+      "action": {
+        "type": "css-display-none",
+        "selector": ".mica-test-ad"
+      }
+    }
+  ]
+}

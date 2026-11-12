@@ -1,0 +1,139 @@
+// mica: runs uBlock Origin's own list compiler (the uBO Lite pipeline) on uBO's lists and turns the result into
+// what public WebKit can apply: content rule lists for requests and element hiding, and two scriptlet bundles.
+const base = new URL('./ublock/', import.meta.url).href;
+
+const RESOURCE_TYPES = {
+  script: ['script'], image: ['image'], stylesheet: ['style-sheet'], font: ['font'], media: ['media'],
+  xmlhttprequest: ['fetch'], websocket: ['websocket'], ping: ['ping'], other: ['other'], object: ['other'],
+  sub_frame: ['document'], main_frame: ['document'], csp_report: ['other'],
+};
+const NON_DOCUMENT = ['script', 'image', 'style-sheet', 'font', 'media', 'fetch', 'websocket', 'ping', 'other', 'raw', 'svg-document'];
+const escapeRe = s => s.replace(/[.?+()[\]{}\\$|]/g, c => '\\' + c);
+const SEP = '[^a-zA-Z0-9_.%-]';
+const HOST_ANCHOR = '^[^:]+://+([^:/]+\\.)?';
+
+// ABP-style urlFilter of DNR to the regex subset of WebKit content rules. Null when it cannot be expressed.
+function urlFilterRegex(filter) {
+  if (filter === undefined) return '.*';
+  let out = '', rest = filter;
+  if (rest.startsWith('||')) { out = HOST_ANCHOR; rest = rest.slice(2); }
+  else if (rest.startsWith('|')) { out = '^'; rest = rest.slice(1); }
+  let end = '';
+  if (rest.endsWith('|')) { end = '$'; rest = rest.slice(0, -1); }
+  for (let i = 0; i < rest.length; i++) {
+    const c = rest[i];
+    if (c === '*') out += '.*';
+    else if (c === '^') out += i === rest.length - 1 && end === '' ? `(${SEP}.*)?$` : SEP;
+    else out += escapeRe(c);
+  }
+  out += end;
+  if (out.startsWith('.*')) out = out.slice(2) || '.*';
+  return out;
+}
+// regexFilter of DNR, only when it stays inside what WebKit accepts.
+function regexOK(re) {
+  if (/\||\{|\\[dDwWsSbB]|\(\?|\\[1-9]/.test(re)) return null;
+  return re;
+}
+function domainList(list) { return list.map(d => '*' + d.toLowerCase()); }
+function entityless(list) { return list.every(d => !d.endsWith('.*') && !d.includes('/')); }
+
+function networkRule(rule) {
+  const c = rule.condition, a = rule.action.type;
+  if (!['block', 'allow', 'allowAllRequests'].includes(a)) return [];
+  if (c.requestMethods || c.responseHeaders || c.excludedResponseHeaders || c.excludedRequestDomains || c.topDomains || c.excludedTopDomains || c.tabIds) return [];
+  const trigger = {};
+  if (c.regexFilter !== undefined) { const re = regexOK(c.regexFilter); if (re === null) return []; trigger['url-filter'] = re; }
+  else trigger['url-filter'] = urlFilterRegex(c.urlFilter);
+  if (c.isUrlFilterCaseSensitive) trigger['url-filter-is-case-sensitive'] = true;
+  if (c.initiatorDomains) { if (!entityless(c.initiatorDomains)) return []; trigger['if-domain'] = domainList(c.initiatorDomains); }
+  else if (c.excludedInitiatorDomains) { if (!entityless(c.excludedInitiatorDomains)) return []; trigger['unless-domain'] = domainList(c.excludedInitiatorDomains); }
+  if (c.domainType === 'thirdParty') trigger['load-type'] = ['third-party'];
+  if (c.domainType === 'firstParty') trigger['load-type'] = ['first-party'];
+  let types;
+  if (c.resourceTypes) types = [...new Set(c.resourceTypes.flatMap(t => RESOURCE_TYPES[t] ?? []))];
+  else if (c.excludedResourceTypes) { const ex = new Set(c.excludedResourceTypes.flatMap(t => RESOURCE_TYPES[t] ?? [])); types = NON_DOCUMENT.filter(t => !ex.has(t)); }
+  else types = a === 'allowAllRequests' ? undefined : NON_DOCUMENT;
+  if (types && types.length === 0) return [];
+  if (types) trigger['resource-type'] = types;
+  if (c.resourceTypes && c.resourceTypes.includes('sub_frame') && !c.resourceTypes.includes('main_frame')) trigger['load-context'] = ['child-frame'];
+  const action = { type: a === 'block' ? 'block' : 'ignore-previous-rules' };
+  if (c.requestDomains) {
+    if (c.urlFilter !== undefined || c.regexFilter !== undefined || !entityless(c.requestDomains)) return [];
+    return c.requestDomains.map(d => ({ trigger: { ...trigger, 'url-filter': HOST_ANCHOR + escapeRe(d.toLowerCase()) + '[:/]' }, action }));
+  }
+  if (a === 'allowAllRequests') { delete trigger['resource-type']; trigger['resource-type'] = ['document']; }
+  return [{ trigger, action }];
+}
+
+function cosmeticRules(result, validSelector) {
+  const rules = [];
+  const generic = new Set((result.genericCosmeticFilters ?? []).map(f => f.selector));
+  for (const f of result.genericCosmeticExceptions ?? []) generic.delete(f.selector);
+  const valid = [...generic].filter(validSelector);
+  for (let i = 0; i < valid.length; i += 500) {
+    rules.push({ trigger: { 'url-filter': '.*' }, action: { type: 'css-display-none', selector: valid.slice(i, i + 500).join(',') } });
+  }
+  // Selectors per set of sites; procedural ones (uBO's own pseudo-classes) need uBO's script and are left out.
+  const bySites = new Map();
+  for (const [selector, details] of result.specificCosmetic ?? []) {
+    if (selector.startsWith('{') || !details.matches || details.matches.length === 0) continue;
+    if (details.excludeMatches?.length || !entityless(details.matches) || details.matches.includes('*')) continue;
+    if (!validSelector(selector)) continue;
+    const key = details.matches.slice().sort().join(' ');
+    (bySites.get(key) ?? bySites.set(key, []).get(key)).push(selector);
+  }
+  for (const [key, selectors] of bySites) {
+    for (let i = 0; i < selectors.length; i += 200) {
+      rules.push({ trigger: { 'url-filter': '.*', 'if-domain': domainList(key.split(' ')) }, action: { type: 'css-display-none', selector: selectors.slice(i, i + 200).join(',') } });
+    }
+  }
+  return rules;
+}
+
+export async function build(lists, { validSelector = () => true, exceptions = [] } = {}) {
+  const [{ dnrRulesetFromRawLists }, { builtinScriptlets }, ms] = await Promise.all([
+    import(base + 'js/static-dnr-filtering.js'), import(base + 'js/resources/scriptlets.js'), import(base + 'js/make-scriptlets.js'),
+  ]);
+  const template = name => fetch(base + 'js/' + name).then(r => r.text());
+  const [begin, core, end] = await Promise.all([template('scriptlet-begin.template.js'), template('scriptlet.template.js'), template('scriptlet-end.template.js')]);
+  const env = ['safari', 'mv3', 'native_css_has', 'ublock', 'ubol', 'user_stylesheet'];
+  // uBO's own lists may use trusted scriptlets; uBO Lite marks them the same way.
+  const secret = crypto.randomUUID();
+  const marked = lists.map(list => list.trustedSource ? { name: list.name, text: `!#trusted on ${secret}\n${list.text}\n!#trusted off ${secret}\n` } : { name: list.name, text: list.text });
+  const result = await dnrRulesetFromRawLists(marked, { env, secret });
+
+  const block = [], allow = [], windowsBlock = [], windowsAllow = [];
+  for (const rule of result.network.ruleset) {
+    if (rule._error) continue;
+    const converted = networkRule(rule);
+    for (const [i, r] of converted.entries()) {
+      (r.action.type === 'block' ? block : allow).push(r);
+      // A safe host index avoids testing every network expression on every WebView2 request.
+      const c = rule.condition;
+      const host = c.requestDomains?.[i] ?? /^\|\|([a-z0-9.-]+)(?:\^|\/|$)/i.exec(c.urlFilter ?? '')?.[1];
+      (r.action.type === 'block' ? windowsBlock : windowsAllow).push({ ...r, host });
+    }
+  }
+  // Sites the user excluded from blocking in mica's settings: nothing of uBO applies there.
+  const off = exceptions.length ? [{ trigger: { 'url-filter': '.*', 'if-domain': domainList(exceptions) }, action: { type: 'ignore-previous-rules' } }] : [];
+  const cosmetic = cosmeticRules(result, validSelector);
+
+  ms.init(builtinScriptlets);
+  let scriptlets = 0;
+  for (const details of result.scriptlet?.values() ?? []) {
+    if (!details.matches || details.matches.length === 0) continue;
+    const exclude = [...(details.excludeMatches ?? []), ...exceptions];
+    ms.compile('mica', { ...details, excludeMatches: exclude, trustedSource: details.trustedSource === true });
+    scriptlets += 1;
+  }
+  const bundleSecret = crypto.randomUUID();
+  const coreCode = ms.commit('mica', core, bundleSecret);
+  const framework = ms.commitFramework(begin, end, bundleSecret);
+  const bundle = world => coreCode[world] ? [framework[world].beginCode, coreCode[world].code ?? coreCode[world], framework[world].endCode].join('\n') : '';
+  return {
+    network: [...block, ...allow, ...off], windows: [...windowsBlock, ...windowsAllow], cosmetic: [...cosmetic, ...off],
+    main: bundle('MAIN'), isolated: bundle('ISOLATED'),
+    stats: { network: block.length + allow.length, cosmetic: cosmetic.length, scriptlets },
+  };
+}

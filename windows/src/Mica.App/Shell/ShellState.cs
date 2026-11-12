@@ -189,7 +189,7 @@ public static class ShellState
         if (AddressParser.Host(url) is { } host)
         {
             node["host"] = host;
-            node["blocking"] = store.Preferences.Blocking && !store.Preferences.BlockingExceptions.Contains(host);
+            node["blocking"] = store.Preferences.Blocking && DomainBlocker.MatchingExceptions(host, store.Preferences.BlockingExceptions).Count == 0;
         }
         if (Origin.Of(url) is { } origin)
         {
@@ -260,6 +260,7 @@ public static class ShellState
                         ["permissions"] = Strings(r.Permissions), ["hosts"] = Strings(r.Hosts), ["error"] = manager.Errors.GetValueOrDefault(r.Id),
                         // WebView2 runs extensions without toolbar popups or option pages.
                         ["options"] = false,
+                        ["icon"] = manager.IconPath(r) is null ? null : "https://mica.icons/ext/" + r.Id.ToString("N"),
                     });
                 var extensions = new JsonObject { ["records"] = records, ["status"] = manager.ChromeStatus, ["busy"] = manager.Busy };
                 if (browser.Selected?.Url is { } url && ChromeStore.ExtensionId(url) is { } id)
@@ -319,9 +320,12 @@ public static class ShellState
             ["engines"] = engines,
             ["search"] = p.Search.RawValue(),
             ["blocking"] = p.Blocking,
-            ["blockerCount"] = store.Blocker.Count,
-            ["blockerStatus"] = store.Blocker.Status,
-            ["blockerUpdating"] = store.Blocker.Updating,
+            ["blockerCount"] = store.UBlock.Count,
+            ["blockerUpdated"] = store.UBlock.ListsUpdated?.ToString("O"),
+            ["blockerStatus"] = store.UBlock.Status,
+            ["blockerIssue"] = store.UBlock.Issue,
+            ["blockerCompiling"] = store.UBlock.Busy,
+            ["blockerUpdating"] = (store.UBlock.Updating || store.UBlock.Busy),
             ["blockingExceptions"] = Strings(p.BlockingExceptions),
             ["restore"] = p.Restore, ["lazyRestore"] = p.LazyRestore, ["eagerHosts"] = Strings(p.EagerHosts),
             ["notificationRequests"] = p.NotificationRequests,
@@ -383,6 +387,16 @@ public static class ShellState
                 ["id"] = q.Id, ["title"] = q.Title, ["text"] = q.Text, ["buttons"] = Strings(q.Buttons), ["destructive"] = q.Destructive,
                 ["choices"] = q.Choices is null ? null : Strings(q.Choices), ["fields"] = fields, ["cancel"] = 0,
             };
+            // On top of the card: the site's icon for a page's dialog, mica's icon for mica's own questions, like the
+            // profile question carries the profile's mark.
+            var appIcon = store.Preferences.AppIcon ?? Appearance.AppIcons.Standard;
+            if (q.Site is { } site)
+            {
+                var tile = new JsonObject { ["origin"] = site, ["host"] = AddressParser.Host(site) ?? site };
+                Icon(tile, browser.Favicons, site, look.Dark);
+                alert["site"] = tile;
+            }
+            else if (q.Password is null && Appearance.AppIcons.Png(appIcon) is not null) alert["mark"] = "https://mica.icons/app/" + appIcon;
             if (q.Password is { } card)
             {
                 var password = new JsonObject { ["origin"] = card.Origin, ["host"] = AddressParser.Host(card.Origin) ?? card.Origin, ["account"] = card.Account, ["secret"] = card.Secret };

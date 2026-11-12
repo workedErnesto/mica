@@ -146,7 +146,7 @@ enum ProfileActions {
     }
     static func remove(_ profile: Profile, store: Store, browser: BrowserModel) async {
         let name = browser.profileName(profile)
-        let answer = await ask(title: browser.text("удалить профиль ", "Удалить профиль ") + browser.quoted(name) + "?", detail: browser.text("его окна перейдут в обычный профиль, закреплённые вкладки профиля закроются. пароли, история и закладки останутся.", "Его окна перейдут в обычный профиль, закреплённые вкладки профиля закроются. Пароли, история и закладки останутся."), buttons: [browser.text("отмена", "Отмена"), browser.text("удалить", "Удалить")], window: browser.controller?.window)
+        let answer = await ask(title: browser.text("удалить профиль ", "Удалить профиль ") + browser.quoted(name) + "?", detail: browser.text("его окна перейдут в обычный профиль, закреплённые вкладки профиля закроются. пароли, история и закладки останутся.", "Его окна перейдут в обычный профиль, закреплённые вкладки профиля закроются. Пароли, история и закладки останутся."), buttons: [browser.text("отмена", "Отмена"), browser.text("удалить", "Удалить")], window: browser.controller?.window, destructive: true)
         guard answer == 1 else { return }
         withMotion(Motion.quick) {
             if browser.editingProfile == profile.id { browser.editingProfile = nil }

@@ -58,6 +58,7 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
         if configuration == nil && !owner.privateMode { passwordBridge = PasswordBridge(tab: self, controller: config.userContentController) }
         if configuration == nil { notifications = NotificationBridge(tab: self, controller: config.userContentController, privateMode: owner.privateMode, permissions: owner.store.permissions) }
         // A popup shares the opener's content controller, which already carries the context script and its handler.
+        if configuration == nil { owner.store.ublock.addScripts(to: config.userContentController) }
         if configuration == nil {
             ContextTargets.shared.install(in: config.userContentController)
             faviconBridge = FaviconBridge(tab: self, controller: config.userContentController)
@@ -93,11 +94,35 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
         let version = (NSDictionary(contentsOf: plist)?["CFBundleShortVersionString"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "18.0"
         return "Version/\(version) Safari/605.1.15"
     }()
+    /// uBlock Origin's rules or scripts changed: rules apply at once, scripts from the next load. WebKit removes user
+    /// scripts only all together, so the tab's other scripts are put back as they were.
+    func refreshFilters() {
+        guard let view = webView, let owner else { return }
+        owner.store.blocker.apply(view)
+        let controller = view.configuration.userContentController
+        let others = controller.userScripts.filter { !UBlockEngine.owns($0) }
+        controller.removeAllUserScripts()
+        for script in others { controller.addUserScript(script) }
+        owner.store.ublock.addScripts(to: controller)
+    }
     func ensureLoaded() {
         guard phase != .live && phase != .terminated, let url else { return }
         load(url)
     }
+    private var filterNavigation: Task<Void, Never>?
     func load(_ url: URL) {
+        filterNavigation?.cancel()
+        if let owner, owner.store.preferences.blocking, !owner.store.ublock.prepared {
+            self.url = url
+            filterNavigation = Task { [weak self, weak owner] in
+                while let owner, !owner.store.ublock.prepared {
+                    do { try await Task.sleep(for: .milliseconds(50)) } catch { return }
+                }
+                guard !Task.isCancelled, let self, self.url == url else { return }
+                self.load(url)
+            }
+            return
+        }
         if url.isFileURL { openFile(url); return }
         guard AddressParser.navigable(url) || owner?.store.extensions.controller.extensionContext(for: url) != nil else { return }
         makeWebView(); error = nil; navigationFailure = nil; secure = false; phase = .live
@@ -152,6 +177,7 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
         error = nil; webView.reloadFromOrigin()
     }
     func dispose() {
+        filterNavigation?.cancel(); filterNavigation = nil
         observations.removeAll()
         faviconRefresh?.cancel(); faviconRefresh = nil
         if let faviconBridge, let controller = webView?.configuration.userContentController { faviconBridge.detach(from: controller); self.faviconBridge = nil }
@@ -239,10 +265,10 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
     }
     func webViewDidClose(_ webView: WKWebView) { owner?.close(self) }
     func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
-        Task { _ = await ask(title: Origin.string(frame.request.url) ?? "mica", detail: message, buttons: ["OK"], window: owner?.controller?.window); completionHandler() }
+        Task { _ = await ask(title: Origin.string(frame.request.url) ?? "mica", detail: message, buttons: ["OK"], window: owner?.controller?.window, site: frame.request.url); completionHandler() }
     }
     func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (Bool) -> Void) {
-        Task { let result = await ask(title: Origin.string(frame.request.url) ?? "mica", detail: message, buttons: [owner?.text("отмена", "Отмена") ?? "Cancel", "OK"], window: owner?.controller?.window); completionHandler(result == 1) }
+        Task { let result = await ask(title: Origin.string(frame.request.url) ?? "mica", detail: message, buttons: [owner?.text("отмена", "Отмена") ?? "Cancel", "OK"], window: owner?.controller?.window, site: frame.request.url); completionHandler(result == 1) }
     }
     func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
         let alert = NSAlert(); alert.messageText = Origin.string(frame.request.url) ?? "mica"; alert.informativeText = prompt
@@ -270,7 +296,7 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
                 if decision == .ask {
                     guard owner.selectedID == id else { decisionHandler(.deny); return }
                     let label = capability == .camera ? owner.text("камера", "Камера") : owner.text("микрофон", "Микрофон")
-                    let answer = await ask(title: key + ": " + label, detail: owner.text("сайт запрашивает доступ для записи или звонка. macOS отдельно проверит системное разрешение.", "Сайт запрашивает доступ для записи или звонка. macOS отдельно проверит системное разрешение.") + (frame.isMainFrame ? "" : "\n" + owner.text("запрос из встроенного фрейма на ", "Запрос из встроенного фрейма на ") + (Origin.string(webView.url) ?? "")), buttons: [owner.text("запретить", "Запретить"), owner.text("разрешить один раз", "Разрешить один раз"), owner.text("разрешить для сайта", "Разрешить для сайта")], window: owner.controller?.window)
+                    let answer = await ask(title: key + ": " + label, detail: owner.text("сайт запрашивает доступ для записи или звонка. macOS отдельно проверит системное разрешение.", "Сайт запрашивает доступ для записи или звонка. macOS отдельно проверит системное разрешение.") + (frame.isMainFrame ? "" : "\n" + owner.text("запрос из встроенного фрейма на ", "Запрос из встроенного фрейма на ") + (Origin.string(webView.url) ?? "")), buttons: [owner.text("запретить", "Запретить"), owner.text("разрешить один раз", "Разрешить один раз"), owner.text("разрешить для сайта", "Разрешить для сайта")], window: owner.controller?.window, site: URL(string: key))
                     if answer != 1 {
                         let choice: Decision = answer == 2 ? .allow : .deny
                         if owner.privateMode { owner.transientPermissions.removeAll { $0.origin == key && $0.capability == capability }; owner.transientPermissions.append(SitePermission(origin: key, capability: capability, decision: choice)) }

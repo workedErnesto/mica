@@ -1,0 +1,13 @@
+mica bundles uBlock Origin 1.76.0 compiler, scriptlet resources and default filter lists.
+Source: https://github.com/gorhill/uBlock/tree/1.76.0
+Package: https://addons.mozilla.org/firefox/downloads/file/5225273/ublock_origin-1.76.0.xpi
+SHA-256: 6f20ff6749193599548770539103069c20948dfcd3e61c3089a67da7bfc3be39
+The package hash was checked against the Mozilla Add-ons API before extraction.
+Code: GPL-3.0-or-later, see ublock/LICENSE.txt and copyright headers.
+Filter list terms and attribution remain in each list's header and adjacent README files.
+EasyList and EasyPrivacy: https://easylist.to/pages/licence.html
+Peter Lowe: ublock/assets/thirdparties/pgl.yoyo.org/as/README.md
+The urlhaus list is omitted. This is mica's integration, not the uBlock Origin extension.
+Upstream components are pinned and updated with mica releases; filter lists update separately.
+Corresponding upstream source is available at the source URL above; mica integration source:
+https://github.com/workedErnesto/mica

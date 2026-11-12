@@ -31,6 +31,7 @@
     <Content Include="$(SharedDir)favicons/*.png" Link="Assets/Favicons/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="$(SharedDir)favicons/NOTICE.txt" Link="Assets/Favicons/NOTICE.txt" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="$(SharedDir)blocklist/BLOCKLIST-NOTICE.txt" Link="Assets/BLOCKLIST-NOTICE.txt" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(SharedDir)blocking/**" Link="Assets/Blocking/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <!-- The interface: mica's shell, loaded by ShellView from https://mica.shell. dev/ is the preview stand-in for the host. -->
     <Content Include="../../shell/**" Exclude="../../shell/dev/**" Link="shell/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="$(SharedDir)fixtures/extension-check/**" Link="Assets/QA/extension-check/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />

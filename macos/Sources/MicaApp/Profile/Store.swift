@@ -12,7 +12,7 @@ final class Store: ObservableObject {
     lazy var websiteDataStore: WKWebsiteDataStore = ProcessInfo.processInfo.arguments.contains("--qa") ? WKWebsiteDataStore(forIdentifier: UUID(uuidString: "4931E497-3225-4DAD-A8E3-87D4038B84EE")!) : .default()
     /// Application-wide preferences. The part a profile owns (ProfileLook) is read through `prefs(for:)`; its copy here
     /// only seeds the standard profile when preferences from a build before profiles are first loaded.
-    @Published var preferences: Preferences { didSet { schedulePreferences(); if oldValue.appIcon != preferences.appIcon { AppIcons.apply(preferences.appIcon); flushPreferences(); AppIcons.announce() }; if oldValue.blocking != preferences.blocking || oldValue.blockingExceptions != preferences.blockingExceptions { Task { await blocker.rebuild() } } } }
+    @Published var preferences: Preferences { didSet { schedulePreferences(); if oldValue.appIcon != preferences.appIcon { AppIcons.apply(preferences.appIcon); flushPreferences(); AppIcons.announce() }; if oldValue.blocking != preferences.blocking || oldValue.blockingExceptions != preferences.blockingExceptions { Task { await blocker.rebuild() } }; if oldValue.blocking != preferences.blocking { Task { await ublock.startBuiltin() } } else if oldValue.blockingExceptions != preferences.blockingExceptions { Task { await ublock.rebuild() } } } }
     /// The standard profile first. Each window shows one of them; deleting a profile moves its windows to the standard one.
     @Published var profiles: [Profile] { didSet { scheduleProfiles(); for window in windows { window.applyProfile() }; updateTextStyle() } }
     /// Language and case of text that belongs to no window (the menu bar, alerts without a window, extension and update
@@ -22,11 +22,18 @@ final class Store: ObservableObject {
     @Published var history: [Visit] { didSet { save(history, "history.json") } }
     @Published var permissions: [SitePermission] { didSet { save(permissions, "permissions.json") } }
     @Published var downloadRecords: [DownloadRecord] { didSet { save(downloadRecords, "downloads.json") } }
+    /// A problem to tell the user. Shown once in the window in front, or in the first window when it opens.
     @Published var issue: String?
+    func presentIssue() {
+        guard let text = issue, let browser = active else { return }
+        issue = nil
+        browser.inform(text)
+    }
     /// Text typed in a settings field but not yet added; closing settings asks before discarding it.
     @Published var settingsDraft = ""
     var windows: [BrowserWindow] = []
     lazy var blocker = Blocker(store: self)
+    lazy var ublock = UBlockEngine(store: self)
     lazy var extensions = ExtensionManager(store: self)
     lazy var importer = ImportManager(store: self)
     lazy var updater = Updater(store: self)
@@ -186,6 +193,7 @@ final class Store: ObservableObject {
         if preferences.restore, let saved, !saved.windows.isEmpty {
             for window in saved.windows { _ = newWindow(saved: window) }
         } else { _ = newWindow() }
+        Task { await ublock.startBuiltin() }
     }
     /// Without a profile the window takes the one of the window in front, so ⌘N and ⌘⇧N stay in the current profile.
     @discardableResult func newWindow(privateMode: Bool = false, saved: SavedWindow? = nil, profile: UUID? = nil) -> BrowserModel {

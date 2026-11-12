@@ -68,12 +68,15 @@ function ProfilePrompt(profile) {
       h('span', null, T("запомнить выбор", "Запомнить выбор")), Switch(remember, value => update(() => { ui.rememberProfile = value; }), { label: T("запомнить выбор", "Запомнить выбор") })));
 }
 
-/// A question or message from the host (ContentDialog before): title, text and buttons; the last is the default.
+/// A question or message from the host (ContentDialog before): the app icon or the asking site's icon, title, text and buttons; the last is the
+/// default. Composed like the profile question; long text scrolls inside the card.
 function Alert(alert) {
   const values = ui.alertValues && ui.alertValues.id === alert.id ? ui.alertValues : (ui.alertValues = { id: alert.id, list: (alert.fields || []).map(field => field.value || '') });
   const answer = index => send('alert.answer', { id: alert.id, index, values: values.list });
   const buttons = alert.buttons && alert.buttons.length ? alert.buttons : ['OK'];
   return h('div', { class: 'prompt alert' },
+    alert.site ? h('span', { class: 'prompt-mark app-mark' }, SiteTile(alert.site, 56))
+      : alert.mark ? h('img', { class: 'prompt-mark app-mark', src: alert.mark, alt: '', width: 56, height: 56, draggable: false }) : null,
     h('div', { class: 'prompt-title' }, alert.title),
     alert.text ? h('div', { class: 'prompt-text selectable' }, alert.text) : null,
     (alert.fields || []).length ? h('div', { class: 'col', style: { gap: '8px', width: '100%', 'margin-bottom': '14px' } }, alert.fields.map((field, index) => h('div', { class: 'field', key: index },

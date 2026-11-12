@@ -15,6 +15,7 @@ final class SharedVectorTests: XCTestCase {
             case .external(let url): return "external:" + url.absoluteString
             case .rejected(let reason): return "rejected:" + reason
             }
+        case "blockingExceptions": return BlockingRules.matchingExceptions(host: c["host"] as! String, exceptions: c["exceptions"] as! [String])
         case "navigation": return URL(string: c["url"] as! String).map { AddressParser.navigable($0, mainFrame: c["mainFrame"] as! Bool) } ?? false
         case "origin": return Origin.string(URL(string: c["url"] as! String)) ?? NSNull()
         case "localFile": return URL(string: c["url"] as! String).map(AddressParser.openableFile) ?? false

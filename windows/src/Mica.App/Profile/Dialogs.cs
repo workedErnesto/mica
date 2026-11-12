@@ -20,6 +20,8 @@ public static class Dialogs
         public bool Destructive { get; init; }
         /// <summary>A password question: the shell draws the site's icon with a key and the account or password on a plate.</summary>
         public PasswordCard? Password { get; init; }
+        /// <summary>A page's dialog or permission question: the shell draws that site's icon instead of mica's.</summary>
+        public string? Site { get; init; }
         internal TaskCompletionSource<(int Index, string[] Values)> Answer { get; } = new();
         static int next;
     }
@@ -49,17 +51,17 @@ public static class Dialogs
     }
 
     /// <summary>Returns the index of the chosen button, 0 when closed with Esc.</summary>
-    public static async Task<int> Ask(BrowserWindow? window, string title, string detail, IReadOnlyList<string> buttons, bool destructive = false, PasswordCard? password = null) =>
-        (await Present(window, new Question { Title = title, Text = detail, Buttons = buttons, Destructive = destructive, Password = password })).Index;
+    public static async Task<int> Ask(BrowserWindow? window, string title, string detail, IReadOnlyList<string> buttons, bool destructive = false, PasswordCard? password = null, string? site = null) =>
+        (await Present(window, new Question { Title = title, Text = detail, Buttons = buttons, Destructive = destructive, Password = password, Site = site })).Index;
 
     public static Task Show(BrowserWindow? window, string message) => Ask(window, "mica", message, ["OK"]);
 
     /// <summary>A prompt() of a page: the default text in one field. Null when cancelled.</summary>
-    public static async Task<string?> Prompt(BrowserWindow? window, string title, string message, string defaultText)
+    public static async Task<string?> Prompt(BrowserWindow? window, string title, string message, string defaultText, string? site = null)
     {
         var owner = Owner(window);
         var cancel = owner?.Text("отмена", "Отмена") ?? "Cancel";
-        var (index, values) = await Present(window, new Question { Title = title, Text = message, Buttons = [cancel, "OK"], Fields = [("", defaultText, false)] });
+        var (index, values) = await Present(window, new Question { Title = title, Text = message, Buttons = [cancel, "OK"], Fields = [("", defaultText, false)], Site = site });
         return index == 1 && values.Length > 0 ? values[0] : null;
     }
 

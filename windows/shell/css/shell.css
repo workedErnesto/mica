@@ -412,13 +412,13 @@
 .dl-kind.failed { color: var(--danger); }
 .dl-kind.cancelled .glyph { opacity: 0.5; }
 .ext-list { gap: 8px; }
-.ext-card { display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; background: var(--canvas); box-shadow: inset 0 0 0 1px var(--hairline); flex: none; }
+.ext-card { display: flex; flex-direction: column; gap: var(--space-small); padding: 12px; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--hairline); flex: none; }
 .ext-head { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 4px; border-radius: 8px; text-align: left; --press: 0.98; transition: transform var(--spring-press-ms) var(--spring-press), background-color var(--ease-hover); }
 .ext-head:hover:not(:disabled) { background: var(--hover); }
 .ext-icon { display: flex; flex: none; }
 .ext-icon.off { opacity: 0.5; }
 .ext-note { font-size: 11px; color: var(--text2); line-height: 1.4; }
-.ext-meta { font-size: 11px; color: var(--text3); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.ext-meta { font-size: 11px; color: var(--text2); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 
 /* Window-level cards */
 .modal-title { font-size: 20px; letter-spacing: -0.4px; font-family: var(--font-display); }
@@ -431,6 +431,10 @@
 .prompt .col + .toggle-row { margin-top: 14px; }
 .prompt-remember { color: var(--text2); }
 .alert .prompt-title { font-size: 14px; }
+.app-mark { display: block; animation: prompt-mark-in var(--spring-snappy-ms) var(--spring-snappy) both; }
+.alert .prompt-text { max-height: 260px; overflow-y: auto; white-space: pre-line; overflow-wrap: anywhere; }
+@keyframes prompt-mark-in { from { transform: scale(0.8); } to { transform: scale(1); } }
+:root[data-reduced-motion] .app-mark { animation: none; }
 .menu-row.choice { justify-content: center; height: 30px; background: var(--track); }
 .menu-row.choice:hover { background: var(--hover); }
 .quit-hold-layer { position: fixed; inset: 0; z-index: 990; display: flex; align-items: center; justify-content: center; pointer-events: none; }

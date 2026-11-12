@@ -41,15 +41,16 @@ struct InstalledExtension: View {
     private var sourceName: String { record.source.hasPrefix("amo:") ? ", Firefox Add-ons" : record.source.hasPrefix("cws:") ? ", Chrome Web Store" : "" }
     var body: some View {
         let context = manager.contexts[record.id]
-        let enabled = context != nil
-        let runnable = enabled && !browser.privateMode
-        VStack(alignment: .leading, spacing: 6) {
+        let engine = manager.isEngine(record)
+        let enabled = manager.running(record)
+        let runnable = enabled && !engine && !browser.privateMode
+        VStack(alignment: .leading, spacing: Space.small) {
             HStack(spacing: 10) {
                 // The header runs the extension, like its button in the top bar.
                 Button { manager.popupAnchor = anchor.view; manager.action(record, tab: browser.selected) } label: {
                     HStack(spacing: 10) {
                         SwiftUI.Group {
-                            if let image = context?.webExtension.icon(for: CGSize(width: Chrome.rowIcon, height: Chrome.rowIcon)) { Image(nsImage: image).resizable().interpolation(.high).frame(width: Chrome.rowIcon, height: Chrome.rowIcon) }
+                            if let image = context?.webExtension.icon(for: CGSize(width: Chrome.rowIcon, height: Chrome.rowIcon)) ?? manager.icons[record.id] { Image(nsImage: image).resizable().interpolation(.high).frame(width: Chrome.rowIcon, height: Chrome.rowIcon) }
                             else { Monogram(host: record.name, size: Chrome.rowIcon) }
                         }
                         .opacity(enabled ? 1 : 0.5)
@@ -70,23 +71,32 @@ struct InstalledExtension: View {
                 .animation(Motion.hover, value: hover)
                 .accessibilityLabel(browser.text("открыть ", "Открыть ") + record.name)
                 MenuButton(label: browser.text("действия", "Действия"), size: 26) {
+                    if engine {
+                        MenuEntry.item(browser.text("обновить списки фильтров", "Обновить списки фильтров"), enabled: enabled && !browser.store.ublock.updating) { Task { await browser.store.ublock.updateLists() } }
+                        MenuEntry.divider
+                        MenuEntry.item(browser.text("удалить", "Удалить"), destructive: true) { Task { await manager.remove(record) } }
+                    } else {
                     MenuEntry.item(browser.text("настройки расширения", "Настройки расширения"), enabled: manager.contexts[record.id]?.optionsPageURL != nil && !browser.privateMode) { manager.options(record) }
                     MenuEntry.item(browser.text("разрешить текущий сайт", "Разрешить текущий сайт"), enabled: !browser.privateMode && browser.selected?.url != nil) { Task { await manager.allowCurrentSite(record, tab: browser.selected) } }
                     MenuEntry.item(browser.text("отозвать доступ к сайтам", "Отозвать доступ к сайтам")) { Task { await manager.revokeHosts(record) } }
                     MenuEntry.item(browser.text("обновить с диска", "Обновить с диска")) { manager.chooseImport(replacing: record) }
                     MenuEntry.divider
                     MenuEntry.item(browser.text("удалить", "Удалить"), destructive: true) { Task { await manager.remove(record) } }
+                    }
                 }
                 SwitchKnob(isOn: Binding(get: { enabled }, set: { _ in Task { await manager.toggle(record) } }))
                     .accessibilityLabel(record.name)
             }
             if let warning = manager.compatibility[record.id] { Text(warning).font(.system(size: 11)).foregroundStyle(Palette.text2).fixedSize(horizontal: false, vertical: true) }
             if let error = manager.errors[record.id] { Text(error).font(.system(size: 11)).foregroundStyle(Palette.danger).textSelection(.enabled).fixedSize(horizontal: false, vertical: true) }
-            Text("API: " + record.permissions.joined(separator: ", ")).font(.system(size: 11)).foregroundStyle(Palette.text3).textSelection(.enabled).lineLimit(3)
-            Text(browser.text("сайты: ", "Сайты: ") + (record.hosts.isEmpty ? browser.text("доступ не выдан", "доступ не выдан") : record.hosts.joined(separator: ", "))).font(.system(size: 11)).foregroundStyle(Palette.text3).textSelection(.enabled).lineLimit(3)
+            if engine { UBlockStatus(engine: browser.store.ublock, browser: browser, enabled: enabled) } else {
+            Hairline()
+            if !record.permissions.isEmpty { Text("API: " + record.permissions.joined(separator: ", ")).font(.system(size: 11)).foregroundStyle(Palette.text2).textSelection(.enabled).lineLimit(3) }
+            Text(browser.text("сайты: ", "Сайты: ") + (record.hosts.isEmpty ? browser.text("доступ не выдан", "доступ не выдан") : record.hosts.joined(separator: ", "))).font(.system(size: 11)).foregroundStyle(Palette.text2).textSelection(.enabled).lineLimit(3)
+            }
         }
         .padding(12)
-        .background(RoundedRectangle(cornerRadius: Radius.row + 2, style: .continuous).fill(Palette.canvas))
+        .background(RoundedRectangle(cornerRadius: Radius.row + 2, style: .continuous).fill(Palette.surface))
         .overlay(RoundedRectangle(cornerRadius: Radius.row + 2, style: .continuous).strokeBorder(Palette.hairline, lineWidth: 1))
     }
 }
@@ -97,9 +107,14 @@ struct CatalogCard: View {
     @ObservedObject var browser: BrowserModel
     var body: some View {
         let existing = manager.installed(entry)
-        VStack(alignment: .leading, spacing: 6) {
+        let missing = manager.missingInWebKit(entry)
+        VStack(alignment: .leading, spacing: Space.small) {
             HStack(spacing: 10) {
-                Monogram(host: entry.name, size: Chrome.rowIcon)
+                SwiftUI.Group {
+                    if let image = manager.catalogIcons[entry.id] { Image(nsImage: image).resizable().interpolation(.high).aspectRatio(contentMode: .fit).frame(width: Chrome.rowIcon, height: Chrome.rowIcon).transition(.opacity) }
+                    else { Monogram(host: entry.name, size: Chrome.rowIcon).transition(.opacity) }
+                }
+                .animation(Motion.quick, value: manager.catalogIcons[entry.id] != nil)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(entry.name).font(.system(size: 12.5, weight: .medium)).foregroundStyle(Palette.ink).lineLimit(1)
                     Text("Firefox Add-ons, " + entry.version).font(.system(size: 11)).foregroundStyle(Palette.text3)
@@ -107,12 +122,16 @@ struct CatalogCard: View {
             }
             Text(entry.summary).font(.system(size: 11.5)).foregroundStyle(Palette.text2).lineLimit(3).fixedSize(horizontal: false, vertical: true)
             if !entry.permissions.isEmpty { Text(browser.text("заявленные права: ", "Заявленные права: ") + entry.permissions.joined(separator: ", ")).font(.system(size: 11)).foregroundStyle(Palette.text3).textSelection(.enabled).lineLimit(3) }
+            if entry.isUBlock { Text(browser.text("блокировка uBlock Origin уже встроена: включите её в настройках mica.", "Блокировка uBlock Origin уже встроена: включите её в настройках mica.")).font(.system(size: 11)).foregroundStyle(Palette.text2).fixedSize(horizontal: false, vertical: true) }
+            if !entry.isUBlock && !missing.isEmpty { Text(browser.text("не заработает в WebKit, нет API: ", "Не заработает в WebKit, нет API: ") + missing.joined(separator: ", ") + ". " + manager.blockingHint).font(.system(size: 11)).foregroundStyle(Palette.text2).fixedSize(horizontal: false, vertical: true) }
             HStack(spacing: 6) {
-                if manager.installing == entry.id {
+                if entry.isUBlock {
+                    Button(browser.text("настройки", "Настройки")) { browser.settingsSection = .search; browser.showSettings = true }.buttonStyle(MButtonStyle(kind: .secondary, compact: true))
+                } else if manager.installing == entry.id {
                     Text(browser.text("загрузка и проверка…", "Загрузка и проверка…")).font(.system(size: 11.5)).foregroundStyle(Palette.text2).frame(height: 26)
                 } else if let existing, existing.version == entry.version {
                     Label(browser.text("установлено", "Установлено"), systemImage: "checkmark").font(.system(size: 11.5, weight: .medium)).foregroundStyle(Palette.text2).frame(height: 26)
-                } else if entry.download != nil && entry.sha256 != nil {
+                } else if entry.download != nil && entry.sha256 != nil && missing.isEmpty {
                     Button(existing == nil ? browser.text("установить", "Установить") : browser.text("обновить до ", "Обновить до ") + entry.version) { Task { await manager.installFromCatalog(entry, replacing: existing) } }
                         .buttonStyle(MButtonStyle(kind: .primary, compact: true)).disabled(browser.privateMode || manager.busy || manager.installing != nil)
                 }
@@ -120,7 +139,7 @@ struct CatalogCard: View {
             }
         }
         .padding(12)
-        .background(RoundedRectangle(cornerRadius: Radius.row + 2, style: .continuous).fill(Palette.canvas))
+        .background(RoundedRectangle(cornerRadius: Radius.row + 2, style: .continuous).fill(Palette.surface))
         .overlay(RoundedRectangle(cornerRadius: Radius.row + 2, style: .continuous).strokeBorder(Palette.hairline, lineWidth: 1))
         .animation(Motion.hover, value: manager.installing)
     }

@@ -10,7 +10,7 @@ namespace Mica.App;
 /// <summary>The window's interface: mica's shell (windows/shell, the same layout, springs and transitions as the SwiftUI
 /// views on macOS) running in its own WebView2 over the window backdrop. The shell receives the window state as JSON
 /// and sends commands back; it never touches the network. Its files come from the app folder through a virtual host,
-/// site icons and app icons through https://mica.icons, answered here from memory.</summary>
+/// site icons, app icons and extension icons through https://mica.icons, answered here from memory and the extension folders.</summary>
 public sealed partial class ShellView : Grid
 {
     public const string Host = "mica.shell";
@@ -34,7 +34,7 @@ public sealed partial class ShellView : Grid
         var store = browser.Store;
         store.PreferencesUpdated += Schedule; store.ProfilesChanged += Schedule; store.BookmarksChanged += Schedule;
         store.HistoryChanged += Schedule; store.PermissionsChanged += Schedule; store.DownloadsChanged += Schedule;
-        store.Extensions.Changed += Schedule; store.Importer.Changed += Schedule; store.Passwords.Changed += Schedule; store.Blocker.Changed += Schedule;
+        store.Extensions.Changed += Schedule; store.Importer.Changed += Schedule; store.Passwords.Changed += Schedule; store.Blocker.Changed += Schedule; store.UBlock.Changed += Schedule;
         browser.Favicons.Changed += Schedule;
         if (!browser.PrivateMode) store.Favicons.Changed += Schedule;
         browser.FocusAddressRequested += () => Event("focusAddress");
@@ -52,7 +52,7 @@ public sealed partial class ShellView : Grid
         var store = browser.Store;
         store.PreferencesUpdated -= Schedule; store.ProfilesChanged -= Schedule; store.BookmarksChanged -= Schedule;
         store.HistoryChanged -= Schedule; store.PermissionsChanged -= Schedule; store.DownloadsChanged -= Schedule;
-        store.Extensions.Changed -= Schedule; store.Importer.Changed -= Schedule; store.Passwords.Changed -= Schedule; store.Blocker.Changed -= Schedule;
+        store.Extensions.Changed -= Schedule; store.Importer.Changed -= Schedule; store.Passwords.Changed -= Schedule; store.Blocker.Changed -= Schedule; store.UBlock.Changed -= Schedule;
         browser.Favicons.Changed -= Schedule;
         if (!browser.PrivateMode) store.Favicons.Changed -= Schedule;
         view.Close();
@@ -105,6 +105,11 @@ public sealed partial class ShellView : Grid
         if (path.StartsWith("app/", StringComparison.Ordinal))
         {
             if (Appearance.AppIcons.Png(path[4..]) is { } file) png = File.ReadAllBytes(file);
+        }
+        else if (path.StartsWith("ext/", StringComparison.Ordinal))
+        {
+            var record = browser.Store.Extensions.Records.FirstOrDefault(r => r.Id.ToString("N") == path[4..]);
+            if (record is not null && browser.Store.Extensions.IconPath(record) is { } file) png = File.ReadAllBytes(file);
         }
         else png = browser.Favicons.IconFor(path)?.Png;
         var environment = browser.Store.Engine.Environment;

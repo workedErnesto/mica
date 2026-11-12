@@ -111,7 +111,7 @@ public static class ShellCommands
                 if (Str(a, "host") is { } host)
                 {
                     var on = Bool(a, "on");
-                    store.Change(b.ProfileId, p => { if (on) { p.BlockingExceptions.Remove(host); p.Blocking = true; } else if (!p.BlockingExceptions.Contains(host)) p.BlockingExceptions.Add(host); });
+                    store.Change(b.ProfileId, p => { if (on) { var inherited = DomainBlocker.MatchingExceptions(host, p.BlockingExceptions); p.BlockingExceptions.RemoveAll(inherited.Contains); p.Blocking = true; } else if (!p.BlockingExceptions.Contains(host)) p.BlockingExceptions.Add(host); });
                 }
                 break;
             case "site.stopCapture": break;
@@ -154,7 +154,7 @@ public static class ShellCommands
             case "settings.draft": break;
             case "settings.set": SetSetting(b, Str(a, "key") ?? "", a.TryGetProperty("value", out var setting) ? setting : default); break;
             case "settings.search": if (SearchEngines.Parse(Str(a, "engine")) is { } engine) store.Change(b.ProfileId, p => p.Search = engine); break;
-            case "settings.updateBlocklist": await store.Blocker.UpdateAsync(); break;
+            case "settings.updateBlocklist": await store.UBlock.UpdateAsync(); break;
             case "settings.makeDefault":
                 DefaultBrowserFailed = false;
                 try { Mica.Install.DefaultBrowser.Register(); await Mica.Install.DefaultBrowser.OpenSettingsAsync(); }
@@ -163,10 +163,12 @@ public static class ShellCommands
                 break;
             case "settings.appIcon": if (Str(a, "id") is { } icon) store.Change(b.ProfileId, p => p.AppIcon = icon == Appearance.AppIcons.Standard ? null : icon); break;
             case "settings.hosts":
-                if (a.TryGetProperty("hosts", out var hosts) && hosts.ValueKind == JsonValueKind.Array && Str(a, "key") == "eagerHosts")
+                if (a.TryGetProperty("hosts", out var hosts) && hosts.ValueKind == JsonValueKind.Array && Str(a, "key") is "eagerHosts" or "blockingExceptions")
                 {
-                    var list = hosts.EnumerateArray().Select(h => h.GetString()).OfType<string>().Where(h => h.Length > 0).Distinct().ToList();
-                    store.Change(b.ProfileId, p => p.EagerHosts = list);
+                    try {
+                        var list = DomainBlocker.ParseDomains(string.Join("\n", hosts.EnumerateArray().Where(h => h.ValueKind == JsonValueKind.String).Select(h => h.GetString())));
+                        store.Change(b.ProfileId, p => { if (Str(a, "key") == "blockingExceptions") p.BlockingExceptions = list; else p.EagerHosts = list; });
+                    } catch (FormatException) { store.Issue = b.Text("нужен домен без пути, например mail.example.com", "Нужен домен без пути, например mail.example.com"); }
                 }
                 break;
             case "settings.editProfile": if (Id(a) is { } profileId) { b.EditingProfile = profileId; b.Touch(); } break;

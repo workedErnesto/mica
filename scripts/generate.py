@@ -33,6 +33,8 @@ def cs_argb(value):
 def generate():
     tokens = json.loads((shared / 'tokens.json').read_text())
     out = {}
+    compiler = (shared / 'blocking/compiler.mjs').read_text().rstrip()
+    out['macos/Sources/MicaApp/Blocking/UBlockCompiler.swift'] = '// ' + HEADER.format(src='blocking/compiler.mjs') + '\nimport Foundation\n\nenum UBlockCompiler {\n    static let version = "2"\n    static let module = #"""\n' + compiler + '\n"""#\n}\n'
     version = (shared / 'version.txt').read_text().strip()
     if not re.fullmatch(r'\d+\.\d+\.\d+', version):
         sys.exit('shared/version.txt must contain a three-part numeric version')

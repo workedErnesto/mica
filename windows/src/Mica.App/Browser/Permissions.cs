@@ -38,7 +38,7 @@ public static class Permissions
         {
             if (e.PermissionKind == CoreWebView2PermissionKind.Autoplay) return CoreWebView2PermissionState.Deny;
             if (owner.SelectedId != tab.Id || !e.IsUserInitiated) return CoreWebView2PermissionState.Deny;
-            var once = await Dialogs.Ask(owner.Window, origin, store.Text("сайт запрашивает: ", "Сайт запрашивает: ") + Describe(store, e.PermissionKind), [store.Text("запретить", "Запретить"), store.Text("разрешить один раз", "Разрешить один раз")]);
+            var once = await Dialogs.Ask(owner.Window, origin, store.Text("сайт запрашивает: ", "Сайт запрашивает: ") + Describe(store, e.PermissionKind), [store.Text("запретить", "Запретить"), store.Text("разрешить один раз", "Разрешить один раз")], site: origin);
             return once == 1 ? CoreWebView2PermissionState.Allow : CoreWebView2PermissionState.Deny;
         }
         if (capability == SiteCapability.Notifications)
@@ -49,7 +49,7 @@ public static class Permissions
             if (!NotificationPolicy.MayAsk(origin, owner.PrivateMode, owner.SelectedId == tab.Id && owner.Window?.IsKey == true, e.IsUserInitiated, true)) return CoreWebView2PermissionState.Default;
             var answer = await Dialogs.Ask(owner.Window, origin + ": " + store.CapabilityName(capability),
                 store.Text("сайт хочет показывать уведомления, пока вкладка открыта. windows отдельно проверит, разрешены ли уведомления mica.", "Сайт хочет показывать уведомления, пока вкладка открыта. Windows отдельно проверит, разрешены ли уведомления mica."),
-                [store.Text("не сейчас", "Не сейчас"), store.Text("запретить", "Запретить"), store.Text("разрешить", "Разрешить")]);
+                [store.Text("не сейчас", "Не сейчас"), store.Text("запретить", "Запретить"), store.Text("разрешить", "Разрешить")], site: origin);
             if (answer == 2)
             {
                 if (!Notifications.Notifier.Shared.SystemAllows) owner.Show(store.Text("windows запрещает уведомления mica. разрешите их в параметрах windows, раздел «уведомления».", "Windows запрещает уведомления mica. Разрешите их в параметрах Windows, раздел «Уведомления»."));
@@ -68,7 +68,7 @@ public static class Permissions
             : store.Text("сайт запрашивает доступ для записи или звонка. windows отдельно проверит системное разрешение.", "Сайт запрашивает доступ для записи или звонка. Windows отдельно проверит системное разрешение.");
         if (embedded) detail += "\n" + store.Text("запрос из встроенного фрейма на ", "Запрос из встроенного фрейма на ") + top;
         var choice = await Dialogs.Ask(owner.Window, origin + ": " + store.CapabilityName(capability), detail,
-            [store.Text("запретить", "Запретить"), store.Text("разрешить один раз", "Разрешить один раз"), store.Text("разрешить для сайта", "Разрешить для сайта")]);
+            [store.Text("запретить", "Запретить"), store.Text("разрешить один раз", "Разрешить один раз"), store.Text("разрешить для сайта", "Разрешить для сайта")], site: origin);
         if (choice != 1) store.SetPermission(origin, capability, choice == 2 ? Decision.Allow : Decision.Deny, owner);
         return choice == 0 || choice < 0 ? CoreWebView2PermissionState.Deny : CoreWebView2PermissionState.Allow;
     }

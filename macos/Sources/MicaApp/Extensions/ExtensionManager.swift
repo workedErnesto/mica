@@ -18,6 +18,18 @@ final class ExtensionManager: NSObject, ObservableObject, WKWebExtensionControll
     @Published var installingChrome: String?
     @Published var chromeStatus = ""
     @Published var contexts: [UUID: WKWebExtensionContext] = [:]
+    /// Icons of installed extensions, also of the disabled ones, read from their packages without running them.
+    @Published var icons: [UUID: NSImage] = [:]
+    /// Installed packages of uBlock Origin. mica applies their filters itself (UBlockEngine) instead of running them.
+    @Published var engines: Set<UUID> = []
+    func isEngine(_ record: ExtensionRecord) -> Bool { engines.contains(record.id) }
+    /// Working: an extension loaded into WebKit, or uBlock Origin whose filters mica applies.
+    func running(_ record: ExtensionRecord) -> Bool { contexts[record.id] != nil || (isEngine(record) && store.ublock.package?.lastPathComponent == record.id.uuidString) }
+    nonisolated static func manifest(_ package: URL) -> [String: Any] {
+        (try? Data(contentsOf: package.appendingPathComponent("manifest.json"))).flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] } ?? [:]
+    }
+    /// Icons of the catalog results, by AMO add-on ID.
+    @Published var catalogIcons: [Int: NSImage] = [:]
     /// Button the user clicked last; the action popup opens under it.
     weak var popupAnchor: NSView?
     /// Running extensions in the order they were installed; none for incognito windows.
@@ -36,17 +48,43 @@ final class ExtensionManager: NSObject, ObservableObject, WKWebExtensionControll
         let supported = Set(ext.requestedPermissions.map(\.rawValue))
         return requested.filter { !$0.contains("://") && $0 != "<all_urls>" && !supported.contains($0) }.sorted()
     }
+    static let essential: Set<String> = ["downloads", "identity", "nativeMessaging", "proxy", "debugger", "bookmarks", "history", "notifications", "webRequestBlocking"]
     func validateCompatibility(_ ext: WKWebExtension) throws -> String? {
         let missing = unsupported(ext)
-        let essential: Set<String> = ["downloads", "identity", "nativeMessaging", "proxy", "debugger", "bookmarks", "history", "notifications", "webRequestBlocking"]
-        let unavailable = missing.filter { essential.contains($0) }
-        if !unavailable.isEmpty { throw MicaError.message(store.text("обязательные API недоступны в этом WebKit: ", "Обязательные API недоступны в этом WebKit: ") + unavailable.joined(separator: ", ")) }
+        let unavailable = missing.filter { Self.essential.contains($0) }
+        if !unavailable.isEmpty {
+            var text = store.text("расширению нужны API, которых нет в WebKit: ", "Расширению нужны API, которых нет в WebKit: ") + unavailable.joined(separator: ", ") + "."
+            if unavailable.contains("webRequestBlocking") { text += " " + blockingHint }
+            throw MicaError.message(text)
+        }
         return missing.isEmpty ? nil : store.text("WebKit не предоставляет: ", "WebKit не предоставляет: ") + missing.joined(separator: ", ")
+    }
+    /// Blockers built on blocking webRequest (Manifest V2) cannot filter in WebKit; uBlock Origin can, through UBlockEngine.
+    var blockingHint: String { store.text("блокировку рекламы можно включить в настройках mica.", "Блокировку рекламы можно включить в настройках mica.") }
+    /// Problems WebKit reported while reading the manifest. It skips the faulty entry and loads the rest, as Safari
+    /// does: an empty `"_execute_browser_action": {}` in `commands` (valid in Firefox and Chrome) is one of them.
+    func manifestNotes(_ ext: WKWebExtension) -> String? {
+        let notes = ext.errors.map(\.localizedDescription).filter { !$0.isEmpty }
+        return notes.isEmpty ? nil : store.text("WebKit пропустил часть манифеста: ", "WebKit пропустил часть манифеста: ") + notes.joined(separator: " ")
     }
     func persist() { store.save(records, "extensions.json") }
     func restore() async {
         records = (try? Persistence.read([ExtensionRecord].self, at: store.root.appendingPathComponent("extensions.json"))) ?? []
+        let legacy = records.filter { UBlockEngine.isUBlock(manifest: Self.manifest(folder.appendingPathComponent($0.id.uuidString))) }
+        if !legacy.isEmpty {
+            store.preferences.blocking = legacy.contains { $0.enabled }
+            store.flushPreferences()
+            records.removeAll { record in legacy.contains { $0.id == record.id } }
+            persist()
+        }
+        engines = []
         for record in records where record.enabled { await load(record) }
+        for record in records where icons[record.id] == nil { await readIcon(record) }
+    }
+    /// The icon of a disabled extension: its package is read, nothing of it runs.
+    func readIcon(_ record: ExtensionRecord) async {
+        guard let ext = try? await WKWebExtension(resourceBaseURL: folder.appendingPathComponent(record.id.uuidString)) else { return }
+        icons[record.id] = ext.icon(for: CGSize(width: 64, height: 64))
     }
     func load(_ record: ExtensionRecord) async {
         do {
@@ -54,8 +92,15 @@ final class ExtensionManager: NSObject, ObservableObject, WKWebExtensionControll
             let digest = try await Task.detached(priority: .utility) { try Self.digest(base) }.value
             guard digest == record.digest else { throw MicaError.message(store.text("файлы изменены. импортируйте расширение заново и проверьте разрешения.", "Файлы изменены. Импортируйте расширение заново и проверьте разрешения.")) }
             let ext = try await WKWebExtension(resourceBaseURL: base)
-            guard ext.errors.isEmpty else { throw MicaError.message(ext.errors.map(\.localizedDescription).joined(separator: "\n")) }
-            compatibility[record.id] = try validateCompatibility(ext)
+            icons[record.id] = ext.icon(for: CGSize(width: 64, height: 64))
+            if isEngine(record) {
+                // uBlock Origin's code does not run; mica compiles and applies its lists.
+                errors[record.id] = nil; compatibility[record.id] = nil
+                await store.ublock.start(package: base)
+                return
+            }
+            let notes = [try validateCompatibility(ext), manifestNotes(ext)].compactMap { $0 }
+            compatibility[record.id] = notes.isEmpty ? nil : notes.joined(separator: "\n")
             let context = WKWebExtensionContext(for: ext)
             context.uniqueIdentifier = record.id.uuidString
             context.baseURL = URL(string: "webkit-extension://" + record.id.uuidString.lowercased() + "/")!
@@ -71,6 +116,11 @@ final class ExtensionManager: NSObject, ObservableObject, WKWebExtensionControll
     }
     func toggle(_ record: ExtensionRecord) async {
         guard let index = records.firstIndex(where: { $0.id == record.id }) else { return }
+        if isEngine(record) {
+            if running(record) { store.ublock.stop(); records[index].enabled = false }
+            else { records[index].enabled = true; await load(records[index]); if !running(records[index]) { records[index].enabled = false } }
+            persist(); return
+        }
         if let context = contexts[record.id] {
             do { try controller.unload(context); contexts[record.id] = nil; records[index].enabled = false; errors[record.id] = nil }
             catch { errors[record.id] = error.localizedDescription }
@@ -78,15 +128,16 @@ final class ExtensionManager: NSObject, ObservableObject, WKWebExtensionControll
         persist()
     }
     func remove(_ record: ExtensionRecord) async {
-        let result = await ask(title: store.text("удалить расширение?", "Удалить расширение?"), detail: record.name, buttons: [store.text("отмена", "Отмена"), store.text("удалить", "Удалить")])
+        let result = await ask(title: store.text("удалить расширение?", "Удалить расширение?"), detail: record.name, buttons: [store.text("отмена", "Отмена"), store.text("удалить", "Удалить")], destructive: true)
         guard result == 1 else { return }
+        if isEngine(record) { store.ublock.forget() }
         if let context = contexts[record.id] {
             do {
                 try controller.unload(context)
                 if let data = await controller.dataRecord(ofTypes: WKWebExtensionController.allExtensionDataTypes, for: context) { await controller.removeData(ofTypes: WKWebExtensionController.allExtensionDataTypes, from: [data]) }
             } catch { errors[record.id] = error.localizedDescription; return }
         }
-        do { try FileManager.default.removeItem(at: folder.appendingPathComponent(record.id.uuidString)); records.removeAll { $0.id == record.id }; contexts[record.id] = nil; errors[record.id] = nil; persist() }
+        do { try FileManager.default.removeItem(at: folder.appendingPathComponent(record.id.uuidString)); records.removeAll { $0.id == record.id }; contexts[record.id] = nil; errors[record.id] = nil; icons[record.id] = nil; engines.remove(record.id); persist() }
         catch { errors[record.id] = error.localizedDescription }
     }
     func chooseImport(replacing: ExtensionRecord? = nil) {
@@ -105,13 +156,16 @@ final class ExtensionManager: NSObject, ObservableObject, WKWebExtensionControll
             let manifestSize = try package.appendingPathComponent("manifest.json").resourceValues(forKeys: [.fileSizeKey]).fileSize ?? Int.max
             guard manifestSize <= 1_000_000 else { throw MicaError.message("manifest.json exceeds 1 MB") }
             let ext = try await WKWebExtension(resourceBaseURL: package)
-            guard ext.errors.isEmpty else { throw MicaError.message(ext.errors.map(\.localizedDescription).joined(separator: "\n")) }
-            let forbidden = ext.requestedPermissions.filter { ["nativeMessaging", "debugger", "proxy"].contains($0.rawValue) }
+            let engine = UBlockEngine.isUBlock(manifest: ext.manifest)
+            if engine { throw MicaError.message(store.text("блокировка uBlock Origin уже встроена: включите её в настройках mica.", "Блокировка uBlock Origin уже встроена: включите её в настройках mica.")) }
+            // One uBlock Origin at a time: a second install replaces the first.
+            let replacing = replacing ?? (engine ? records.first { isEngine($0) } : nil)
+            let forbidden = engine ? [] : ext.requestedPermissions.filter { ["nativeMessaging", "debugger", "proxy"].contains($0.rawValue) }
             guard forbidden.isEmpty else { throw MicaError.message(store.text("не поддерживаются обязательные разрешения: ", "Не поддерживаются обязательные разрешения: ") + forbidden.map(\.rawValue).joined(separator: ", ")) }
-            let warning = try validateCompatibility(ext)
+            let warning = engine ? nil : try validateCompatibility(ext)
             let name = ext.displayName ?? url.lastPathComponent
-            let perms = ext.requestedPermissions.map(\.rawValue).sorted()
-            let hosts = ext.requestedPermissionMatchPatterns.map(\.string).sorted()
+            let perms = engine ? [] : ext.requestedPermissions.map(\.rawValue).sorted()
+            let hosts = engine ? [] : ext.requestedPermissionMatchPatterns.map(\.string).sorted()
             let hash = try await Task.detached(priority: .userInitiated) { try Self.digest(package) }.value
             let permissionText = "API: " + (perms.isEmpty ? "—" : perms.joined(separator: ", "))
             let hostText = store.text("сайты: ", "Сайты: ") + (hosts.isEmpty ? "—" : hosts.joined(separator: ", "))
@@ -120,23 +174,26 @@ final class ExtensionManager: NSObject, ObservableObject, WKWebExtensionControll
             else if source.hasPrefix("amo:") { sourceText = store.text("источник: Firefox Add-ons. SHA-256 пакета совпал с ответом каталога.", "Источник: Firefox Add-ons. SHA-256 пакета совпал с ответом каталога.") }
             else { sourceText = store.text("источник: файл с диска. подпись издателя не проверена. SHA-256 фиксирует целостность локальной копии.", "Источник: файл с диска. Подпись издателя не проверена. SHA-256 фиксирует целостность локальной копии.") }
             let note = store.text("окна инкогнито недоступны. совместимость требует проверки.", "Окна инкогнито недоступны. Совместимость требует проверки.")
-            let detail = [ext.displayDescription ?? "", sourceText, hash, permissionText, hostText, warning ?? "", note].joined(separator: "\n\n")
-            let buttons = [store.text("отмена", "Отмена"), store.text("установить без доступа к сайтам", "Установить без доступа к сайтам"), store.text("установить с указанным доступом", "Установить с указанным доступом")]
+            let engineText = store.text("WebKit не даёт расширениям блокировать запросы, поэтому код uBlock Origin не запускается. mica сама применяет его фильтры: блокирует запросы, скрывает элементы и встраивает скриптлеты, в том числе против рекламы на YouTube. списки обновляются из источников uBlock Origin раз в сутки. фильтры действуют и в приватных окнах. окно и настройки uBlock Origin недоступны, сайт можно исключить в сведениях о сайте.", "WebKit не даёт расширениям блокировать запросы, поэтому код uBlock Origin не запускается. mica сама применяет его фильтры: блокирует запросы, скрывает элементы и встраивает скриптлеты, в том числе против рекламы на YouTube. Списки обновляются из источников uBlock Origin раз в сутки. Фильтры действуют и в приватных окнах. Окно и настройки uBlock Origin недоступны, сайт можно исключить в сведениях о сайте.")
+            let detail = (engine ? [ext.displayDescription ?? "", sourceText, hash, engineText] : [ext.displayDescription ?? "", sourceText, hash, permissionText, hostText, warning ?? "", manifestNotes(ext) ?? "", note]).filter { !$0.isEmpty }.joined(separator: "\n\n")
+            let buttons = engine ? [store.text("отмена", "Отмена"), store.text("установить", "Установить")] : [store.text("отмена", "Отмена"), store.text("установить без доступа к сайтам", "Установить без доступа к сайтам"), store.text("установить с указанным доступом", "Установить с указанным доступом")]
             let result = await ask(title: name, detail: detail, buttons: buttons)
             guard result > 0 else { return }
             let record = ExtensionRecord(id: replacing?.id ?? UUID(), name: name, version: ext.version ?? "?", enabled: true, digest: hash, source: source, permissions: perms, hosts: result == 2 ? hosts : [])
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            if engine { engines.insert(record.id) }
             let destination = folder.appendingPathComponent(record.id.uuidString, isDirectory: true)
             if let replacing, let index = records.firstIndex(where: { $0.id == replacing.id }) {
                 let backup = store.root.appendingPathComponent("ExtensionRecovery-" + UUID().uuidString, isDirectory: true)
                 if let old = contexts[replacing.id] { try controller.unload(old) }
+                if isEngine(replacing) { store.ublock.stop() }
                 contexts[replacing.id] = nil
                 try FileManager.default.moveItem(at: destination, to: backup)
                 do {
                     try FileManager.default.moveItem(at: package, to: destination)
                     records[index] = record
                     await load(record)
-                    guard contexts[record.id] != nil else { throw MicaError.message(errors[record.id] ?? "extension load failed") }
+                    guard running(record) else { throw MicaError.message(errors[record.id] ?? "extension load failed") }
                     try? FileManager.default.removeItem(at: backup)
                 } catch {
                     if let loaded = contexts[record.id] { try? controller.unload(loaded) }
@@ -150,7 +207,7 @@ final class ExtensionManager: NSObject, ObservableObject, WKWebExtensionControll
             } else {
                 try FileManager.default.moveItem(at: package, to: destination)
                 records.append(record); await load(record)
-                if contexts[record.id] == nil, let index = records.firstIndex(where: { $0.id == record.id }) { records[index].enabled = false }
+                if !running(record), let index = records.firstIndex(where: { $0.id == record.id }) { records[index].enabled = false }
             }
             persist()
         } catch { store.issue = store.text("расширение не установлено: ", "Расширение не установлено: ") + error.localizedDescription }
@@ -216,7 +273,7 @@ final class ExtensionManager: NSObject, ObservableObject, WKWebExtensionControll
     }
     nonisolated static func run(_ path: String, _ args: [String]) throws -> String {
         let p = Process(); p.executableURL = URL(fileURLWithPath: path); p.arguments = args
-        let output = Pipe(); p.standardOutput = output; p.standardError = FileHandle.nullDevice
+        let output = Pipe(), errors = Pipe(); p.standardOutput = output; p.standardError = errors
         try p.run()
         let timeout = DispatchWorkItem { if p.isRunning { p.terminate() } }
         DispatchQueue.global().asyncAfter(deadline: .now() + 20, execute: timeout)
@@ -228,8 +285,9 @@ final class ExtensionManager: NSObject, ObservableObject, WKWebExtensionControll
             data.append(chunk)
             if data.count > 4_000_000 { p.terminate(); p.waitUntilExit(); throw MicaError.message("archive listing exceeds safety limit") }
         }
+        let problem = String(decoding: errors.fileHandleForReading.readDataToEndOfFile().prefix(2000), as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
         p.waitUntilExit()
-        guard p.terminationStatus == 0 else { throw MicaError.message("archive tool failed; try an unpacked directory") }
+        guard p.terminationStatus == 0 else { throw MicaError.message("archive tool failed (\(URL(fileURLWithPath: path).lastPathComponent) \(p.terminationStatus)\(problem.isEmpty ? "" : ": " + problem)); try an unpacked directory") }
         return String(decoding: data, as: UTF8.self)
     }
     func search(_ query: String) {
@@ -241,7 +299,7 @@ final class ExtensionManager: NSObject, ObservableObject, WKWebExtensionControll
             do {
                 var c = URLComponents(string: "https://addons.mozilla.org/api/v5/addons/search/")!
                 c.queryItems = [.init(name: "q", value: String(query.prefix(100))), .init(name: "type", value: "extension"), .init(name: "page_size", value: "12")]
-                let config = URLSessionConfiguration.ephemeral; config.timeoutIntervalForRequest = 20
+                let config = URLSessionConfiguration.ephemeral; config.timeoutIntervalForRequest = 20; config.httpCookieStorage = nil
                 let session = URLSession(configuration: config); defer { session.invalidateAndCancel() }
                 let (data, response) = try await session.data(from: c.url!)
                 guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw MicaError.message("Firefox Add-ons is unavailable") }
@@ -253,13 +311,34 @@ final class ExtensionManager: NSObject, ObservableObject, WKWebExtensionControll
                     let file = version?["file"] as? [String: Any]
                     let download = (file?["url"] as? String).flatMap(URL.init(string:)).flatMap { $0.scheme == "https" && $0.host == "addons.mozilla.org" ? $0 : nil }
                     let hash = (file?["hash"] as? String).flatMap { $0.hasPrefix("sha256:") ? String($0.dropFirst(7)).lowercased() : nil }
-                    return CatalogEntry(id: id, name: localized(item["name"]), summary: localized(item["summary"]).replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression), source: url, version: version?["version"] as? String ?? "", permissions: file?["permissions"] as? [String] ?? [], download: download, sha256: hash)
+                    let icons = item["icons"] as? [String: String] ?? [:]
+                    let icon = (icons["64"] ?? icons["128"] ?? item["icon_url"] as? String).flatMap(URL.init(string:)).flatMap { $0.scheme == "https" && $0.host == "addons.mozilla.org" ? $0 : nil }
+                    return CatalogEntry(id: id, guid: item["guid"] as? String ?? "", name: localized(item["name"]), summary: localized(item["summary"]).replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression), source: url, version: version?["version"] as? String ?? "", permissions: file?["permissions"] as? [String] ?? [], download: download, sha256: hash, icon: icon)
                 }
                 guard !Task.isCancelled else { return }
                 catalog = entries; catalogStatus = entries.isEmpty ? store.text("ничего не найдено", "Ничего не найдено") : store.text("источник: Firefox Add-ons. совместимость каждого расширения не гарантируется.", "Источник: Firefox Add-ons. Совместимость каждого расширения не гарантируется.")
+                await loadCatalogIcons(entries, session: session)
             } catch { if !Task.isCancelled { catalog = []; catalogStatus = store.text("каталог недоступен: ", "Каталог недоступен: ") + error.localizedDescription } }
         }
     }
+    /// Catalog icons from AMO's own HTTPS host, without cookies, all at once; a missing one keeps the monogram.
+    private func loadCatalogIcons(_ entries: [CatalogEntry], session: URLSession) async {
+        let wanted = entries.filter { catalogIcons[$0.id] == nil }.compactMap { entry in entry.icon.map { (entry.id, $0) } }
+        let loaded = await withTaskGroup(of: (Int, Data?).self) { group in
+            for (id, url) in wanted {
+                group.addTask {
+                    guard let (data, response) = try? await session.data(from: url), (response as? HTTPURLResponse)?.statusCode == 200, data.count < 1_000_000 else { return (id, nil) }
+                    return (id, data)
+                }
+            }
+            var result: [(Int, Data)] = []
+            for await (id, data) in group { if let data { result.append((id, data)) } }
+            return result
+        }
+        for (id, data) in loaded { if let image = NSImage(data: data) { catalogIcons[id] = image } }
+    }
+    /// Declared permissions WebKit lacks that the extension cannot work without; known before downloading.
+    func missingInWebKit(_ entry: CatalogEntry) -> [String] { entry.permissions.filter { $0 == "webRequestBlocking" } }
     func installed(_ entry: CatalogEntry) -> ExtensionRecord? { records.first { $0.source == "amo:\(entry.id)" } ?? records.first { $0.name == entry.name } }
     /// Downloads the AMO-published XPI over HTTPS, checks size and the SHA-256 from the API, then runs the normal import with its permission prompt.
     func installFromCatalog(_ entry: CatalogEntry, replacing: ExtensionRecord? = nil) async {
