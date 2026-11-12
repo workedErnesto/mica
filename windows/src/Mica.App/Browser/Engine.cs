@@ -96,7 +96,7 @@ public sealed partial class Blocker(Store store)
     /// <summary>Manual update over HTTPS from pgl.yoyo.org, validated before it replaces the working list.</summary>
     public async Task UpdateAsync()
     {
-        if (Updating) return;
+        if (Updating || !store.Preferences.Blocking) return;
         Updating = true; Changed?.Invoke();
         try
         {

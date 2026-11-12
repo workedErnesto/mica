@@ -28,9 +28,9 @@ struct SiteInfo: View {
                 Text(file.path).font(.system(size: 11.5)).foregroundStyle(Palette.text3).textSelection(.enabled).lineLimit(2).truncationMode(.middle).fixedSize(horizontal: false, vertical: true)
             }
             if let host = tab.url?.host {
-                Toggle(browser.text("блокировка рекламы на сайте", "Блокировка рекламы на сайте"), isOn: Binding(get: { store.preferences.blocking && !store.preferences.blockingExceptions.contains(host) }, set: { value in
-                    if value { store.preferences.blockingExceptions.removeAll { $0 == host }; store.preferences.blocking = true }
-                    else if !store.preferences.blockingExceptions.contains(host) { store.preferences.blockingExceptions.append(host) }
+                Toggle(browser.text("блокировка рекламы на сайте", "Блокировка рекламы на сайте"), isOn: Binding(get: { store.preferences.blocking && BlockingRules.matchingExceptions(host: host, exceptions: store.preferences.blockingExceptions).isEmpty }, set: { value in
+                    if value { let inherited = BlockingRules.matchingExceptions(host: host, exceptions: store.preferences.blockingExceptions); store.preferences.blockingExceptions.removeAll { inherited.contains($0) }; store.preferences.blocking = true }
+                    else if BlockingRules.matchingExceptions(host: host, exceptions: store.preferences.blockingExceptions).isEmpty { store.preferences.blockingExceptions.append(host) }
                 })).toggleStyle(MToggleStyle()).font(.system(size: 12.5))
                 Text(browser.text("правила применяются к новым запросам; перезагрузите страницу для полной проверки", "Правила применяются к новым запросам; перезагрузите страницу для полной проверки")).font(.system(size: 11)).foregroundStyle(Palette.text3).fixedSize(horizontal: false, vertical: true)
             }

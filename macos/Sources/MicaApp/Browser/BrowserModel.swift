@@ -29,7 +29,7 @@ final class BrowserModel: NSObject, ObservableObject, WKWebExtensionWindow {
     @Published var showSettings = false
     @Published var showClearData = false
     /// A window-level card (settings, onboarding, clearing data) covers the page; the web view takes no clicks meanwhile.
-    var modal: Bool { showSettings || showOnboarding || showClearData || profilePrompt != nil || passwordPrompt != nil }
+    var modal: Bool { showSettings || showOnboarding || showClearData || profilePrompt != nil || passwordPrompt != nil || !alerts.isEmpty }
     /// Profile chosen in the profile menu while mica still has to ask where to open it.
     @Published var profilePrompt: UUID?
     /// Password question of the selected page (PasswordBridge); answered once, then closed.
@@ -38,6 +38,19 @@ final class BrowserModel: NSObject, ObservableObject, WKWebExtensionWindow {
         guard let request = passwordPrompt else { return }
         passwordPrompt = nil
         request.answer(answer)
+    }
+    /// Questions and messages waiting in this window (`ask`); the first is shown, each is answered once.
+    @Published var alerts: [AlertRequest] = []
+    func answerAlert(_ index: Int) {
+        guard !alerts.isEmpty else { return }
+        alerts.removeFirst().answer(index)
+    }
+    /// A message with one button; nothing waits for the answer.
+    func inform(_ text: String) { alerts.append(AlertRequest(title: "mica", detail: text, buttons: ["OK"]) { _ in }) }
+    /// Closing the window cancels what it was asking, so pages and callers always get their answer.
+    func cancelAlerts() {
+        let pending = alerts; alerts = []
+        for request in pending { request.answer(0) }
     }
     @Published var settingsSection: SettingsSection = .space
     /// Profile open in the profile editor of settings.

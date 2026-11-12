@@ -12,7 +12,7 @@ struct HostListEditor: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: Space.small) {
-                MTextField(placeholder: "example.com", text: $input, symbol: "globe") { add() }
+                MTextField(placeholder: "example.com", text: $input, symbol: "globe", selectionStyle: true) { add() }
                     .onChange(of: input) { _, value in store.settingsDraft = value }
                 Button(browser.text("добавить", "Добавить")) { add() }.buttonStyle(MButtonStyle(kind: .secondary, compact: true)).disabled(input.isEmpty)
             }
@@ -35,7 +35,7 @@ struct HostListEditor: View {
     }
     private func add() {
         let host = input.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard let url = URL(string: "https://" + host), url.host == host, url.path.isEmpty, host.contains(".") else { invalid = true; return }
+        guard (try? BlockingRules.parseDomains(host)) == [host] else { invalid = true; return }
         invalid = false
         if !hosts.contains(host) { withMotion(Motion.quick) { hosts.append(host) } }
         input = ""; store.settingsDraft = ""

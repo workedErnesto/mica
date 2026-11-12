@@ -129,7 +129,7 @@ final class DownloadItem: NSObject, ObservableObject, Identifiable, WKDownloadDe
                 if let url = request?.url { values["LSQuarantineDataURL"] = url }
                 try (staging as NSURL).setResourceValue(values, forKey: .quarantinePropertiesKey)
                 if FileManager.default.fileExists(atPath: destination.path) {
-                    let choice = await ask(title: browser.text("заменить существующий файл?", "Заменить существующий файл?"), detail: destination.lastPathComponent, buttons: [browser.text("отмена", "Отмена"), browser.text("заменить", "Заменить")], window: browser.controller?.window)
+                    let choice = await ask(title: browser.text("заменить существующий файл?", "Заменить существующий файл?"), detail: destination.lastPathComponent, buttons: [browser.text("отмена", "Отмена"), browser.text("заменить", "Заменить")], window: browser.controller?.window, destructive: true)
                     guard choice == 1 else { state = .cancelled; try? FileManager.default.removeItem(at: staging); releaseScope(); return }
                     _ = try FileManager.default.replaceItemAt(destination, withItemAt: staging)
                 } else { try FileManager.default.moveItem(at: staging, to: destination) }

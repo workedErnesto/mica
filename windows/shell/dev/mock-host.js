@@ -107,7 +107,7 @@ export class MockHost {
       section: (s.settings && s.settings.section) || new URLSearchParams(location.search).get('section') || 'space',
       isDefault: false, addressSample: [{ text: 'shop.', dim: s.prefs.address.dimSubdomain }, { text: 'example.com', dim: false }].concat(s.prefs.address.full ? [{ text: '/shoes/running?size=42', dim: s.prefs.address.dimPath }] : []),
       engines: [['duckDuckGo', 'DuckDuckGo', 'duckduckgo.com'], ['google', 'Google', 'google.com'], ['yandex', 'Яндекс', 'ya.ru'], ['kagi', 'Kagi', 'kagi.com'], ['bing', 'Bing', 'bing.com']].map(([id, title, host]) => ({ id, title, host })),
-      search: 'duckDuckGo', blocking: true, blockerCount: 3512, blockerStatus: '', blockerUpdating: false, blockingExceptions: [],
+      search: 'duckDuckGo', blocking: true, blockerCount: 3512, blockerStatus: '', blockerUpdating: false, blockingExceptions: s.prefs.blockingExceptions || [],
       restore: true, lazyRestore: true, eagerHosts: [], notificationRequests: true, permissions: [{ origin: 'https://meet.example.com', capability: 'camera', decision: 'allow' }],
       offerPasswords: true, fillPasswords: true, passwords: { logins: [{ id: 'l1', origin: 'https://github.com', host: 'github.com', username: 'whoa' }, { id: 'l2', origin: 'https://www.moysklad.ru', host: 'www.moysklad.ru', username: '' }], never: [] },
       importer: { browsers: [{ id: 'chrome', name: 'Google Chrome', profiles: [{ path: 'Default', name: 'Default' }], selected: 'Default' }, { id: 'edge', name: 'Microsoft Edge', profiles: [{ path: 'Default', name: 'Default' }, { path: 'Profile 1', name: 'Work' }], selected: 'Default' }] },
@@ -167,6 +167,7 @@ export class MockHost {
       case 'settings.open': s.overlay.settings = true; if (a.section) s.settings.section = a.section; return done();
       case 'settings.close': s.overlay.settings = false; return done();
       case 'alert.answer': s.overlay.alert = null; return done();
+      case 'settings.hosts': if (a.key === 'eagerHosts' || a.key === 'blockingExceptions') s.prefs[a.key] = a.hosts; return done();
       case 'settings.set': s.settings[a.key] = a.value; this.push(); return;
       case 'settings.search': s.settings.search = a.engine; this.push(); return;
       case 'onboarding.step': s.overlay.onboardingStep = a.step; return done();

@@ -3,7 +3,7 @@
 
 import { h, cx } from '../core/dom.js';
 import { icon } from '../core/icons.js';
-import { T, keys, quoted, isLowercase, lang } from '../core/text.js';
+import { T, keys, quoted, isLowercase, lang, locale } from '../core/text.js';
 import { profileCatalog, geometry } from '../gen/tokens.g.js';
 import { Button, IconButton, Segmented, Switch, Slider, TextField, Group, Setting, Nav, Monogram, KeyHint, LinkRow, SiteTile } from '../ui/controls.js';
 import { openPopover, closePopover } from '../ui/menu.js';
@@ -275,15 +275,19 @@ function StartSettings() {
 
 function SearchSettings() {
   const s = S();
+  const filterStatus = !s.blocking ? T("блокировка выключена", "Блокировка выключена")
+    : s.blockerCompiling ? T("подготовка фильтров…", "Подготовка фильтров…")
+    : s.blockerUpdating ? T("обновление…", "Обновление…")
+    : s.blockerIssue || (s.blockerUpdated ? T("обновлены ", "Обновлены ") + new Date(s.blockerUpdated).toLocaleString(locale(), { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
+      : T("встроенные списки готовы", "Встроенные списки готовы"));
   return [
     Group(T("поиск", "Поиск"), [h('div', { class: 'setting', key: 'engines' }, SearchPicker())], { footnote: T("запрос из адресной строки уходит только выбранному поисковику", "Запрос из адресной строки уходит только выбранному поисковику"), key: 'search' }),
     Group(T("блокировка", "Блокировка"), [
-      ToggleSetting(T("блокировать рекламу и трекеры", "Блокировать рекламу и трекеры"), s.blocking, value => send('settings.set', { key: 'blocking', value }), { detail: T("только сторонние запросы, без косметических фильтров", "Только сторонние запросы, без косметических фильтров"), key: 'block' }),
-      Setting(T("список Peter Lowe", "Список Peter Lowe"), Button(s.blockerUpdating ? T("обновление…", "Обновление…") : T("обновить", "Обновить"), { compact: true, disabled: s.blockerUpdating, onClick: () => send('settings.updateBlocklist') }),
-        { detail: s.blockerCount + T(" доменов. ", " доменов. ") + (s.blockerStatus || T("обновление только по кнопке, запрос к pgl.yoyo.org", "Обновление только по кнопке, запрос к pgl.yoyo.org")), key: 'list',
-          info: InfoTip(T("список Peter Lowe", "Список Peter Lowe"), T("открытый список доменов рекламных сетей и счётчиков, который Peter Lowe ведёт на pgl.yoyo.org. mica проверяет по нему каждый запрос страницы к чужому домену и не даёт загрузить баннеры, пиксели и скрипты слежки. сам сайт открывается как обычно. список встроен в приложение и работает без сети. «обновить» скачивает свежую версию, по расписанию mica в сеть не ходит.", "Открытый список доменов рекламных сетей и счётчиков, который Peter Lowe ведёт на pgl.yoyo.org. mica проверяет по нему каждый запрос страницы к чужому домену и не даёт загрузить баннеры, пиксели и скрипты слежки. Сам сайт открывается как обычно. Список встроен в приложение и работает без сети. «Обновить» скачивает свежую версию, по расписанию mica в сеть не ходит.")) }),
+      ToggleSetting(T("блокировать рекламу и трекеры", "Блокировать рекламу и трекеры"), s.blocking, value => send('settings.set', { key: 'blocking', value }), { detail: T("встроенные фильтры uBlock Origin", "Встроенные фильтры uBlock Origin"), key: 'block' }),
+      Setting(T("списки фильтров", "Списки фильтров"), Button(T("обновить", "Обновить"), { kind: 'ghost', compact: true, disabled: !s.blocking || s.blockerUpdating, onClick: () => send('settings.updateBlocklist') }),
+        { detail: filterStatus, info: InfoTip(T("списки фильтров", "Списки фильтров"), T("mica обновляет списки каждый день без cookie. блокировка работает и в инкогнито. отключить её для отдельного сайта можно в сведениях о сайте. после изменения перезагрузите страницу.", "mica обновляет списки каждый день без cookie. Блокировка работает и в инкогнито. Отключить её для отдельного сайта можно в сведениях о сайте. После изменения перезагрузите страницу.")), key: 'list' }),
     ], { key: 'blocking' }),
-    (s.blockingExceptions || []).length ? Group(T("сайты без блокировки", "Сайты без блокировки"), s.blockingExceptions.map(host => Setting(host, Button(T("вернуть блокировку", "Вернуть блокировку"), { kind: 'ghost', compact: true, onClick: () => send('site.blocking', { host, on: true }) }), { key: host })), { key: 'exceptions' }) : null,
+    Group(T("сайты без блокировки", "Сайты без блокировки"), HostList('blockingExceptions', s.blockingExceptions || []), { footnote: T("добавьте домен: блокировка отключится для него и его поддоменов. после изменения перезагрузите сайт.", "Добавьте домен: блокировка отключится для него и его поддоменов. После изменения перезагрузите сайт."), key: 'exceptions' }),
     Group(T("данные", "Данные"), [Setting(T("история и данные сайтов", "История и данные сайтов"), Button(T("очистить…", "Очистить…"), { kind: 'destructive', compact: true, onClick: () => send('clearData.open') }), { detail: T("cookie, кэш и локальное хранилище обычных окон", "Cookie, кэш и локальное хранилище обычных окон") })], { key: 'data' }),
   ];
 }
@@ -296,10 +300,16 @@ function InfoTip(title, text) {
 /// A list of hosts with an add field (HostListEditor on macOS).
 function HostList(key, hosts) {
   const draft = local()[key] || (local()[key] = { text: '' });
-  const add = () => { const host = draft.text.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, ''); if (!host) return; send('settings.hosts', { key, hosts: Array.from(new Set(hosts.concat(host))) }); draft.text = ''; send('settings.draft', { text: '' }); update(); };
+  const add = () => {
+    const host = draft.text.trim().toLowerCase();
+    if (host.length > 253 || !/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(host)) { draft.invalid = true; update(); return; }
+    send('settings.hosts', { key, hosts: Array.from(new Set(hosts.concat(host))) });
+    draft.text = ''; draft.invalid = false; send('settings.draft', { text: '' }); update();
+  };
   return [
+    h('div', { class: 'setting', key: 'add' }, h('div', { class: 'grow' }, TextField(T("домен, например mail.example.com", "Домен, например mail.example.com"), draft.text, value => { draft.text = value; send('settings.draft', { text: value }); update(); }, { symbol: 'plus', selectionStyle: true, onSubmit: add })), Button(T("добавить", "Добавить"), { compact: true, disabled: !draft.text.trim(), onClick: add })),
+    draft.invalid ? h('div', { class: 'setting form-error', key: 'invalid' }, T("нужен домен без пути, например mail.example.com", "Нужен домен без пути, например mail.example.com")) : null,
     hosts.map(host => Setting(host, IconButton('minus.circle', T("удалить ", "Удалить ") + host, { size: 22, onClick: () => send('settings.hosts', { key, hosts: hosts.filter(other => other !== host) }) }), { key: host })),
-    h('div', { class: 'setting', key: 'add' }, h('div', { class: 'grow' }, TextField(T("домен, например mail.example.com", "Домен, например mail.example.com"), draft.text, value => { draft.text = value; send('settings.draft', { text: value }); update(); }, { symbol: 'plus', onSubmit: add })), Button(T("добавить", "Добавить"), { compact: true, disabled: !draft.text.trim(), onClick: add })),
   ];
 }
 

@@ -66,6 +66,7 @@ public sealed partial class BrowserWindow : Window
         shell.Ready += () => FocusContent();
         model.WebViewCreated += tab => { if (tab.WebView is { } view && view.Parent is null) { Prepare(view); pages.Children.Add(view); } Arrange(); };
         model.Changed += Arrange;
+        model.Message += text => _ = Dialogs.Show(this, text);
         root.SizeChanged += (_, _) => { ClipPage(); };
         UpdateTitle();
     }

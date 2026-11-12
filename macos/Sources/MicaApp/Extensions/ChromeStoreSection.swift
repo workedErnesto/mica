@@ -29,7 +29,7 @@ struct ChromeStoreSection: View {
                     }
                 }
                 .padding(12)
-                .background(RoundedRectangle(cornerRadius: Radius.row + 2, style: .continuous).fill(Palette.canvas))
+                .background(RoundedRectangle(cornerRadius: Radius.row + 2, style: .continuous).fill(Palette.surface))
                 .overlay(RoundedRectangle(cornerRadius: Radius.row + 2, style: .continuous).strokeBorder(Palette.hairline, lineWidth: 1))
                 .transition(.opacity)
             }

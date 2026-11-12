@@ -27,6 +27,32 @@ public sealed partial class ExtensionManager(Store store)
 
     public List<ExtensionRecord> Actionable(bool privateWindow) => [];
 
+    readonly Dictionary<Guid, string?> icons = [];
+    /// <summary>The PNG the manifest names under <c>icons</c> for the list row: the smallest one of at least 48 px,
+    /// else the largest. Only files inside the extension's folder count. Read once per package.</summary>
+    public string? IconPath(ExtensionRecord record)
+    {
+        if (icons.TryGetValue(record.Id, out var cached)) return cached;
+        string? best = null;
+        try
+        {
+            var folder = Path.GetFullPath(Path.Combine(Folder, record.Id.ToString("N")));
+            using var manifest = JsonDocument.Parse(File.ReadAllBytes(Path.Combine(folder, "manifest.json")));
+            if (manifest.RootElement.TryGetProperty("icons", out var list) && list.ValueKind == JsonValueKind.Object)
+            {
+                var sizes = list.EnumerateObject()
+                    .Where(p => int.TryParse(p.Name, out _) && p.Value.ValueKind == JsonValueKind.String && p.Value.GetString()!.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+                    .Select(p => (Size: int.Parse(p.Name), File: Path.GetFullPath(Path.Combine(folder, p.Value.GetString()!.TrimStart('/')))))
+                    .Where(p => p.File.StartsWith(folder + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) && File.Exists(p.File))
+                    .OrderBy(p => p.Size).ToList();
+                best = (sizes.FirstOrDefault(p => p.Size >= 48).File ?? sizes.LastOrDefault().File);
+            }
+        }
+        catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException or ArgumentException) { best = null; }
+        icons[record.Id] = best;
+        return best;
+    }
+
     public async Task RestoreAsync()
     {
         try { Records = File.Exists(Path.Combine(store.Root, FileName)) ? Persistence.Read<List<ExtensionRecord>>(Path.Combine(store.Root, FileName)) : []; }
@@ -145,6 +171,7 @@ public sealed partial class ExtensionManager(Store store)
         if (replacing?.EngineId is { } old) { foreach (var e in await profile.GetBrowserExtensionsAsync()) if (e.Id == old) await e.RemoveAsync(); }
         if (Directory.Exists(folder)) Directory.Delete(folder, true);
         Directory.Move(staging, folder);
+        icons.Remove(record.Id);
         var engine = await profile.AddBrowserExtensionAsync(folder);
         record.Name = name; record.Version = Text("version"); record.Enabled = true; record.EngineId = engine.Id;
         record.Permissions = permissions; record.Hosts = hosts;
@@ -166,6 +193,7 @@ public sealed partial class ExtensionManager(Store store)
         if (await Profile() is { } profile) foreach (var e in await profile.GetBrowserExtensionsAsync()) if (e.Id == record.EngineId) await e.RemoveAsync();
         try { Directory.Delete(Path.Combine(Folder, record.Id.ToString("N")), true); } catch (IOException) { }
         Records.Remove(record);
+        icons.Remove(record.Id);
         Save();
     }
 }

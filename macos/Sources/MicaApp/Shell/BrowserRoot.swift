@@ -93,6 +93,7 @@ struct BrowserRoot: View {
                     ModalCard(width: 300, onDismiss: { browser.answerPassword(.later) }) { PasswordPrompt(request: request, browser: browser) }.id(request.id).transition(.opacity)
                 }
             }
+            .modifier(AlertLayer(browser: browser, store: store))
             .overlay { QuitHoldOverlay(browser: browser, store: store) }
             .background { shellBackground.ignoresSafeArea() }
             .ignoresSafeArea()
@@ -109,7 +110,6 @@ struct BrowserRoot: View {
             .animation(Motion.quick, value: browser.profilePrompt)
             .animation(Motion.quick, value: browser.passwordPrompt?.id)
             .animation(Motion.panel, value: browser.customizingToolbar)
-            .alert("mica", isPresented: Binding(get: { browser.message != nil || store.issue != nil }, set: { if !$0 { browser.message = nil; store.issue = nil } })) { Button("OK") { browser.message = nil; store.issue = nil } } message: { Text(browser.message ?? store.issue ?? "") }
         }
         .environment(\.look, browser.look)
         .environment(\.locale, browser.locale)

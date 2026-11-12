@@ -361,6 +361,100 @@
       ]
     }
   ],
+  "blockingExceptions" : [
+    {
+      "exceptions" : [
+        "example.com"
+      ],
+      "expect" : [
+        "example.com"
+      ],
+      "host" : "example.com"
+    },
+    {
+      "exceptions" : [
+        "example.com"
+      ],
+      "expect" : [
+        "example.com"
+      ],
+      "host" : "mail.example.com"
+    },
+    {
+      "exceptions" : [
+        "example.com",
+        "mail.example.com"
+      ],
+      "expect" : [
+        "example.com",
+        "mail.example.com"
+      ],
+      "host" : "deep.mail.example.com"
+    },
+    {
+      "exceptions" : [
+        "example.com"
+      ],
+      "expect" : [
+
+      ],
+      "host" : "notexample.com"
+    },
+    {
+      "exceptions" : [
+        "example.com"
+      ],
+      "expect" : [
+
+      ],
+      "host" : "example.com.attacker.test"
+    },
+    {
+      "exceptions" : [
+        "example.com"
+      ],
+      "expect" : [
+        "example.com"
+      ],
+      "host" : "EXAMPLE.COM"
+    },
+    {
+      "exceptions" : [
+
+      ],
+      "expect" : [
+
+      ],
+      "host" : "example.com"
+    },
+    {
+      "exceptions" : [
+        ""
+      ],
+      "expect" : [
+
+      ],
+      "host" : "example.com"
+    },
+    {
+      "exceptions" : [
+        "other.com"
+      ],
+      "expect" : [
+
+      ],
+      "host" : "mail.example.com"
+    },
+    {
+      "exceptions" : [
+        "example.com"
+      ],
+      "expect" : [
+
+      ],
+      "host" : "other.com"
+    }
+  ],
   "checksum" : [
     {
       "expect" : "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",

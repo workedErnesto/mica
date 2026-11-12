@@ -69,6 +69,7 @@ final class Blocker: ObservableObject {
     func apply(_ view: WKWebView?) {
         guard let view else { return }
         view.configuration.userContentController.removeAllContentRuleLists()
-        if store.preferences.blocking, let list { view.configuration.userContentController.add(list) }
+        if store.preferences.blocking, store.ublock.network == nil, let list { view.configuration.userContentController.add(list) }
+        store.ublock.addRules(to: view.configuration.userContentController)
     }
 }

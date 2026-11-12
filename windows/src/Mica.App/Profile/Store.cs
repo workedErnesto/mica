@@ -22,7 +22,10 @@ public sealed partial class Store
     public List<Visit> History { get; private set; }
     public List<SitePermission> Permissions { get; private set; }
     public List<DownloadRecord> DownloadRecords { get; private set; }
-    public string? Issue { get; set; }
+    string? issue;
+    /// <summary>A problem to tell the user. Shown once in the question card of the window in front, or of the first
+    /// window when it opens.</summary>
+    public string? Issue { get => issue; set { issue = value; if (value is not null) { IssueChanged?.Invoke(); queue.TryEnqueue(PresentIssue); } } }
     public readonly List<BrowserWindow> Windows = [];
     public bool ShuttingDown { get; set; }
 
@@ -33,6 +36,7 @@ public sealed partial class Store
 
     public Engine Engine { get; }
     public Blocker Blocker { get; }
+    public UBlockEngine UBlock { get; }
     public Extensions.ExtensionManager Extensions { get; }
     public Import.ImportManager Importer { get; }
     public Update.Updater Updater { get; }
@@ -78,6 +82,7 @@ public sealed partial class Store
         if (Program.QA) { Preferences.OnboardingComplete = true; Preferences.Restore = false; }
         Engine = new Engine(this);
         Blocker = new Blocker(this);
+        UBlock = new UBlockEngine(this);
         Extensions = new Extensions.ExtensionManager(this);
         Importer = new Import.ImportManager(this);
         Updater = new Update.Updater(this);
@@ -135,7 +140,7 @@ public sealed partial class Store
         if (!look.SameAs(target.Look)) { target.Look = look; ScheduleProfiles(); }
         ApplyAppearance();
         if (old.AppIcon != Preferences.AppIcon) { Appearance.AppIcons.Apply(this); FlushPreferences(); }
-        if (old.Blocking != Preferences.Blocking || !old.BlockingExceptions.SequenceEqual(Preferences.BlockingExceptions)) _ = Blocker.RebuildAsync();
+        if (old.Blocking != Preferences.Blocking || !old.BlockingExceptions.SequenceEqual(Preferences.BlockingExceptions)) { _ = Blocker.RebuildAsync(); if (old.Blocking != Preferences.Blocking && Preferences.Blocking) _ = UBlock.StartAsync(); else _ = UBlock.RebuildAsync(); }
         PreferencesChanged?.Invoke(old);
         PreferencesUpdated?.Invoke();
     }
@@ -200,7 +205,7 @@ public sealed partial class Store
     {
         if (unreadable.Contains(name)) return;
         try { Persistence.Write(value, Path.Combine(Root, name)); }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { Issue = Text("не удалось сохранить данные: ", "Не удалось сохранить данные: ") + e.Message; IssueChanged?.Invoke(); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { Issue = Text("не удалось сохранить данные: ", "Не удалось сохранить данные: ") + e.Message; }
     }
 
     void SchedulePreferences()
@@ -277,9 +282,17 @@ public sealed partial class Store
         }
         if (Preferences.Restore && saved is { Windows.Count: > 0 }) foreach (var window in saved.Windows) NewWindow(saved: window);
         else NewWindow();
+        _ = UBlock.StartAsync();
         Appearance.AppIcons.Apply(this);
         try { if (!Program.QA) Mica.Install.DefaultBrowser.Register(); } catch (Exception e) when (e is UnauthorizedAccessException or IOException or System.Security.SecurityException) { Diagnostics.Log.Error(e); }
         Updater.Start();
+    }
+
+    void PresentIssue()
+    {
+        if (issue is not { } text || Windows.Count == 0) return;
+        issue = null;
+        _ = Dialogs.Show(null, text);
     }
 
     /// <summary>Without a profile the window takes the one of the window in front, so Ctrl+N stays in the current profile.</summary>
@@ -289,6 +302,7 @@ public sealed partial class Store
         var model = new BrowserModel(this, privateMode, profileId);
         var window = new BrowserWindow(model);
         Windows.Add(window);
+        queue.TryEnqueue(PresentIssue);
         if (saved is { Tabs.Count: > 0 })
         {
             foreach (var t in saved.Tabs) model.Add(t, activate: false, restored: true);

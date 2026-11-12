@@ -20,6 +20,7 @@ public class SharedVectorTests
             case "address":
                 var target = AddressParser.Resolve(S("input"), Engine());
                 return target.Kind switch { AddressKind.Web => "web:" + target.Value, AddressKind.External => "external:" + target.Value, _ => "rejected:" + target.Value };
+            case "blockingExceptions": return new JsonArray([.. DomainBlocker.MatchingExceptions(S("host"), c["exceptions"]!.AsArray().Select(x => x!.GetValue<string>())).Select(x => (JsonNode)JsonValue.Create(x))]);
             case "navigation": return AddressParser.Navigable(S("url"), B("mainFrame"));
             case "origin": return Origin.Of(S("url"));
             case "localFile": return AddressParser.OpenableFile(S("url"));

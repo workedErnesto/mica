@@ -14,6 +14,8 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="$(SharedDir)fixtures/core/vectors.json" Link="vectors.json" CopyToOutputDirectory="PreserveNewest" />
+    <Compile Include="../../src/Mica.App/Blocking/ContentRules.cs" Link="Adapters/ContentRules.cs" />
+    <Content Include="$(SharedDir)fixtures/blocking/compiled.json" Link="blocking-compiled.json" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="$(SharedDir)keymap.json" Link="keymap.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

@@ -37,6 +37,9 @@ public sealed partial class DomainBlocker
     }
 
     public int Count => domains.Count;
+    /// <summary>A listed domain excludes itself and its subdomains, at label boundaries only.</summary>
+    public static List<string> MatchingExceptions(string host, IEnumerable<string> exceptions) => exceptions
+        .Where(domain => domain.Length > 0 && (host.Equals(domain, StringComparison.OrdinalIgnoreCase) || host.EndsWith("." + domain, StringComparison.OrdinalIgnoreCase))).ToList();
 
     [GeneratedRegex(@"^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$")] private static partial Regex DomainShape();
 
@@ -53,7 +56,7 @@ public sealed partial class DomainBlocker
     {
         if (!Uri.TryCreate(requestUrl, UriKind.Absolute, out var request) || (request.Scheme != "http" && request.Scheme != "https")) return false;
         var top = AddressParser.Host(topUrl)?.ToLowerInvariant();
-        if (top is not null && exceptions.Contains(top)) return false;
+        if (top is not null && MatchingExceptions(top, exceptions).Count > 0) return false;
         var host = request.Host.ToLowerInvariant();
         if (top is not null && SameSite(host, top)) return false;
         for (var label = host; ; )

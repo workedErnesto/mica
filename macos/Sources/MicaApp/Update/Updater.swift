@@ -132,8 +132,8 @@ final class Updater {
             detail = store.text("установлена версия ", "Установлена версия ") + version.description + store.text(", на образе версия ", ", на образе версия ") + current.description
         case .same, .newer: return
         }
-        let answer = await ask(title: title, detail: detail, buttons: [store.text("продолжить", "Продолжить"), store.text("позже", "Позже")])
-        guard answer == 0 else { return }
+        let answer = await ask(title: title, detail: detail, buttons: [store.text("позже", "Позже"), store.text("продолжить", "Продолжить")])
+        guard answer == 1 else { return }
         let panel = NSOpenPanel()
         panel.canChooseFiles = false; panel.canChooseDirectories = true; panel.allowsMultipleSelection = false
         panel.directoryURL = URL(fileURLWithPath: "/Applications", isDirectory: true)

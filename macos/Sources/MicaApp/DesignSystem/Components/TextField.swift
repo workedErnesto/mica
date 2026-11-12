@@ -7,7 +7,9 @@ import SwiftUI
 struct FieldChrome: ViewModifier {
     var focused: Bool
     var prominent = false
+    var selectionStyle = false
     var radius: CGFloat = Radius.row
+    @State private var hover = false
     @Environment(\.look) private var look
     func body(content: Content) -> some View {
         let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
@@ -15,6 +17,8 @@ struct FieldChrome: ViewModifier {
             .background {
                 if prominent {
                     shape.fill(Palette.surface).shadow(color: focused ? Palette.shadowStrong : Palette.shadow, radius: focused ? 10 : 4, y: focused ? 3 : 1)
+                } else if selectionStyle {
+                    shape.fill(hover && !focused ? Palette.hover : Palette.track)
                 } else {
                     shape.fill(Palette.field)
                 }
@@ -22,10 +26,14 @@ struct FieldChrome: ViewModifier {
             .overlay {
                 if prominent {
                     shape.strokeBorder(focused ? Palette.hairlineStrong : Palette.hairline, lineWidth: 1)
+                } else if selectionStyle {
+                    shape.strokeBorder(focused ? Palette.focusRing : .clear, lineWidth: 1.5)
                 } else {
                     shape.strokeBorder(focused ? look.primary : Palette.hairlineStrong, lineWidth: focused ? 1.5 : 1)
                 }
             }
+            .onHover { if selectionStyle { hover = $0 } }
+            .animation(Motion.hover, value: hover)
             .animation(prominent ? Motion.quick : Motion.hover, value: focused)
     }
 }
@@ -36,6 +44,8 @@ struct MTextField: View {
     var symbol: String?
     /// Search field look (surface, shadow, larger text) instead of the tonal field.
     var prominent = false
+    /// Same tonal fill and focus outline as the search engine choices.
+    var selectionStyle = false
     /// Takes the focus when it appears, for the first field of a form in a popover.
     var autofocus = false
     var onSubmit: () -> Void = {}
@@ -64,7 +74,7 @@ struct MTextField: View {
         }
         .padding(.horizontal, prominent ? 12 : 10)
         .frame(height: prominent ? 36 : 32)
-        .modifier(FieldChrome(focused: focused, prominent: prominent))
+        .modifier(FieldChrome(focused: focused, prominent: prominent, selectionStyle: selectionStyle))
         .animation(Motion.hover, value: text.isEmpty)
         .onAppear { if autofocus { DispatchQueue.main.async { focused = true } } }
     }

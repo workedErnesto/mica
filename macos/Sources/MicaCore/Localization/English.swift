@@ -176,7 +176,24 @@ mica установлена⟩mica is installed⟩mica is installed
 Заменить существующий файл?⟩replace the existing file?⟩Replace the existing file?
 Заменить⟩replace⟩Replace
 Открыть загруженный файл?⟩open the downloaded file?⟩Open the downloaded file?
-Обязательные API недоступны в этом WebKit: ⟩required APIs are unavailable in this WebKit: ⟩Required APIs are unavailable in this WebKit: 
+Расширению нужны API, которых нет в WebKit: ⟩the extension needs APIs that WebKit lacks: ⟩The extension needs APIs that WebKit lacks: 
+WebKit пропустил часть манифеста: ⟩WebKit skipped part of the manifest: ⟩WebKit skipped part of the manifest: 
+Вместо такого блокировщика установите uBlock Origin: его фильтры mica применяет сама.⟩install uBlock Origin instead of such a blocker: mica applies its filters itself.⟩Install uBlock Origin instead of such a blocker: mica applies its filters itself.
+WebKit не даёт расширениям блокировать запросы, поэтому код uBlock Origin не запускается. mica сама применяет его фильтры: блокирует запросы, скрывает элементы и встраивает скриптлеты, в том числе против рекламы на YouTube. Списки обновляются из источников uBlock Origin раз в сутки. Фильтры действуют и в приватных окнах. Окно и настройки uBlock Origin недоступны, сайт можно исключить в сведениях о сайте.⟩WebKit does not let extensions block requests, so uBlock Origin's code does not run. mica applies its filters itself: it blocks requests, hides elements and injects scriptlets, including against YouTube ads. the lists update from uBlock Origin's sources once a day. the filters also work in private windows. uBlock Origin's popup and settings are unavailable; a site can be excluded in the site info.⟩WebKit does not let extensions block requests, so uBlock Origin's code does not run. mica applies its filters itself: it blocks requests, hides elements and injects scriptlets, including against YouTube ads. The lists update from uBlock Origin's sources once a day. The filters also work in private windows. uBlock Origin's popup and settings are unavailable; a site can be excluded in the site info.
+Обновить списки фильтров⟩update filter lists⟩Update filter lists
+Код расширения не запускается: mica сама применяет фильтры uBlock Origin, в том числе против рекламы на YouTube.⟩the extension's code does not run: mica applies uBlock Origin's filters itself, including against YouTube ads.⟩The extension's code does not run: mica applies uBlock Origin's filters itself, including against YouTube ads.
+Списки обновлены ⟩lists updated ⟩Lists updated 
+Код uBlock Origin не запускается: его фильтры применяет mica, и в приватных окнах тоже⟩uBlock Origin's code does not run: mica applies its filters, in private windows too⟩uBlock Origin's code does not run: mica applies its filters, in private windows too
+Выключено, фильтры не применяются⟩off, filters are not applied⟩Off, filters are not applied
+Подготовка фильтров…⟩preparing filters…⟩Preparing filters…
+Обновление списков uBlock Origin…⟩updating uBlock Origin lists…⟩Updating uBlock Origin lists…
+Не обновлены: ⟩not updated: ⟩Not updated: 
+Правил для запросов: ⟩request rules: ⟩Request rules: 
+, скрытия: ⟩, hiding: ⟩, hiding: 
+, скриптлетов: ⟩, scriptlets: ⟩, scriptlets: 
+Сборка фильтров uBlock Origin…⟩building uBlock Origin filters…⟩Building uBlock Origin filters…
+Фильтры uBlock Origin не собраны: ⟩uBlock Origin filters not built: ⟩uBlock Origin filters not built: 
+Не заработает в WebKit, нет API: ⟩won't work in WebKit, missing API: ⟩Won't work in WebKit, missing API: 
 WebKit не предоставляет: ⟩WebKit does not provide: ⟩WebKit does not provide: 
 Файлы изменены. Импортируйте расширение заново и проверьте разрешения.⟩the files have changed. import the extension again and review its permissions.⟩The files have changed. Import the extension again and review its permissions.
 Удалить расширение?⟩remove the extension?⟩Remove the extension?
@@ -715,6 +732,23 @@ www и всё, что стоит перед доменом⟩www and everything 
 Переносятся история и закладки. Пароли, cookie и расширения не переносятся.⟩history and bookmarks are imported. passwords, cookies and extensions are not.⟩History and bookmarks are imported. Passwords, cookies and extensions are not.
 Свой цвет⟩custom colour⟩Custom colour
 Удалить профиль⟩delete profile⟩Delete profile
-Удерживайте ⟩hold ⟩Hold 
+Удерживайте ⟩hold ⟩Hold
+Блокировка uBlock Origin уже встроена: включите её в настройках mica.⟩uBlock Origin blocking is built in: enable it in mica settings.⟩uBlock Origin blocking is built in: enable it in mica settings.
+Блокировка действует и в окнах инкогнито⟩blocking also applies in incognito windows⟩Blocking also applies in incognito windows
+Блокировку рекламы можно включить в настройках mica.⟩enable ad blocking in mica settings.⟩Enable ad blocking in mica settings.
+Встроенная блокировка сторонних рекламных доменов⟩built-in blocking of third-party advertising domains⟩Built-in blocking of third-party advertising domains
+Встроенные фильтры недоступны⟩built-in filters are unavailable⟩Built-in filters are unavailable
+Обновление раз в сутки без cookie⟩updates once a day without cookies⟩Updates once a day without cookies
+Списки встроены в mica и обновляются раз в сутки без cookie. Исключения действуют и в инкогнито. После изменения перезагрузите страницу.⟩lists are bundled with mica and update once a day without cookies. exceptions apply in incognito too. reload the page after a change.⟩Lists are bundled with mica and update once a day without cookies. Exceptions apply in incognito too. Reload the page after a change.
+Фильтры uBlock Origin⟩uBlock Origin filters⟩uBlock Origin filters
+Фильтры uBlock Origin, включая скрытие рекламы⟩uBlock Origin filters, including ad hiding⟩uBlock Origin filters, including ad hiding
+Открытый список доменов рекламных сетей и счётчиков, который Peter Lowe ведёт на pgl.yoyo.org. mica проверяет по нему каждый запрос страницы к чужому домену и не даёт загрузить баннеры, пиксели и скрипты слежки. Сам сайт открывается как обычно. Список встроен в приложение и работает без сети. «Обновить» скачивает свежую версию, список также обновляется раз в сутки без cookie.⟩an open list of advertising and tracking domains maintained by Peter Lowe at pgl.yoyo.org. mica checks third-party requests against it to block banners, pixels and tracking scripts. the site itself opens as usual. the list is bundled and works offline. update downloads a fresh copy; automatic updates run once a day without cookies.⟩An open list of advertising and tracking domains maintained by Peter Lowe at pgl.yoyo.org. mica checks third-party requests against it to block banners, pixels and tracking scripts. The site itself opens as usual. The list is bundled and works offline. Update downloads a fresh copy; automatic updates run once a day without cookies.
+Встроенные фильтры uBlock Origin⟩built-in uBlock Origin filters⟩Built-in uBlock Origin filters
+Блокировка выключена⟩blocking is off⟩Blocking is off
+Обновлены ⟩updated ⟩Updated 
+Встроенные списки готовы⟩built-in lists are ready⟩Built-in lists are ready
+Списки фильтров⟩filter lists⟩Filter lists
+mica обновляет списки каждый день без cookie. Блокировка работает и в инкогнито. Отключить её для отдельного сайта можно в сведениях о сайте. После изменения перезагрузите страницу.⟩mica updates the lists daily without cookies. blocking also works in incognito. turn it off for a specific site in site information. reload the page after a change.⟩mica updates the lists daily without cookies. Blocking also works in incognito. Turn it off for a specific site in site information. Reload the page after a change.
+Добавьте домен: блокировка отключится для него и его поддоменов. После изменения перезагрузите сайт.⟩add a domain to turn off blocking for it and its subdomains. reload the site after a change.⟩Add a domain to turn off blocking for it and its subdomains. Reload the site after a change.
 """
 }
