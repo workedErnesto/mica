@@ -32,8 +32,25 @@ struct PermissionSettings: View {
                     }
                 }
             }
+            if !store.appLinks.isEmpty {
+                SettingsGroup(title: browser.text("ссылки в приложениях", "Ссылки в приложениях"), footnote: browser.text("эти сайты открывают такие ссылки без вопроса", "Эти сайты открывают такие ссылки без вопроса")) {
+                    ForEach(Array(store.appLinks.enumerated()), id: \.element.id) { index, record in
+                        SettingRow(title: record.origin, detail: appLinkDetail(record), divider: index < store.appLinks.count - 1) {
+                            Button(browser.text("удалить", "Удалить")) { store.appLinks.removeAll { $0 == record } }
+                                .buttonStyle(MButtonStyle(kind: .secondary, compact: true))
+                        }
+                    }
+                }
+            }
         }
         .task { notificationStatus = await store.notifier.status() }
+    }
+    /// The app the system opens for the scheme now, then the scheme: "Telegram, tg:".
+    private func appLinkDetail(_ record: AppLinkPermission) -> String {
+        guard let link = URL(string: record.scheme + ":"), let app = NSWorkspace.shared.urlForApplication(toOpen: link) else { return record.scheme + ":" }
+        var name = FileManager.default.displayName(atPath: app.path)
+        if name.hasSuffix(".app") { name.removeLast(4) }
+        return name + ", " + record.scheme + ":"
     }
     private func systemStatus(_ capability: SiteCapability) -> String {
         if capability == .notifications {

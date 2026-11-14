@@ -24,6 +24,10 @@ public class SharedVectorTests
             case "navigation": return AddressParser.Navigable(S("url"), B("mainFrame"));
             case "origin": return Origin.Of(S("url"));
             case "localFile": return AddressParser.OpenableFile(S("url"));
+            case "externalScheme": return AddressParser.External(S("url"));
+            case "appLinkAllowed":
+                var allowed = c["allowed"]!.AsArray().Select(x => new AppLinkPermission { Origin = x![0]!.GetValue<string>(), Scheme = x[1]!.GetValue<string>() }).ToList();
+                return AppLinkPermission.Allows(allowed, c["origin"]?.GetValue<string>(), S("url"));
             case "version":
                 var a = AppVersion.Parse(S("a")); var b = AppVersion.Parse(S("b"));
                 return a is null || b is null ? "invalid" : Math.Sign(a.CompareTo(b));

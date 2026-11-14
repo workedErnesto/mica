@@ -239,7 +239,11 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
             decisionHandler(.allow)
         } else {
             decisionHandler(.cancel)
-            if navigationAction.navigationType == .linkActivated { Task { await owner?.external(url) } }
+            if navigationAction.navigationType == .linkActivated {
+                let source: WKFrameInfo? = navigationAction.sourceFrame
+                let origin = Origin.string(source?.request.url ?? self.url)
+                Task { await owner?.external(url, from: origin) }
+            }
         }
     }
     func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) { decisionHandler(navigationResponse.canShowMIMEType ? .allow : .download) }
@@ -266,15 +270,15 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
     }
     func webViewDidClose(_ webView: WKWebView) { owner?.close(self) }
     func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
-        Task { _ = await ask(title: Origin.string(frame.request.url) ?? "mica", detail: message, buttons: ["OK"], window: owner?.controller?.window, site: frame.request.url); completionHandler() }
+        Task { _ = await ask(title: Origin.string(frame.request.url) ?? "mica", detail: message, buttons: [owner?.text("понятно", "Понятно") ?? "OK"], window: owner?.controller?.window, site: frame.request.url); completionHandler() }
     }
     func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (Bool) -> Void) {
-        Task { let result = await ask(title: Origin.string(frame.request.url) ?? "mica", detail: message, buttons: [owner?.text("отмена", "Отмена") ?? "Cancel", "OK"], window: owner?.controller?.window, site: frame.request.url); completionHandler(result == 1) }
+        Task { let result = await ask(title: Origin.string(frame.request.url) ?? "mica", detail: message, buttons: [owner?.text("отмена", "Отмена") ?? "Cancel", owner?.text("ок", "ОК") ?? "OK"], window: owner?.controller?.window, site: frame.request.url); completionHandler(result == 1) }
     }
     func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
         let alert = NSAlert(); alert.messageText = Origin.string(frame.request.url) ?? "mica"; alert.informativeText = prompt
         let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24)); field.stringValue = defaultText ?? ""; alert.accessoryView = field
-        alert.addButton(withTitle: "OK"); alert.addButton(withTitle: owner?.text("отмена", "Отмена") ?? "Cancel")
+        alert.addButton(withTitle: owner?.text("ок", "ОК") ?? "OK"); alert.addButton(withTitle: owner?.text("отмена", "Отмена") ?? "Cancel")
         if let window = owner?.controller?.window { alert.beginSheetModal(for: window) { completionHandler($0 == .alertFirstButtonReturn ? field.stringValue : nil) } }
         else { completionHandler(alert.runModal() == .alertFirstButtonReturn ? field.stringValue : nil) }
     }

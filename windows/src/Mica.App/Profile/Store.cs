@@ -21,6 +21,8 @@ public sealed partial class Store
     public List<Visit> Bookmarks { get; private set; }
     public List<Visit> History { get; private set; }
     public List<SitePermission> Permissions { get; private set; }
+    /// <summary>Sites that open a kind of app link without asking. Incognito windows never add to it.</summary>
+    public List<AppLinkPermission> AppLinks { get; private set; }
     public List<DownloadRecord> DownloadRecords { get; private set; }
     string? issue;
     /// <summary>A problem to tell the user. Shown once in the question card of the window in front, or of the first
@@ -78,6 +80,7 @@ public sealed partial class Store
         Bookmarks = Read<List<Visit>>("bookmarks.json") ?? [];
         History = Read<List<Visit>>("history.json") ?? [];
         Permissions = Read<List<SitePermission>>("permissions.json") ?? [];
+        AppLinks = Read<List<AppLinkPermission>>("app-links.json") ?? [];
         if (issues.Count > 0) Issue = "mica: " + string.Join("\n", issues);
         if (Program.QA) { Preferences.OnboardingComplete = true; Preferences.Restore = false; }
         Engine = new Engine(this);
@@ -383,6 +386,18 @@ public sealed partial class Store
 
     /// <summary>Removes what the clear-data panel selected, from the start of its period up to now. Bookmarks, open tabs
     /// and incognito windows are not touched.</summary>
+    public void AddAppLink(AppLinkPermission permission)
+    {
+        if (AppLinks.Any(p => p.Id == permission.Id)) return;
+        AppLinks.Add(permission); Save(AppLinks, "app-links.json"); PermissionsChanged?.Invoke();
+    }
+
+    public void RemoveAppLink(string id)
+    {
+        if (AppLinks.RemoveAll(p => p.Id == id) == 0) return;
+        Save(AppLinks, "app-links.json"); PermissionsChanged?.Invoke();
+    }
+
     public async Task ClearAsync(ClearChoice choice)
     {
         var now = DateTimeOffset.Now;
@@ -390,7 +405,7 @@ public sealed partial class Store
         if (choice.History) SetHistory(HistoryOps.Removing(History, start));
         // Icons are not dated, so any history or cache clearing forgets all of them.
         if (choice.History || choice.Cache) Favicons.Clear();
-        if (choice.Permissions) { Permissions = []; Save(Permissions, "permissions.json"); PermissionsChanged?.Invoke(); }
+        if (choice.Permissions) { Permissions = []; Save(Permissions, "permissions.json"); AppLinks = []; Save(AppLinks, "app-links.json"); PermissionsChanged?.Invoke(); }
         var kinds = (CoreWebView2BrowsingDataKinds)0;
         if (choice.SiteData) kinds |= CoreWebView2BrowsingDataKinds.AllDomStorage | CoreWebView2BrowsingDataKinds.Cookies | CoreWebView2BrowsingDataKinds.ServiceWorkers;
         if (choice.Cache) kinds |= CoreWebView2BrowsingDataKinds.DiskCache | CoreWebView2BrowsingDataKinds.CacheStorage;

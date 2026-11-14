@@ -13,9 +13,11 @@ struct AlertRequest: Identifiable, Equatable {
     let detail: String
     let buttons: [String]
     var destructive = false
-    /// A page's dialog shows that site's icon instead of mica's.
+    /// A page's dialog shows that site's icon.
     var site: URL?
-    let answer: (Int) -> Void
+    /// A switch under the buttons ("don't ask for t.me"); its state comes back with the answer.
+    var remember: String?
+    let answer: (Int, Bool) -> Void
     static func == (a: AlertRequest, b: AlertRequest) -> Bool { a.id == b.id }
 }
 
@@ -23,12 +25,18 @@ struct AlertRequest: Identifiable, Equatable {
 /// all, still gets the system alert so the answer always comes back.
 @MainActor
 func ask(title: String, detail: String, buttons: [String], window: NSWindow? = nil, destructive: Bool = false, site: URL? = nil) async -> Int {
+    await askRemembering(title: title, detail: detail, buttons: buttons, window: window, destructive: destructive, site: site).index
+}
+
+/// The same question with a switch under the buttons (`remember` is its label); the answer carries its state.
+@MainActor
+func askRemembering(title: String, detail: String, buttons: [String], window: NSWindow? = nil, destructive: Bool = false, site: URL? = nil, remember: String? = nil) async -> (index: Int, remember: Bool) {
     let store = Store.shared
     let target = window ?? NSApp.keyWindow
     let browser = store.windows.first(where: { $0.window === target })?.model ?? (window == nil ? store.active : nil)
     if let browser, browser.controller?.window?.isVisible == true {
         return await withCheckedContinuation { continuation in
-            let pending = AlertRequest(title: title, detail: detail, buttons: buttons.isEmpty ? ["OK"] : buttons, destructive: destructive, site: site) { continuation.resume(returning: $0) }
+            let pending = AlertRequest(title: title, detail: detail, buttons: buttons.isEmpty ? [store.text("понятно", "Понятно")] : buttons, destructive: destructive, site: site, remember: remember) { continuation.resume(returning: (index: $0, remember: $1)) }
             browser.alerts.append(pending)
             // QA only (`--qa --qa-confirm`): the card is answered with its default button after two seconds.
             let arguments = ProcessInfo.processInfo.arguments
@@ -37,12 +45,13 @@ func ask(title: String, detail: String, buttons: [String], window: NSWindow? = n
             }
         }
     }
-    return await systemAsk(title: title, detail: detail, buttons: buttons, window: target)
+    return await systemAsk(title: title, detail: detail, buttons: buttons, window: target, remember: remember)
 }
 
 @MainActor
-private func systemAsk(title: String, detail: String, buttons: [String], window: NSWindow?) async -> Int {
+private func systemAsk(title: String, detail: String, buttons: [String], window: NSWindow?, remember: String?) async -> (index: Int, remember: Bool) {
     let alert = NSAlert(); alert.messageText = title
+    if let remember { alert.showsSuppressionButton = true; alert.suppressionButton?.title = remember }
     // NSAlert draws the bundle icon; the icon chosen in settings is the one in the Dock.
     alert.icon = NSApp.applicationIconImage
     if detail.count > 1600 {
@@ -57,10 +66,11 @@ private func systemAsk(title: String, detail: String, buttons: [String], window:
         scroll.documentView = text; alert.accessoryView = scroll
     } else { alert.informativeText = detail }
     for button in buttons { alert.addButton(withTitle: button) }
+    let index: Int
     if let window, window.attachedSheet == nil {
-        return await withCheckedContinuation { continuation in alert.beginSheetModal(for: window) { continuation.resume(returning: $0.rawValue - NSApplication.ModalResponse.alertFirstButtonReturn.rawValue) } }
-    }
-    return alert.runModal().rawValue - NSApplication.ModalResponse.alertFirstButtonReturn.rawValue
+        index = await withCheckedContinuation { continuation in alert.beginSheetModal(for: window) { continuation.resume(returning: $0.rawValue - NSApplication.ModalResponse.alertFirstButtonReturn.rawValue) } }
+    } else { index = alert.runModal().rawValue - NSApplication.ModalResponse.alertFirstButtonReturn.rawValue }
+    return (index, alert.suppressionButton?.state == .on)
 }
 
 /// This window's questions over the shell and page. Messages of the window and problems of mica go to the same card.
@@ -86,20 +96,19 @@ struct AlertLayer: ViewModifier {
     }
 }
 
-/// The card of a question: the composition of the profile question (mark on top, title, text, buttons stacked full
-/// width) with mica's icon, or the site's icon for a page's dialog. The default button is on top and the cancelling
+/// The card of a question: the composition of the profile question (title, text, buttons stacked full width), with
+/// the site's icon on top for a page's dialog. The default button is on top and the cancelling
 /// one at the bottom, as in the profile and password questions. Long text scrolls inside the card.
 struct AlertPrompt: View {
     let request: AlertRequest
     @ObservedObject var browser: BrowserModel
     @State private var shown = false
+    @State private var remembered = false
     @Environment(\.accessibilityReduceMotion) private var reduced
     private var long: Bool { request.detail.count > 160 || request.detail.contains("\n") }
     var body: some View {
         VStack(spacing: 0) {
             mark
-                .scaleEffect(shown || reduced ? 1 : 0.8)
-                .padding(.bottom, 14)
             Text(request.title)
                 .font(.system(size: 14, weight: .semibold)).foregroundStyle(Palette.ink)
                 .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
@@ -111,10 +120,16 @@ struct AlertPrompt: View {
             }
             VStack(spacing: Space.small) {
                 ForEach(order, id: \.self) { index in
-                    Button(request.buttons[index]) { browser.answerAlert(index) }
+                    Button(request.buttons[index]) { browser.answerAlert(index, remember: remembered) }
                         .buttonStyle(MButtonStyle(kind: kind(index), fill: true))
                         .keyboardShortcut(shortcut(index))
                 }
+            }
+            if let remember = request.remember {
+                Toggle(remember, isOn: $remembered)
+                    .toggleStyle(MToggleStyle()).font(.system(size: 12.5)).foregroundStyle(Palette.text2).fixedSize()
+                    .help(browser.text("решение можно отменить в настройках, в разделе «разрешения сайтов».", "Решение можно отменить в настройках, в разделе «Разрешения сайтов»."))
+                    .padding(.top, 14)
             }
         }
         .padding(.horizontal, 22).padding(.top, 24).padding(.bottom, 18)
@@ -124,12 +139,13 @@ struct AlertPrompt: View {
         .accessibilityAddTraits(.isModal)
     }
 
+    /// Only a page's dialog carries a mark, the site's icon. mica's own questions have none: its icon belongs to
+    /// "about mica".
     @ViewBuilder private var mark: some View {
         if let site = request.site {
             SiteIcon(url: site, favicons: browser.favicons, size: 56, tiled: true)
-        } else {
-            Image(nsImage: NSApp.applicationIconImage).resizable().interpolation(.high).frame(width: 56, height: 56)
-                .accessibilityHidden(true)
+                .scaleEffect(shown || reduced ? 1 : 0.8)
+                .padding(.bottom, 14)
         }
     }
 

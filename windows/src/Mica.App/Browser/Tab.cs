@@ -391,10 +391,10 @@ public sealed partial class Tab : Observable
             switch (e.Kind)
             {
                 case CoreWebView2ScriptDialogKind.Alert:
-                    await Dialogs.Ask(owner.Window, title, e.Message, ["OK"], site: e.Uri); e.Accept(); break;
+                    await Dialogs.Ask(owner.Window, title, e.Message, [owner.Text("понятно", "Понятно")], site: e.Uri); e.Accept(); break;
                 case CoreWebView2ScriptDialogKind.Confirm:
                 case CoreWebView2ScriptDialogKind.Beforeunload:
-                    if (await Dialogs.Ask(owner.Window, title, e.Kind == CoreWebView2ScriptDialogKind.Beforeunload ? owner.Text("покинуть страницу? несохранённые изменения могут потеряться.", "Покинуть страницу? Несохранённые изменения могут потеряться.") : e.Message, [owner.Text("отмена", "Отмена"), "OK"], site: e.Uri) == 1) e.Accept();
+                    if (await Dialogs.Ask(owner.Window, title, e.Kind == CoreWebView2ScriptDialogKind.Beforeunload ? owner.Text("покинуть страницу? несохранённые изменения могут потеряться.", "Покинуть страницу? Несохранённые изменения могут потеряться.") : e.Message, [owner.Text("отмена", "Отмена"), owner.Text("ок", "ОК")], site: e.Uri) == 1) e.Accept();
                     break;
                 case CoreWebView2ScriptDialogKind.Prompt:
                     if (await Dialogs.Prompt(owner.Window, title, e.Message, e.DefaultText, e.Uri) is { } text) { e.ResultText = text; e.Accept(); }
@@ -420,7 +420,7 @@ public sealed partial class Tab : Observable
     async void OnExternalScheme(CoreWebView2 sender, CoreWebView2LaunchingExternalUriSchemeEventArgs e)
     {
         e.Cancel = true;
-        if (Owner is { } owner && e.IsUserInitiated) await owner.ExternalAsync(e.Uri);
+        if (Owner is { } owner && e.IsUserInitiated) await owner.ExternalAsync(e.Uri, Origin.Of(e.InitiatingOrigin));
     }
 
     void OnProcessFailed(CoreWebView2 sender, CoreWebView2ProcessFailedEventArgs e)

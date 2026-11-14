@@ -122,3 +122,22 @@ public sealed record WebNotification(string Id, string Title, string Body = "", 
     public static string Identifier(string origin, Guid tab, WebNotification n) =>
         n.Tag.Length == 0 ? $"{origin}|{tab:D}|{n.Id}" : $"{origin}|tag|{n.Tag}";
 }
+
+/// <summary>A site that opens one kind of app link without asking, after "don't ask for this site" (t.me with tg:).
+/// Kept per scheme, so a site allowed to open Telegram cannot open other apps silently.</summary>
+public sealed class AppLinkPermission
+{
+    public string Origin { get; set; } = "";
+    public string Scheme { get; set; } = "";
+    public string Id => Origin + " " + Scheme;
+
+    /// <summary>The permission for a link a page opened: the page must be a web origin and the link an app link.</summary>
+    public static AppLinkPermission? For(string? origin, string? url)
+    {
+        if (url is null || string.IsNullOrEmpty(origin) || !(origin.StartsWith("https://", StringComparison.Ordinal) || origin.StartsWith("http://", StringComparison.Ordinal)) || !AddressParser.External(url)) return null;
+        return new AppLinkPermission { Origin = origin, Scheme = url[..url.IndexOf(':')].ToLowerInvariant() };
+    }
+
+    public static bool Allows(IEnumerable<AppLinkPermission> list, string? origin, string? url) =>
+        For(origin, url) is { } wanted && list.Any(p => p.Origin == wanted.Origin && p.Scheme.Equals(wanted.Scheme, StringComparison.OrdinalIgnoreCase));
+}

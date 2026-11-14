@@ -20,8 +20,11 @@ public static class Dialogs
         public bool Destructive { get; init; }
         /// <summary>A password question: the shell draws the site's icon with a key and the account or password on a plate.</summary>
         public PasswordCard? Password { get; init; }
-        /// <summary>A page's dialog or permission question: the shell draws that site's icon instead of mica's.</summary>
+        /// <summary>A page's dialog or permission question: the shell draws that site's icon. mica's own questions have no icon.</summary>
         public string? Site { get; init; }
+        /// <summary>A switch under the buttons ("don't ask for t.me"); its state comes back in <see cref="Remembered"/>.</summary>
+        public string? Remember { get; init; }
+        public bool Remembered { get; set; }
         internal TaskCompletionSource<(int Index, string[] Values)> Answer { get; } = new();
         static int next;
     }
@@ -39,9 +42,9 @@ public static class Dialogs
     }
 
     /// <summary>The shell answered: index of the button, 100 + index of a choice, field values in order.</summary>
-    public static void Answer(BrowserModel owner, int id, int index, string[] values)
+    public static void Answer(BrowserModel owner, int id, int index, string[] values, bool remember = false)
     {
-        if (owner.Questions.FirstOrDefault(q => q.Id == id) is { } question) question.Answer.TrySetResult((index, values));
+        if (owner.Questions.FirstOrDefault(q => q.Id == id) is { } question) { question.Remembered = remember; question.Answer.TrySetResult((index, values)); }
     }
 
     /// <summary>Closing the window cancels what it was asking.</summary>
@@ -54,14 +57,22 @@ public static class Dialogs
     public static async Task<int> Ask(BrowserWindow? window, string title, string detail, IReadOnlyList<string> buttons, bool destructive = false, PasswordCard? password = null, string? site = null) =>
         (await Present(window, new Question { Title = title, Text = detail, Buttons = buttons, Destructive = destructive, Password = password, Site = site })).Index;
 
-    public static Task Show(BrowserWindow? window, string message) => Ask(window, "mica", message, ["OK"]);
+    /// <summary>The same question with a switch under the buttons (<paramref name="remember"/> is its label).</summary>
+    public static async Task<(int Index, bool Remember)> AskRemembering(BrowserWindow? window, string title, string detail, IReadOnlyList<string> buttons, string? remember)
+    {
+        var question = new Question { Title = title, Text = detail, Buttons = buttons, Remember = remember };
+        var (index, _) = await Present(window, question);
+        return (index, question.Remembered);
+    }
+
+    public static Task Show(BrowserWindow? window, string message) => Ask(window, "mica", message, [Owner(window)?.Text("понятно", "Понятно") ?? "OK"]);
 
     /// <summary>A prompt() of a page: the default text in one field. Null when cancelled.</summary>
     public static async Task<string?> Prompt(BrowserWindow? window, string title, string message, string defaultText, string? site = null)
     {
         var owner = Owner(window);
         var cancel = owner?.Text("отмена", "Отмена") ?? "Cancel";
-        var (index, values) = await Present(window, new Question { Title = title, Text = message, Buttons = [cancel, "OK"], Fields = [("", defaultText, false)], Site = site });
+        var (index, values) = await Present(window, new Question { Title = title, Text = message, Buttons = [cancel, owner?.Text("ок", "ОК") ?? "OK"], Fields = [("", defaultText, false)], Site = site });
         return index == 1 && values.Length > 0 ? values[0] : null;
     }
 

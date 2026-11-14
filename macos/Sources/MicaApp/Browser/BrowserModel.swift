@@ -41,16 +41,16 @@ final class BrowserModel: NSObject, ObservableObject, WKWebExtensionWindow {
     }
     /// Questions and messages waiting in this window (`ask`); the first is shown, each is answered once.
     @Published var alerts: [AlertRequest] = []
-    func answerAlert(_ index: Int) {
+    func answerAlert(_ index: Int, remember: Bool = false) {
         guard !alerts.isEmpty else { return }
-        alerts.removeFirst().answer(index)
+        alerts.removeFirst().answer(index, remember)
     }
     /// A message with one button; nothing waits for the answer.
-    func inform(_ text: String) { alerts.append(AlertRequest(title: "mica", detail: text, buttons: ["OK"]) { _ in }) }
+    func inform(_ text: String) { alerts.append(AlertRequest(title: "mica", detail: text, buttons: [self.text("понятно", "Понятно")]) { _, _ in }) }
     /// Closing the window cancels what it was asking, so pages and callers always get their answer.
     func cancelAlerts() {
         let pending = alerts; alerts = []
-        for request in pending { request.answer(0) }
+        for request in pending { request.answer(0, false) }
     }
     @Published var settingsSection: SettingsSection = .space
     /// Profile open in the profile editor of settings.
@@ -206,11 +206,31 @@ final class BrowserModel: NSObject, ObservableObject, WKWebExtensionWindow {
         case .rejected: message = text("этот адрес или протокол не поддерживается", "Этот адрес или протокол не поддерживается")
         }
     }
-    func external(_ url: URL) async {
-        guard ["mailto", "tel"].contains(url.scheme?.lowercased() ?? "") else { message = text("этот протокол не поддерживается: ", "Этот протокол не поддерживается: ") + (url.scheme ?? ""); return }
-        let result = await ask(title: text("открыть другое приложение?", "Открыть другое приложение?"), detail: url.absoluteString, buttons: [text("отмена", "Отмена"), text("открыть", "Открыть")], window: controller?.window)
-        if result == 1 { NSWorkspace.shared.open(url) }
+    /// A link for another app: Launch Services picks the app registered for the scheme (Telegram for tg:, Mail for
+    /// mailto:), mica names it and asks before handing the link over. One question at a time per window, so a page
+    /// cannot stack them. `origin` is the page that opened the link: after "don't ask for this site" that site opens
+    /// links of this scheme without the question; incognito windows neither offer nor use it.
+    func external(_ url: URL, from origin: String? = nil) async {
+        guard AddressParser.external(url) else { message = text("этот адрес или протокол не поддерживается", "Этот адрес или протокол не поддерживается"); return }
+        guard let app = NSWorkspace.shared.urlForApplication(toOpen: url), Bundle(url: app)?.bundleIdentifier != Bundle.main.bundleIdentifier else {
+            message = text("не найдено приложение для ссылок ", "Не найдено приложение для ссылок ") + quoted((url.scheme ?? "") + ":"); return
+        }
+        var name = FileManager.default.displayName(atPath: app.path)
+        if name.hasSuffix(".app") { name.removeLast(4) }
+        if !privateMode, AppLinkPermission.allows(store.appLinks, origin: origin, url: url) {
+            if !NSWorkspace.shared.open(url) { message = text("не удалось открыть ", "Не удалось открыть ") + quoted(name) }
+            return
+        }
+        guard !askingExternal else { return }
+        askingExternal = true; defer { askingExternal = false }
+        let permission = privateMode ? nil : AppLinkPermission(origin: origin, url: url)
+        let host = permission.flatMap { URL(string: $0.origin)?.host }
+        let result = await askRemembering(title: text("открыть в приложении ", "Открыть в приложении ") + quoted(name) + "?", detail: url.absoluteString, buttons: [text("отмена", "Отмена"), text("открыть", "Открыть")], window: controller?.window, remember: host.map { text("не спрашивать для ", "Не спрашивать для ") + $0 })
+        guard result.index == 1 else { return }
+        if result.remember, let permission, !store.appLinks.contains(permission) { store.appLinks.append(permission) }
+        if !NSWorkspace.shared.open(url) { message = text("не удалось открыть ", "Не удалось открыть ") + quoted(name) }
     }
+    private var askingExternal = false
     func dispose() {
         downloads.cancelAll()
         for tab in tabs { tab.dispose() }

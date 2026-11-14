@@ -19,6 +19,10 @@ final class SharedVectorTests: XCTestCase {
         case "navigation": return URL(string: c["url"] as! String).map { AddressParser.navigable($0, mainFrame: c["mainFrame"] as! Bool) } ?? false
         case "origin": return Origin.string(URL(string: c["url"] as! String)) ?? NSNull()
         case "localFile": return URL(string: c["url"] as! String).map(AddressParser.openableFile) ?? false
+        case "externalScheme": return URL(string: c["url"] as! String).map(AddressParser.external) ?? false
+        case "appLinkAllowed":
+            let list = (c["allowed"] as! [[String]]).map { AppLinkPermission(origin: $0[0], scheme: $0[1]) }
+            return URL(string: c["url"] as! String).map { AppLinkPermission.allows(list, origin: c["origin"] as? String, url: $0) } ?? false
         case "version":
             guard let a = AppVersion(c["a"] as! String), let b = AppVersion(c["b"] as! String) else { return "invalid" }
             return a < b ? -1 : a > b ? 1 : 0

@@ -76,7 +76,8 @@ macOS ограничивает доступ к файлам Safari. Экспор
 Не удалось включить проверку Gatekeeper. Образ не открыт⟩could not enable Gatekeeper verification. the disk image was not opened⟩Could not enable Gatekeeper verification. The disk image was not opened
 Не удалось скачать или открыть образ. Попробуйте позже⟩could not download or open the disk image. try again later⟩Could not download or open the disk image. Try again later
 Обновление не установлено⟩update not installed⟩Update not installed
-Понятно⟩OK⟩OK
+Понятно⟩ok⟩OK
+ОК⟩ok⟩OK
 Установить mica в «Программы»?⟩install mica in Applications?⟩Install mica in Applications?
 Выберите папку «Программы» для установки⟩choose the Applications folder to install⟩Choose the Applications folder to install
 Обновить mica в «Программах»?⟩update mica in Applications?⟩Update mica in Applications?
@@ -140,8 +141,13 @@ mica установлена⟩mica is installed⟩mica is installed
 Акцентный цвет⟩accent color⟩Accent color
 Инкогнито⟩incognito⟩Incognito
 Этот адрес или протокол не поддерживается⟩this address or protocol is not supported⟩This address or protocol is not supported
-Этот протокол не поддерживается: ⟩this protocol is not supported: ⟩This protocol is not supported: 
-Открыть другое приложение?⟩open another app?⟩Open another app?
+Не найдено приложение для ссылок ⟩no app found for links ⟩No app found for links 
+Открыть в приложении ⟩open in ⟩Open in 
+Не спрашивать для ⟩don’t ask for ⟩Don’t ask for 
+Решение можно отменить в настройках, в разделе «Разрешения сайтов».⟩you can undo this in settings, under site permissions.⟩You can undo this in Settings, under Site Permissions.
+Ссылки в приложениях⟩app links⟩App Links
+Эти сайты открывают такие ссылки без вопроса⟩these sites open these links without asking⟩These sites open these links without asking
+Не удалось открыть ⟩could not open ⟩Could not open 
 Открыть⟩open⟩Open
 Процесс страницы завершён системой. Восстановите страницу; несохранённые формы могут быть потеряны.⟩the system ended the page process. restore the page; unsaved forms may be lost.⟩The system ended the page process. Restore the page; unsaved forms may be lost.
 Вход на сайт⟩sign in to site⟩Sign In to Site
@@ -625,7 +631,7 @@ mica удалена⟩mica is removed⟩mica is removed
 Ярлык есть в меню «Пуск». Вкладки, закладки и настройки хранятся только на этом компьютере.⟩the shortcut is in the Start menu. tabs, bookmarks and settings are stored only on this computer.⟩The shortcut is in the Start menu. Tabs, bookmarks and settings are stored only on this computer.
 Ярлык на рабочем столе⟩desktop shortcut⟩Desktop shortcut
 доступ не запрошен⟩no access requested⟩no access requested
-Камера, микрофон и уведомления, за всё время: у решений нет даты⟩camera, microphone and notifications, for all time: decisions have no date⟩Camera, microphone and notifications, for all time: decisions have no date
+Камера, микрофон, уведомления и ссылки в приложениях, за всё время: у решений нет даты⟩camera, microphone, notifications and app links, for all time: decisions have no date⟩Camera, microphone, notifications and app links, for all time: decisions have no date
 Закрыть все⟩close all tabs⟩Close All Tabs
 Не удалось зарегистрировать mica как браузер. Попробуйте ещё раз⟩could not register mica as a browser. try again⟩Could not register mica as a browser. Try again
 Показывать⟩show⟩Show

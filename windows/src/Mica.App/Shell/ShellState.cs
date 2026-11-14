@@ -286,6 +286,9 @@ public static class ShellState
         foreach (var part in AddressDisplay.Parts("https://shop.example.com/shoes/running?size=42", browser.Prefs.Address)) sample.Push(new JsonObject { ["text"] = part.Text, ["dim"] = part.Dim });
         var permissions = new JsonArray();
         foreach (var record in store.Permissions) permissions.Push(new JsonObject { ["origin"] = record.Origin, ["capability"] = Raw(record.Capability), ["decision"] = Raw(record.Decision) });
+        var appLinks = new JsonArray();
+        foreach (var record in store.AppLinks)
+            appLinks.Push(new JsonObject { ["id"] = record.Id, ["origin"] = record.Origin, ["detail"] = BrowserModel.ExternalApp(record.Scheme) is { } app ? app + ", " + record.Scheme + ":" : record.Scheme + ":" });
         var icons = new JsonArray();
         foreach (var set in Appearance.AppIcons.Sets)
             foreach (var icon in set.Icons)
@@ -329,7 +332,7 @@ public static class ShellState
             ["blockingExceptions"] = Strings(p.BlockingExceptions),
             ["restore"] = p.Restore, ["lazyRestore"] = p.LazyRestore, ["eagerHosts"] = Strings(p.EagerHosts),
             ["notificationRequests"] = p.NotificationRequests,
-            ["permissions"] = permissions,
+            ["permissions"] = permissions, ["appLinks"] = appLinks,
             ["offerPasswords"] = p.OfferPasswords, ["fillPasswords"] = p.FillPasswords,
             ["passwords"] = new JsonObject
             {
@@ -407,18 +410,16 @@ public static class ShellState
             alert = new JsonObject
             {
                 ["id"] = q.Id, ["title"] = q.Title, ["text"] = q.Text, ["buttons"] = Strings(q.Buttons), ["destructive"] = q.Destructive,
-                ["choices"] = q.Choices is null ? null : Strings(q.Choices), ["fields"] = fields, ["cancel"] = 0,
+                ["choices"] = q.Choices is null ? null : Strings(q.Choices), ["fields"] = fields, ["cancel"] = 0, ["remember"] = q.Remember,
             };
-            // On top of the card: the site's icon for a page's dialog, mica's icon for mica's own questions, like the
-            // profile question carries the profile's mark.
-            var appIcon = store.Preferences.AppIcon ?? Appearance.AppIcons.Standard;
+            // On top of the card: the site's icon for a page's dialog. mica's own questions have none, its icon
+            // belongs to "about mica".
             if (q.Site is { } site)
             {
                 var tile = new JsonObject { ["origin"] = site, ["host"] = AddressParser.Host(site) ?? site };
                 Icon(tile, browser.Favicons, site, look.Dark);
                 alert["site"] = tile;
             }
-            else if (q.Password is null && Appearance.AppIcons.Png(appIcon) is not null) alert["mark"] = "https://mica.icons/app/" + appIcon;
             if (q.Password is { } card)
             {
                 var password = new JsonObject { ["origin"] = card.Origin, ["host"] = AddressParser.Host(card.Origin) ?? card.Origin, ["account"] = card.Account };

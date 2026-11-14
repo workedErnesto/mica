@@ -339,6 +339,9 @@ function PermissionSettings() {
       ? s.permissions.map(record => Setting(record.origin, Segmented(record.decision, decisions, value => send('site.permission', { origin: record.origin, capability: record.capability, decision: value }), { compact: true, minWidth: 270, label: record.origin }), { detail: capabilityName(record.capability), key: record.origin + record.capability }))
       : [h('div', { class: 'setting muted', key: 'none' }, T("сайты пока ничего не запрашивали", "Сайты пока ничего не запрашивали"))],
       { footnote: T("решения окон инкогнито существуют только внутри окна.", "Решения окон инкогнито существуют только внутри окна."), key: 'decisions' }),
+    (s.appLinks || []).length ? Group(T("ссылки в приложениях", "Ссылки в приложениях"),
+      s.appLinks.map(record => Setting(record.origin, Button(T("удалить", "Удалить"), { compact: true, onClick: () => send('appLink.remove', { id: record.id }) }), { detail: record.detail, key: record.id })),
+      { footnote: T("эти сайты открывают такие ссылки без вопроса", "Эти сайты открывают такие ссылки без вопроса"), key: 'appLinks' }) : null,
   ];
 }
 
