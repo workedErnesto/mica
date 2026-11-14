@@ -258,7 +258,15 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
             }
         }
     }
-    func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) { decisionHandler(navigationResponse.canShowMIMEType ? .allow : .download) }
+    nonisolated static func shouldDownload(response: URLResponse, canShowMIMEType: Bool) -> Bool {
+        let disposition = (response as? HTTPURLResponse)?.value(forHTTPHeaderField: "Content-Disposition")
+        let kind = disposition?.split(separator: ";", maxSplits: 1, omittingEmptySubsequences: false).first?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return kind?.caseInsensitiveCompare("attachment") == .orderedSame || !canShowMIMEType
+    }
+    func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
+        decisionHandler(Self.shouldDownload(response: navigationResponse.response, canShowMIMEType: navigationResponse.canShowMIMEType) ? .download : .allow)
+    }
     func webView(_ webView: WKWebView, navigationAction: WKNavigationAction, didBecome download: WKDownload) { owner?.downloads.add(download, tab: self) }
     func webView(_ webView: WKWebView, navigationResponse: WKNavigationResponse, didBecome download: WKDownload) { owner?.downloads.add(download, tab: self) }
     func webView(_ webView: WKWebView, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {

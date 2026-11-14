@@ -5,7 +5,12 @@ import MicaCore
 extension WKSecurityOrigin {
     /// Same form as `Origin.string`, so decisions match the address bar.
     var key: String? {
-        var parts = URLComponents(); parts.scheme = self.protocol; parts.host = host
+        Self.key(protocol: self.protocol, host: host, port: port)
+    }
+    static func key(protocol scheme: String, host: String, port: Int) -> String? {
+        // Opaque WebKit origins can have an empty protocol; URLComponents traps on invalid schemes.
+        guard scheme == "http" || scheme == "https", !host.isEmpty else { return nil }
+        var parts = URLComponents(); parts.scheme = scheme; parts.host = host
         if port > 0 { parts.port = port }
         return Origin.string(parts.url)
     }
