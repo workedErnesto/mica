@@ -55,6 +55,9 @@ private struct MenuRow: View {
                     Image(systemName: "checkmark").font(.system(size: 10, weight: .semibold))
                 }
                 Spacer(minLength: 0)
+                if !entry.submenu.isEmpty {
+                    Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(Palette.text3)
+                }
             }
             .foregroundStyle(!entry.enabled ? Palette.text3.opacity(0.7) : entry.destructive ? Palette.danger : Palette.ink)
             .padding(.horizontal, 8)

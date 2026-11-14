@@ -96,6 +96,7 @@ export function appMenu() {
     item(T("уменьшить", "Уменьшить"), run('zoomOut'), { symbol: 'minus', enabled: live, keys: keys('zoomOut') }),
     item(T("исходный масштаб", "Исходный масштаб") + (zoomed ? ` (${Math.round(tab.zoom * 100)}%)` : ''), run('zoomReset'), { enabled: !!zoomed, keys: keys('zoomReset') }),
     item(T("полноэкранный режим", "Полноэкранный режим"), run('fullscreen'), { symbol: 'arrow.up.left.and.arrow.down.right', keys: keys('fullscreen') }),
+    item(T("инструменты разработчика", "Инструменты разработчика"), run('devTools'), { enabled: live, keys: keys('devTools') }),
     divider,
     state.profiles.length > 1 ? state.profiles.map(profile => ({ title: profile.name, profile, checked: profile.id === state.profile.id, action: () => openProfile(profile) })) : null,
     item(T("настроить профили…", "Настроить профили…"), () => send('settings.open', { section: 'profiles', profile: state.profile.id }), { symbol: 'person.crop.circle' }),

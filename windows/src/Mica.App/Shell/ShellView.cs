@@ -40,6 +40,7 @@ public sealed partial class ShellView : Grid
         browser.FocusAddressRequested += () => Event("focusAddress");
         browser.MenuRequested += () => Event("menu");
         browser.SaveMenuRequested += () => Event("saveMenu");
+        browser.PageMenuRequested += args => Event("pageMenu", args);
         browser.FindStepRequested += back => _ = ShellCommands.Run(browser, "find.run", JsonDocument.Parse("{\"query\":" + Tab.Json(lastFind) + ",\"back\":" + (back ? "true" : "false") + "}").RootElement);
         _ = StartAsync();
     }

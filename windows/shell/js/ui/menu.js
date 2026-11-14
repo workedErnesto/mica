@@ -1,6 +1,7 @@
 // Shell menus and popovers drawn by mica (MicaMenu and StickyPopover on macOS).
 // One menu at a time; it closes on a click elsewhere, Esc, a choice, a resize or when the window loses focus.
-// A menu entry: { title, symbol?, keys?, enabled?, checked?, destructive?, profile?, action, secondary? } or "divider".
+// A menu entry: { title, symbol?, keys?, enabled?, checked?, destructive?, profile?, action, secondary?, submenu? } or "divider".
+// secondary opens on a right click of the row, submenu beside the row when the pointer rests on it.
 
 import { h, cx } from '../core/dom.js';
 import { icon } from '../core/icons.js';
@@ -17,7 +18,7 @@ export function tidy(entries) {
   for (const entry of entries.flat(Infinity)) {
     if (!entry) continue;
     if (entry === divider) { if (out.length && out[out.length - 1] !== divider) out.push(entry); }
-    else out.push({ enabled: true, ...entry });
+    else out.push({ enabled: true, ...entry, submenu: entry.submenu ? tidy(entry.submenu) : undefined });
   }
   while (out[out.length - 1] === divider) out.pop();
   return out;
@@ -25,8 +26,8 @@ export function tidy(entries) {
 
 let sequence = 0;
 
-/// Opens at a point (a right click).
-export function openMenuAt(entries, x, y) { present(entries, { x, y }); }
+/// Opens at a point (a right click). onClose runs when the menu closes without a choice.
+export function openMenuAt(entries, x, y, onClose) { present(entries, { x, y }, onClose); }
 
 /// Opens under a control, or above it when there is no room below.
 export function openMenuBelow(entries, element) {
@@ -34,15 +35,35 @@ export function openMenuBelow(entries, element) {
   present(entries, { rect: { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom } });
 }
 
-function present(entries, where) {
+function present(entries, where, onClose) {
   const list = tidy(entries);
-  if (!list.length) return;
-  update(u => { u.menu = { id: ++sequence, entries: list, where, highlighted: -1 }; u.submenu = null; });
+  if (!list.length) { if (onClose) onClose(); return; }
+  closeMenu(false);
+  update(u => { u.menu = { id: ++sequence, entries: list, where, highlighted: -1, onClose }; u.submenu = null; });
 }
 
 export function closeMenu(animated = true) {
   if (!ui.menu) return;
+  const closing = ui.menu;
   update(u => { u.menu = null; u.submenu = null; });
+  if (!closing.chosen && closing.onClose) closing.onClose();
+}
+
+let submenuTimer = 0;
+/// Resting on a row with a submenu opens it beside the row; another row closes it after a moment, so the pointer can
+/// cross neighbouring rows on its way in.
+function hoverRow(menu, entry, element) {
+  clearTimeout(submenuTimer);
+  if (entry.submenu && entry.submenu.length && entry.enabled !== false) {
+    if (ui.submenu && ui.submenu.from === entry) return;
+    submenuTimer = setTimeout(() => {
+      if (ui.menu !== menu) return;
+      const rect = element.getBoundingClientRect();
+      update(u => { u.submenu = { id: ++sequence, entries: entry.submenu, where: { x: rect.right - 2, y: rect.top - 5 }, highlighted: -1, from: entry }; });
+    }, 120);
+  } else if (ui.submenu && ui.submenu.from) {
+    submenuTimer = setTimeout(() => { if (ui.submenu && ui.submenu.from && ui.submenu.highlighted < 0) update(u => { u.submenu = null; }); }, 250);
+  }
 }
 
 /// A context menu for an area: the smallest area under the pointer wins.
@@ -75,7 +96,8 @@ function place(el, where) {
 }
 
 function choose(menu, entry) {
-  if (!entry || entry === divider || entry.enabled === false) return;
+  if (!entry || entry === divider || entry.enabled === false || (entry.submenu && entry.submenu.length)) return;
+  if (ui.menu) ui.menu.chosen = true;
   closeMenu();
   entry.action && entry.action();
 }
@@ -106,14 +128,15 @@ function MenuBody(menu, isChild) {
         class: cx('menu-row', { highlighted: menu.highlighted === index && entry.enabled !== false, destructive: entry.destructive }),
         role: entry.checked != null ? 'menuitemcheckbox' : 'menuitem', type: 'button', 'aria-disabled': entry.enabled === false ? 'true' : null,
         'aria-checked': entry.checked ? 'true' : null, tabIndex: -1,
-        onPointerEnter: () => { if (menu.highlighted !== index) { menu.highlighted = entry.enabled === false ? -1 : index; invalidate(); } },
+        onPointerEnter: event => { if (!isChild) hoverRow(menu, entry, event.currentTarget); if (menu.highlighted !== index) { menu.highlighted = entry.enabled === false ? -1 : index; invalidate(); } },
         onPointerLeave: () => { if (menu.highlighted === index) { menu.highlighted = -1; invalidate(); } },
         onClick: () => { if (isChild) { const parent = ui.menu; choose(menu, entry); if (parent) closeMenu(); } else choose(menu, entry); },
       },
         symbols ? h('span', { class: 'menu-symbol' }, entry.profile ? ProfileMark(entry.profile, 16) : entry.symbol ? icon(entry.symbol, 12) : null) : null,
         h('span', null, entry.title),
         entry.checked ? icon('checkmark', 10, 'semibold') : null,
-        entry.keys ? h('span', { class: 'menu-keys' }, entry.keys) : null)));
+        entry.keys ? h('span', { class: 'menu-keys' }, entry.keys) : null,
+        entry.submenu && entry.submenu.length ? h('span', { class: 'menu-keys' }, icon('chevron.right', 10, 'semibold')) : null)));
 }
 
 /// The layer that holds the open menu; drawn by the root above everything else.

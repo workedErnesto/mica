@@ -118,6 +118,7 @@ public static class ShellCommands
                 }
                 break;
             case "site.stopCapture": break;
+            case "pageMenu.choose": b.ChoosePageMenu((int)Num(a, "id"), a.TryGetProperty("command", out var chosen) && chosen.ValueKind == JsonValueKind.Number ? chosen.GetInt32() : null, Str(a, "search")); break;
             case "page.save": if (b.Selected is { } page && Enum<PageFormat>(Str(a, "format")) is { } format) PageSaver.Save(page, b, format); break;
 
             // Find

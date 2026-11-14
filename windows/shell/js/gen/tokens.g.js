@@ -337,6 +337,13 @@ export const keymap = {
     "Ctrl+0",
     "Ctrl+NumberPad0"
   ],
+  "devTools": [
+    "F12",
+    "Ctrl+Shift+I"
+  ],
+  "console": [
+    "Ctrl+Shift+J"
+  ],
   "sidebar": [
     "Ctrl+Shift+S"
   ],
