@@ -98,13 +98,33 @@
     },
     {
       "engine" : "DuckDuckGo",
-      "expect" : "rejected:unsupported scheme",
+      "expect" : "external:ftp://example.com",
       "input" : "ftp://example.com"
     },
     {
       "engine" : "DuckDuckGo",
       "expect" : "rejected:unsupported scheme",
       "input" : "file:///Users/me/page.html"
+    },
+    {
+      "engine" : "DuckDuckGo",
+      "expect" : "external:tg://join?invite=abc",
+      "input" : "tg://join?invite=abc"
+    },
+    {
+      "engine" : "DuckDuckGo",
+      "expect" : "external:zoommtg://zoom.us/join?confno=1",
+      "input" : "zoommtg://zoom.us/join?confno=1"
+    },
+    {
+      "engine" : "DuckDuckGo",
+      "expect" : "rejected:unsupported scheme",
+      "input" : "vbscript:msgbox(1)"
+    },
+    {
+      "engine" : "DuckDuckGo",
+      "expect" : "rejected:unsupported scheme",
+      "input" : "view-source:https://example.com"
     }
   ],
   "addressDisplay" : [
@@ -314,6 +334,128 @@
       ],
       "full" : true,
       "url" : "ftp://files.site.com/pub"
+    }
+  ],
+  "appLinkAllowed" : [
+    {
+      "allowed" : [
+        [
+          "https://t.me",
+          "tg"
+        ],
+        [
+          "https://zoom.us",
+          "zoommtg"
+        ]
+      ],
+      "expect" : true,
+      "origin" : "https://t.me",
+      "url" : "tg://join?invite=abc"
+    },
+    {
+      "allowed" : [
+        [
+          "https://t.me",
+          "tg"
+        ],
+        [
+          "https://zoom.us",
+          "zoommtg"
+        ]
+      ],
+      "expect" : true,
+      "origin" : "https://t.me",
+      "url" : "TG://join?invite=abc"
+    },
+    {
+      "allowed" : [
+        [
+          "https://t.me",
+          "tg"
+        ],
+        [
+          "https://zoom.us",
+          "zoommtg"
+        ]
+      ],
+      "expect" : false,
+      "origin" : "https://t.me",
+      "url" : "zoommtg://x"
+    },
+    {
+      "allowed" : [
+        [
+          "https://t.me",
+          "tg"
+        ],
+        [
+          "https://zoom.us",
+          "zoommtg"
+        ]
+      ],
+      "expect" : false,
+      "origin" : "https://evil.example",
+      "url" : "tg://join"
+    },
+    {
+      "allowed" : [
+        [
+          "https://t.me",
+          "tg"
+        ],
+        [
+          "https://zoom.us",
+          "zoommtg"
+        ]
+      ],
+      "expect" : false,
+      "origin" : "http://t.me",
+      "url" : "tg://join"
+    },
+    {
+      "allowed" : [
+        [
+          "https://t.me",
+          "tg"
+        ],
+        [
+          "https://zoom.us",
+          "zoommtg"
+        ]
+      ],
+      "expect" : false,
+      "origin" : null,
+      "url" : "tg://join"
+    },
+    {
+      "allowed" : [
+        [
+          "https://t.me",
+          "tg"
+        ],
+        [
+          "https://zoom.us",
+          "zoommtg"
+        ]
+      ],
+      "expect" : false,
+      "origin" : "https://t.me",
+      "url" : "javascript:alert(1)"
+    },
+    {
+      "allowed" : [
+        [
+          "https://t.me",
+          "tg"
+        ],
+        [
+          "https://zoom.us",
+          "zoommtg"
+        ]
+      ],
+      "expect" : true,
+      "origin" : "https://zoom.us",
+      "url" : "zoommtg://zoom.us/join?confno=1"
     }
   ],
   "availableName" : [
@@ -592,6 +734,76 @@
     {
       "expect" : "document",
       "name" : "Слюды — Википедия.html"
+    }
+  ],
+  "externalScheme" : [
+    {
+      "expect" : true,
+      "url" : "tg://resolve?domain=telegram"
+    },
+    {
+      "expect" : true,
+      "url" : "mailto:a@b.c"
+    },
+    {
+      "expect" : true,
+      "url" : "slack://open"
+    },
+    {
+      "expect" : false,
+      "url" : "x-apple.systempreferences:com.apple.preference.security"
+    },
+    {
+      "expect" : false,
+      "url" : "https://example.com"
+    },
+    {
+      "expect" : false,
+      "url" : "http://example.com"
+    },
+    {
+      "expect" : false,
+      "url" : "file:///etc/passwd"
+    },
+    {
+      "expect" : false,
+      "url" : "javascript:alert(1)"
+    },
+    {
+      "expect" : false,
+      "url" : "JavaScript:alert(1)"
+    },
+    {
+      "expect" : false,
+      "url" : "data:text/html,hi"
+    },
+    {
+      "expect" : false,
+      "url" : "blob:https://example.com/1"
+    },
+    {
+      "expect" : false,
+      "url" : "about:blank"
+    },
+    {
+      "expect" : false,
+      "url" : "view-source:https://example.com"
+    },
+    {
+      "expect" : false,
+      "url" : "wss://example.com"
+    },
+    {
+      "expect" : false,
+      "url" : "chrome-extension://abc/page.html"
+    },
+    {
+      "expect" : false,
+      "url" : "mica://settings"
+    },
+    {
+      "expect" : false,
+      "url" : "ms-settings:privacy"
     }
   ],
   "faviconCatalog" : [

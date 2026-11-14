@@ -21,6 +21,8 @@ final class Store: ObservableObject {
     @Published var bookmarks: [Visit] { didSet { save(bookmarks, "bookmarks.json") } }
     @Published var history: [Visit] { didSet { save(history, "history.json") } }
     @Published var permissions: [SitePermission] { didSet { save(permissions, "permissions.json") } }
+    /// Sites that open a kind of app link without asking. Incognito windows never add to it.
+    @Published var appLinks: [AppLinkPermission] { didSet { save(appLinks, "app-links.json") } }
     @Published var downloadRecords: [DownloadRecord] { didSet { save(downloadRecords, "downloads.json") } }
     /// A problem to tell the user. Shown once in the window in front, or in the first window when it opens.
     @Published var issue: String?
@@ -72,6 +74,7 @@ final class Store: ObservableObject {
         bookmarks = read([Visit].self, "bookmarks.json") ?? []
         history = read([Visit].self, "history.json") ?? []
         permissions = read([SitePermission].self, "permissions.json") ?? []
+        appLinks = read([AppLinkPermission].self, "app-links.json") ?? []
         textStyle = TextStyle(Profiles.resolve(nil, in: profiles).look.applied(to: loaded))
         unreadableFiles = Set(loadIssues.map { String($0.prefix { $0 != ":" }) })
         if !loadIssues.isEmpty { issue = "mica: " + loadIssues.joined(separator: "\n") }
@@ -262,7 +265,7 @@ final class Store: ObservableObject {
         // Icons are not dated, so any history or cache clearing forgets all of them.
         if choice.history || choice.cache { favicons.clear() }
         if choice.permissions {
-            permissions = []
+            permissions = []; appLinks = []
             for window in windows { for tab in window.model.tabs { tab.webView?.setCameraCaptureState(.none, completionHandler: nil); tab.webView?.setMicrophoneCaptureState(.none, completionHandler: nil); NotificationBridge.push(tab) } }
         }
         var types = Set<String>()

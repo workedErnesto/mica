@@ -45,7 +45,7 @@ function ClearData() {
       option('history', T("история посещений", "История посещений"), c.visits === 0 ? T("за этот период записей нет", "За этот период записей нет") : count(c.visits)),
       option('siteData', T("cookie и данные сайтов", "Cookie и данные сайтов"), T("вы выйдете из аккаунтов на сайтах, открытых за этот период", "Вы выйдете из аккаунтов на сайтах, открытых за этот период")),
       option('cache', T("кэш", "Кэш"), T("страницы загрузятся заново, это безопасно", "Страницы загрузятся заново, это безопасно")),
-      option('permissions', T("разрешения сайтов", "Разрешения сайтов"), T("камера, микрофон и уведомления, за всё время: у решений нет даты", "Камера, микрофон и уведомления, за всё время: у решений нет даты")),
+      option('permissions', T("разрешения сайтов", "Разрешения сайтов"), T("камера, микрофон, уведомления и ссылки в приложениях, за всё время: у решений нет даты", "Камера, микрофон, уведомления и ссылки в приложениях, за всё время: у решений нет даты")),
     ]),
     h('div', { class: 'row', style: { gap: '8px', 'justify-content': 'flex-end' } },
       Button(T("отмена", "Отмена"), { kind: 'ghost', onClick: () => send('clearData.close') }),
@@ -68,28 +68,29 @@ function ProfilePrompt(profile) {
       h('span', null, T("запомнить выбор", "Запомнить выбор")), Switch(remember, value => update(() => { ui.rememberProfile = value; }), { label: T("запомнить выбор", "Запомнить выбор") })));
 }
 
-/// A question or message from the host (ContentDialog before): the app icon or the asking site's icon, title, text and buttons; the last is the
-/// default. Composed like the profile question; long text scrolls inside the card.
+/// A question or message from the host (ContentDialog before): the asking site's icon for a page's dialog, title, text and buttons; the last is
+/// the default. mica's own questions carry no icon. Composed like the profile question; long text scrolls inside the card.
 function Alert(alert) {
-  const values = ui.alertValues && ui.alertValues.id === alert.id ? ui.alertValues : (ui.alertValues = { id: alert.id, list: (alert.fields || []).map(field => field.value || '') });
-  const answer = index => send('alert.answer', { id: alert.id, index, values: values.list });
-  const buttons = alert.buttons && alert.buttons.length ? alert.buttons : ['OK'];
+  const values = ui.alertValues && ui.alertValues.id === alert.id ? ui.alertValues : (ui.alertValues = { id: alert.id, list: (alert.fields || []).map(field => field.value || ''), remember: false });
+  const answer = index => send('alert.answer', { id: alert.id, index, values: values.list, remember: values.remember });
+  const buttons = alert.buttons && alert.buttons.length ? alert.buttons : [T("понятно", "Понятно")];
   return h('div', { class: 'prompt alert' },
-    alert.site ? h('span', { class: 'prompt-mark app-mark' }, SiteTile(alert.site, 56))
-      : alert.mark ? h('img', { class: 'prompt-mark app-mark', src: alert.mark, alt: '', width: 56, height: 56, draggable: false }) : null,
+    alert.site ? h('span', { class: 'prompt-mark app-mark' }, SiteTile(alert.site, 56)) : null,
     h('div', { class: 'prompt-title' }, alert.title),
     alert.text ? h('div', { class: 'prompt-text selectable' }, alert.text) : null,
     (alert.fields || []).length ? h('div', { class: 'col', style: { gap: '8px', width: '100%', 'margin-bottom': '14px' } }, alert.fields.map((field, index) => h('div', { class: 'field', key: index },
       h('input', { type: field.secret ? 'password' : 'text', value: values.list[index], placeholder: field.label, 'aria-label': field.label || alert.title, spellcheck: false,
         onInput: event => { values.list[index] = event.target.value; },
-        onKeyDown: event => { if (event.key === 'Enter') { answer((alert.buttons || ['OK']).length - 1); event.preventDefault(); } },
+        onKeyDown: event => { if (event.key === 'Enter') { answer(buttons.length - 1); event.preventDefault(); } },
         onMount: index === 0 ? el => requestAnimationFrame(() => { el.focus(); el.select(); }) : null })))) : null,
     alert.choices ? h('div', { class: 'col', style: { gap: '4px', width: '100%' } }, alert.choices.map((choice, index) => h('button', { class: 'menu-row choice', type: 'button', key: index, onClick: () => send('alert.answer', { id: alert.id, index: 100 + index }) }, choice))) : null,
     h('div', { class: 'col', style: { gap: '8px', width: '100%' } },
       buttons.slice().reverse().map((title, reversed) => {
         const index = buttons.length - 1 - reversed;
         return Button(title, { kind: index === buttons.length - 1 ? (alert.destructive ? 'destructive' : 'primary') : index === 0 && buttons.length > 1 ? 'ghost' : 'secondary', fill: true, autofocus: index === buttons.length - 1, onClick: () => answer(index), key: index });
-      })));
+      })),
+    alert.remember ? h('label', { class: 'toggle-row prompt-remember', title: T("решение можно отменить в настройках, в разделе «разрешения сайтов».", "Решение можно отменить в настройках, в разделе «Разрешения сайтов».") },
+      h('span', null, alert.remember), Switch(values.remember, value => update(() => { values.remember = value; }), { label: alert.remember })) : null);
 }
 
 /// The question after a sign-in form was sent (PasswordPrompt on macOS): the site's icon with a key, the host, the

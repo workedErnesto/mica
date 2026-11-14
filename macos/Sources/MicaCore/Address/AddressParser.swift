@@ -10,7 +10,7 @@ public enum AddressParser {
            !text.hasPrefix("localhost:"), text.range(of: #"^[\w.-]+:\d+(/|$)"#, options: .regularExpression) == nil {
             guard let u = URL(string: text), let scheme = u.scheme?.lowercased() else { return .rejected("invalid URL") }
             if ["https", "http"].contains(scheme), let host = u.host, !host.isEmpty, u.user == nil, u.password == nil { return .web(u) }
-            if ["mailto", "tel"].contains(scheme) { return .external(u) }
+            if external(u) { return .external(u) }
             return .rejected("unsupported scheme")
         }
         if !text.contains(where: { $0.isWhitespace }),
@@ -32,6 +32,17 @@ public enum AddressParser {
         let path = url.path
         guard path.hasPrefix("/"), !url.hasDirectoryPath, !path.hasSuffix("/") else { return false }
         return fileExtensions.contains(url.pathExtension.lowercased())
+    }
+    /// Schemes mica never hands to another app: its own web and local content, schemes that run code or carry a
+    /// document inside the address, and system settings, which pages do not open.
+    public static let refusedSchemes: Set<String> = ["http", "https", "file", "about", "blob", "data", "javascript", "vbscript",
+        "view-source", "filesystem", "ws", "wss", "webkit-extension", "safari-web-extension", "chrome", "chrome-extension", "edge", "mica",
+        "x-apple.systempreferences", "ms-settings"]
+    /// A link for another app (tg:, mailto:, zoommtg:, slack:...). The system decides which app opens it; mica asks
+    /// first and says when no app is installed.
+    public static func external(_ url: URL) -> Bool {
+        guard let scheme = url.scheme?.lowercased(), !scheme.isEmpty, !refusedSchemes.contains(scheme) else { return false }
+        return url.absoluteString.count <= 8192
     }
     /// Inline srcdoc documents belong to a child frame; they are never top-level addresses.
     public static func navigable(_ url: URL, mainFrame: Bool = true) -> Bool {

@@ -31,7 +31,7 @@ struct ClearDataPanel: View {
                 option(choice.history, browser.text("история посещений", "История посещений"), visits == 0 ? browser.text("за этот период записей нет", "За этот период записей нет") : count(visits), divider: true)
                 option(choice.siteData, browser.text("cookie и данные сайтов", "Cookie и данные сайтов"), browser.text("вы выйдете из аккаунтов на сайтах, открытых за этот период", "Вы выйдете из аккаунтов на сайтах, открытых за этот период"), divider: true)
                 option(choice.cache, browser.text("кэш", "Кэш"), browser.text("страницы загрузятся заново, это безопасно", "Страницы загрузятся заново, это безопасно"), divider: true)
-                option(choice.permissions, browser.text("разрешения сайтов", "Разрешения сайтов"), browser.text("камера, микрофон и уведомления, за всё время: у решений нет даты", "Камера, микрофон и уведомления, за всё время: у решений нет даты"), divider: false)
+                option(choice.permissions, browser.text("разрешения сайтов", "Разрешения сайтов"), browser.text("камера, микрофон, уведомления и ссылки в приложениях, за всё время: у решений нет даты", "Камера, микрофон, уведомления и ссылки в приложениях, за всё время: у решений нет даты"), divider: false)
             }
             HStack(spacing: Space.small) {
                 Spacer()

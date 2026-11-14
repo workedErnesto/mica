@@ -103,6 +103,9 @@ public static class ShellCommands
             case "start.unpinPage": if (Str(a, "url") is { } unpin) b.RemoveStartShortcut(unpin); break;
 
             // Site
+            case "appLink.remove":
+                if (Str(a, "id") is { } appLink) { store.RemoveAppLink(appLink); Observable.TouchAll(); }
+                break;
             case "site.permission":
                 if (Str(a, "origin") is { } origin && Enum<SiteCapability>(Str(a, "capability")) is { } capability && Enum<Decision>(Str(a, "decision")) is { } decision)
                 { store.SetPermission(origin, capability, decision, b); Observable.TouchAll(); }
@@ -255,7 +258,7 @@ public static class ShellCommands
                 if ((int)Num(a, "id", -1) is var question and >= 0)
                 {
                     var values = a.TryGetProperty("values", out var v) && v.ValueKind == JsonValueKind.Array ? v.EnumerateArray().Select(x => x.GetString() ?? "").ToArray() : [];
-                    Dialogs.Answer(b, question, (int)Num(a, "index"), values);
+                    Dialogs.Answer(b, question, (int)Num(a, "index"), values, a.TryGetProperty("remember", out var r) && r.ValueKind == JsonValueKind.True);
                 }
                 break;
             case "app.quit": await Commands.Quit(store); break;

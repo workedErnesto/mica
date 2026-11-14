@@ -242,13 +242,48 @@ public sealed partial class BrowserModel : Observable
         }
     }
 
-    public async Task ExternalAsync(string url)
+    /// <summary>A link for another app: Windows picks the app registered for the scheme (Telegram for tg:, Mail for
+    /// mailto:), mica names it and asks before handing the link over. One question at a time per window, so a page
+    /// cannot stack them. <paramref name="origin"/> is the page that opened the link: after "don't ask for this site"
+    /// that site opens links of this scheme without the question; incognito windows neither offer nor use it.</summary>
+    public async Task ExternalAsync(string url, string? origin = null)
     {
-        var scheme = url.Split(':')[0].ToLowerInvariant();
-        if (scheme != "mailto" && scheme != "tel") { Show(Text("этот протокол не поддерживается: ", "Этот протокол не поддерживается: ") + scheme); return; }
-        var answer = await Dialogs.Ask(Window, Text("открыть другое приложение?", "Открыть другое приложение?"), url, [Text("отмена", "Отмена"), Text("открыть", "Открыть")]);
-        if (answer == 1) await Windows.System.Launcher.LaunchUriAsync(new Uri(url));
+        if (!AddressParser.External(url) || !Uri.TryCreate(url, UriKind.Absolute, out var uri)) { Show(Text("этот адрес или протокол не поддерживается", "Этот адрес или протокол не поддерживается")); return; }
+        var scheme = url[..url.IndexOf(':')];
+        if (ExternalApp(scheme) is not { } name) { Show(Text("не найдено приложение для ссылок ", "Не найдено приложение для ссылок ") + Quoted(scheme + ":")); return; }
+        if (!PrivateMode && AppLinkPermission.Allows(Store.AppLinks, origin, url))
+        {
+            if (!await Windows.System.Launcher.LaunchUriAsync(uri)) Show(Text("не удалось открыть ", "Не удалось открыть ") + Quoted(name));
+            return;
+        }
+        if (askingExternal) return;
+        askingExternal = true;
+        try
+        {
+            var permission = PrivateMode ? null : AppLinkPermission.For(origin, url);
+            var host = permission is null ? null : AddressParser.Host(permission.Origin);
+            var (answer, remember) = await Dialogs.AskRemembering(Window, Text("открыть в приложении ", "Открыть в приложении ") + Quoted(name) + "?", url, [Text("отмена", "Отмена"), Text("открыть", "Открыть")], host is null ? null : Text("не спрашивать для ", "Не спрашивать для ") + host);
+            if (answer != 1) return;
+            if (remember && permission is not null) Store.AddAppLink(permission);
+            if (!await Windows.System.Launcher.LaunchUriAsync(uri)) Show(Text("не удалось открыть ", "Не удалось открыть ") + Quoted(name));
+        }
+        finally { askingExternal = false; }
     }
+    bool askingExternal;
+
+    /// <summary>The friendly name of the app registered for a URL scheme, or null when none is (Windows would offer the
+    /// Store instead).</summary>
+    internal static unsafe string? ExternalApp(string scheme)
+    {
+        const int isProtocol = 0x1000, friendlyAppName = 4;
+        uint size = 512;
+        var buffer = stackalloc char[512];
+        if (AssocQueryString(isProtocol, friendlyAppName, scheme, "open", buffer, ref size) != 0 || size <= 1) return null;
+        var name = new string(buffer, 0, (int)size - 1).Trim();
+        return name.Length == 0 || name.Equals("mica", StringComparison.OrdinalIgnoreCase) ? null : name;
+    }
+    [System.Runtime.InteropServices.LibraryImport("shlwapi.dll", EntryPoint = "AssocQueryStringW", StringMarshalling = System.Runtime.InteropServices.StringMarshalling.Utf16)]
+    private static unsafe partial int AssocQueryString(int flags, int str, string assoc, string? extra, char* output, ref uint size);
 
     public void ZoomBy(double step) { if (Selected is { } tab) tab.SetZoom(step == 0 ? 1 : Math.Clamp(tab.Zoom + step, 0.5, 3)); }
 

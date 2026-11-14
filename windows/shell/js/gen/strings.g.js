@@ -250,7 +250,11 @@ export const english = {
 "Update not installed"
 ],
 "Понятно": [
-"OK",
+"ok",
+"OK"
+],
+"ОК": [
+"ok",
 "OK"
 ],
 "Установить mica в «Программы»?": [
@@ -505,13 +509,33 @@ export const english = {
 "this address or protocol is not supported",
 "This address or protocol is not supported"
 ],
-"Этот протокол не поддерживается: ": [
-"this protocol is not supported: ",
-"This protocol is not supported: "
+"Не найдено приложение для ссылок ": [
+"no app found for links ",
+"No app found for links "
 ],
-"Открыть другое приложение?": [
-"open another app?",
-"Open another app?"
+"Открыть в приложении ": [
+"open in ",
+"Open in "
+],
+"Не спрашивать для ": [
+"don’t ask for ",
+"Don’t ask for "
+],
+"Решение можно отменить в настройках, в разделе «Разрешения сайтов».": [
+"you can undo this in settings, under site permissions.",
+"You can undo this in Settings, under Site Permissions."
+],
+"Ссылки в приложениях": [
+"app links",
+"App Links"
+],
+"Эти сайты открывают такие ссылки без вопроса": [
+"these sites open these links without asking",
+"These sites open these links without asking"
+],
+"Не удалось открыть ": [
+"could not open ",
+"Could not open "
 ],
 "Открыть": [
 "open",
@@ -2445,9 +2469,9 @@ export const english = {
 "no access requested",
 "no access requested"
 ],
-"Камера, микрофон и уведомления, за всё время: у решений нет даты": [
-"camera, microphone and notifications, for all time: decisions have no date",
-"Camera, microphone and notifications, for all time: decisions have no date"
+"Камера, микрофон, уведомления и ссылки в приложениях, за всё время: у решений нет даты": [
+"camera, microphone, notifications and app links, for all time: decisions have no date",
+"Camera, microphone, notifications and app links, for all time: decisions have no date"
 ],
 "Закрыть все": [
 "close all tabs",

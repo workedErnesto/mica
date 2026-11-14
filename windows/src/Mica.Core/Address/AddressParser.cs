@@ -26,7 +26,7 @@ public static partial class AddressParser
             if (!Uri.TryCreate(text, UriKind.Absolute, out var u)) return AddressTarget.Rejected("invalid URL");
             var scheme = u.Scheme.ToLowerInvariant();
             if ((scheme == "https" || scheme == "http") && u.Host.Length > 0 && u.UserInfo.Length == 0) return AddressTarget.Web(text);
-            if (scheme == "mailto" || scheme == "tel") return AddressTarget.External(text);
+            if (External(text)) return AddressTarget.External(text);
             return AddressTarget.Rejected("unsupported scheme");
         }
         if (!text.Any(char.IsWhiteSpace) && (text.Contains('.') || text.StartsWith("localhost", StringComparison.Ordinal) || text.StartsWith("[::1]", StringComparison.Ordinal)))
@@ -61,6 +61,23 @@ public static partial class AddressParser
         if (path.Length == 0 || path.EndsWith('/')) return false;
         var extension = Path.GetExtension(Uri.UnescapeDataString(path)).TrimStart('.').ToLowerInvariant();
         return FileExtensions.Contains(extension);
+    }
+
+    /// <summary>Schemes mica never hands to another app: its own web and local content, schemes that run code or carry
+    /// a document inside the address, and system settings, which pages do not open.</summary>
+    public static readonly IReadOnlySet<string> RefusedSchemes = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "http", "https", "file", "about", "blob", "data", "javascript", "vbscript", "view-source", "filesystem", "ws", "wss",
+        "webkit-extension", "safari-web-extension", "chrome", "chrome-extension", "edge", "mica", "x-apple.systempreferences", "ms-settings",
+    };
+
+    /// <summary>A link for another app (tg:, mailto:, zoommtg:, slack:...). The system decides which app opens it; mica
+    /// asks first and says when no app is installed.</summary>
+    public static bool External(string? url)
+    {
+        if (url is null || url.Length > 8192 || !SchemePrefix().IsMatch(url)) return false;
+        var scheme = url[..url.IndexOf(':')].ToLowerInvariant();
+        return !RefusedSchemes.Contains(scheme);
     }
 
     public static bool Navigable(string? url, bool mainFrame = true)
