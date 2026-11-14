@@ -756,5 +756,26 @@ www и всё, что стоит перед доменом⟩www and everything 
 Списки фильтров⟩filter lists⟩Filter lists
 mica обновляет списки каждый день без cookie. Блокировка работает и в инкогнито. Отключить её для отдельного сайта можно в сведениях о сайте. После изменения перезагрузите страницу.⟩mica updates the lists daily without cookies. blocking also works in incognito. turn it off for a specific site in site information. reload the page after a change.⟩mica updates the lists daily without cookies. Blocking also works in incognito. Turn it off for a specific site in site information. Reload the page after a change.
 Добавьте домен: блокировка отключится для него и его поддоменов. После изменения перезагрузите сайт.⟩add a domain to turn off blocking for it and its subdomains. reload the site after a change.⟩Add a domain to turn off blocking for it and its subdomains. Reload the site after a change.
+Инструменты разработчика⟩developer tools⟩Developer tools
+Консоль JavaScript⟩JavaScript console⟩JavaScript console
+Перезагрузить страницу⟩reload page⟩Reload page
+Напечатать страницу…⟩print page…⟩Print page…
+Искать в ⟩search with ⟩Search with 
+Открыть ссылку⟩open link⟩Open link
+Открыть ссылку в новой вкладке⟩open link in new tab⟩Open link in new tab
+Загрузить файл по ссылке⟩download linked file⟩Download linked file
+Скопировать ссылку⟩copy link⟩Copy link
+Скопировать ссылку с выделением⟩copy link with highlight⟩Copy link with highlight
+Открыть изображение в новой вкладке⟩open image in new tab⟩Open image in new tab
+Загрузить изображение⟩download image⟩Download image
+Скопировать изображение⟩copy image⟩Copy image
+Открыть видео в новой вкладке⟩open video in new tab⟩Open video in new tab
+Загрузить видео⟩download video⟩Download video
+Скопировать адрес видео⟩copy video address⟩Copy video address
+Найти ⟩look up ⟩Look up 
+Перевести ⟩translate ⟩Translate 
+Поделиться…⟩share…⟩Share…
+Речь⟩speech⟩Speech
+Проверить элемент⟩inspect element⟩Inspect element
 """
 }

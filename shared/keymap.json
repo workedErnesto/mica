@@ -14,6 +14,8 @@
     "zoomIn":     { "macos": ["Cmd+="], "windows": ["Ctrl+=", "Ctrl+Add"] },
     "zoomOut":    { "macos": ["Cmd+-"], "windows": ["Ctrl+-", "Ctrl+Subtract"] },
     "zoomReset":  { "macos": ["Cmd+0"], "windows": ["Ctrl+0", "Ctrl+NumberPad0"] },
+    "devTools":   { "macos": ["Cmd+Alt+I"], "windows": ["F12", "Ctrl+Shift+I"] },
+    "console":    { "macos": ["Cmd+Alt+C"], "windows": ["Ctrl+Shift+J"] },
     "sidebar":    { "macos": ["Ctrl+Cmd+S"], "windows": ["Ctrl+Shift+S"] },
     "fullscreen": { "macos": ["Ctrl+Cmd+F"], "windows": ["F11"] },
     "address":    { "macos": ["Cmd+L"], "windows": ["Ctrl+L", "Alt+D", "F6"] },

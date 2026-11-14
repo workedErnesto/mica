@@ -66,6 +66,26 @@ public sealed partial class BrowserModel : Observable
     /// <summary>Ctrl+S: the save button opens its format menu.</summary>
     public event Action? SaveMenuRequested;
     public void RequestSaveMenu() => SaveMenuRequested?.Invoke();
+    /// <summary>The page context menu of the selected tab, for the shell to draw at a point of the page.</summary>
+    public event Action<System.Text.Json.Nodes.JsonObject>? PageMenuRequested;
+    int pageMenuSerial;
+    Action<int?, string?>? pageMenuDone;
+    /// <summary>Asks the shell for the page menu; <paramref name="done"/> gets the chosen WebView2 command, or a search
+    /// query for mica's own row, or neither when the menu closed without a choice. A new menu ends the previous one.</summary>
+    public void ShowPageMenu(System.Text.Json.Nodes.JsonArray items, double x, double y, Action<int?, string?> done)
+    {
+        var previous = pageMenuDone;
+        pageMenuDone = done;
+        previous?.Invoke(null, null);
+        if (PageMenuRequested is null || items.Count == 0) { ChoosePageMenu(pageMenuSerial, null, null); return; }
+        PageMenuRequested(new System.Text.Json.Nodes.JsonObject { ["id"] = ++pageMenuSerial, ["items"] = items, ["x"] = x, ["y"] = y });
+    }
+    public void ChoosePageMenu(int id, int? command, string? search)
+    {
+        if (id != pageMenuSerial || pageMenuDone is not { } done) return;
+        pageMenuDone = null;
+        done(command, search);
+    }
     public event Action<Tab>? WebViewCreated;
     public event Action<string>? Message;
 

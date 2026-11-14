@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Mica.Core;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -101,7 +102,8 @@ public sealed partial class Tab : Observable
         Core = core;
         if (!owner.PrivateMode && store.Engine.NormalProfile is null) { store.Engine.NormalProfile = core.Profile; _ = store.Extensions.SyncAsync(core.Profile); }
         var settings = core.Settings;
-        settings.AreDevToolsEnabled = Program.Has("--diagnostics");
+        // DevTools come with the browser, as in Edge and Chrome: "Inspect" in the page context menu, F12 and the menu.
+        settings.AreDevToolsEnabled = true;
         settings.IsStatusBarEnabled = false;
         settings.IsPasswordAutosaveEnabled = false;
         settings.IsGeneralAutofillEnabled = false;
@@ -126,6 +128,7 @@ public sealed partial class Tab : Observable
         core.DocumentTitleChanged += (_, _) => { Title = Core?.DocumentTitle ?? Title; Notify(); Owner?.Store.ScheduleSession(); };
         core.HistoryChanged += (_, _) => { CanBack = Core?.CanGoBack ?? false; CanForward = Core?.CanGoForward ?? false; Notify(); };
         core.NewWindowRequested += OnNewWindowRequested;
+        core.ContextMenuRequested += OnContextMenuRequested;
         core.WindowCloseRequested += (_, _) => Owner?.Close(this);
         core.PermissionRequested += (_, e) => Permissions.Handle(this, e);
         core.DownloadStarting += (_, e) => Owner?.Downloads.Start(this, e);
@@ -434,6 +437,93 @@ public sealed partial class Tab : Observable
     }
 
     public void Print() => Core?.ShowPrintUI(CoreWebView2PrintDialogKind.Browser);
+
+    /// <summary>The page context menu, drawn by the shell as a mica menu (PageMenu.swift on macOS). WebView2 still builds
+    /// the items for what was clicked; a chosen row runs the WebView2 item by its command id. "Save as" and the page
+    /// source are left out, as on macOS.</summary>
+    void OnContextMenuRequested(CoreWebView2 sender, CoreWebView2ContextMenuRequestedEventArgs e)
+    {
+        if (Owner is not { } owner) return;
+        e.Handled = true;
+        var deferral = e.GetDeferral();
+        var target = e.ContextMenuTarget;
+        var items = PageMenuItems(e.MenuItems, owner, top: true);
+        if (target.HasSelection && !string.IsNullOrWhiteSpace(target.SelectionText))
+        {
+            var query = target.SelectionText.Trim();
+            if (query.Length > 2000) query = query[..2000];
+            var engine = owner.Prefs.Search;
+            items.Insert(PageMenuSearchIndex(items), new JsonObject { ["title"] = owner.Text("искать в ", "Искать в ") + engine.Title(owner.Prefs.Language), ["enabled"] = true, ["search"] = query });
+        }
+        owner.ShowPageMenu(items, e.Location.X, e.Location.Y, (command, search) =>
+        {
+            if (command is { } id) e.SelectedCommandId = id;
+            deferral.Complete();
+            if (search is { Length: > 0 } text) owner.Open(owner.Prefs.Search.Search(text));
+        });
+    }
+
+    static JsonArray PageMenuItems(IList<CoreWebView2ContextMenuItem> source, BrowserModel owner, bool top)
+    {
+        var list = new JsonArray();
+        foreach (var item in source)
+        {
+            if (item.Name is "saveAs" or "viewPageSource") continue;
+            // Back and forward appear only when they lead somewhere, as on macOS.
+            if (top && item.Name is "back" or "forward" && !item.IsEnabled) continue;
+            if (item.Kind == CoreWebView2ContextMenuItemKind.Separator) { list.Add(new JsonObject { ["divider"] = true }); continue; }
+            var entry = new JsonObject { ["name"] = item.Name, ["title"] = PageMenuTitle(item, owner), ["enabled"] = item.IsEnabled };
+            if (item.Kind == CoreWebView2ContextMenuItemKind.Submenu)
+            {
+                var children = PageMenuItems(item.Children, owner, top: false);
+                if (children.Count == 0) continue;
+                entry["submenu"] = children;
+            }
+            else
+            {
+                entry["command"] = item.CommandId;
+                if (item.Kind is CoreWebView2ContextMenuItemKind.CheckBox or CoreWebView2ContextMenuItemKind.Radio && item.IsChecked) entry["checked"] = true;
+            }
+            list.Add(entry);
+        }
+        return list;
+    }
+
+    /// <summary>Right after "copy" when there is one, otherwise first.</summary>
+    static int PageMenuSearchIndex(JsonArray items)
+    {
+        for (var i = 0; i < items.Count; i++)
+            if (items[i] is JsonObject o && o["name"]?.GetValue<string>() == "copy") return i + 1;
+        return 0;
+    }
+
+    /// <summary>mica words the common items itself so they follow the window's language and letter case; others keep
+    /// WebView2's label without its access-key ampersand.</summary>
+    static string PageMenuTitle(CoreWebView2ContextMenuItem item, BrowserModel owner)
+    {
+        string T(string low, string regular) => owner.Text(low, regular);
+        return item.Name switch
+        {
+            "back" => T("назад", "Назад"),
+            "forward" => T("вперёд", "Вперёд"),
+            "reload" => T("перезагрузить страницу", "Перезагрузить страницу"),
+            "print" => T("напечатать страницу…", "Напечатать страницу…"),
+            "inspect" or "inspectElement" => T("проверить элемент", "Проверить элемент"),
+            "openLinkInNewWindow" => T("открыть ссылку в новой вкладке", "Открыть ссылку в новой вкладке"),
+            "saveLinkAs" => T("загрузить файл по ссылке", "Загрузить файл по ссылке"),
+            "copyLinkLocation" => T("скопировать ссылку", "Скопировать ссылку"),
+            "copyImage" => T("скопировать изображение", "Скопировать изображение"),
+            "saveImageAs" => T("загрузить изображение", "Загрузить изображение"),
+            "saveMediaAs" => T("загрузить видео", "Загрузить видео"),
+            "copy" => T("копировать", "Копировать"),
+            "cut" => T("вырезать", "Вырезать"),
+            "paste" => T("вставить", "Вставить"),
+            "share" => T("поделиться…", "Поделиться…"),
+            _ => System.Text.RegularExpressions.Regex.Replace(item.Label, "&(.)", "$1"),
+        };
+    }
+    /// <summary>WebView2 opens DevTools only in a window of their own, with no API to dock them or pick a panel.</summary>
+    public void OpenDevTools() => Core?.OpenDevToolsWindow();
 
     public async Task<string?> EvaluateAsync(string script) => Core is null ? null : await Core.ExecuteScriptAsync(script);
 

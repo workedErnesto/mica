@@ -152,12 +152,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case "zoomIn": if let web = browser?.selected?.webView { web.pageZoom = min(3, web.pageZoom + 0.1) }
         case "zoomOut": if let web = browser?.selected?.webView { web.pageZoom = max(0.5, web.pageZoom - 0.1) }
         case "zoomReset": browser?.selected?.webView?.pageZoom = 1
-        case "print":
-            // WebKit prints only through runModal: a plain run() keeps paginating and never finishes the job.
-            if let web = browser?.selected?.webView, let window = web.window {
-                let operation = web.printOperation(with: NSPrintInfo.shared); operation.showsPrintPanel = true; operation.view?.frame = web.bounds
-                operation.runModal(for: window, delegate: nil, didRun: nil, contextInfo: nil)
-            }
+        case "devTools": if let web = browser?.selected?.webView { Inspector.toggle(web) }
+        case "console": if let web = browser?.selected?.webView { Inspector.console(web) }
+        case "print": browser?.selected?.printPage()
         case "save":
             guard let browser, let tab = browser.selected, PageSaver.canSave(tab) else { break }
             // The menu hangs from the save button; with the button hidden it opens under the address instead.
@@ -216,7 +213,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         item(edit, "найти на странице", "Найти на странице", "f", "find"); item(edit, "следующее совпадение", "Следующее совпадение", "g", "findNext"); item(edit, "предыдущее совпадение", "Предыдущее совпадение", "g", "findPrevious", [.command, .shift])
-        let view = menu(store.text("вид", "Вид")); item(view, "увеличить", "Увеличить", "=", "zoomIn"); item(view, "уменьшить", "Уменьшить", "-", "zoomOut"); item(view, "исходный масштаб", "Исходный масштаб", "0", "zoomReset"); view.addItem(.separator()); item(view, "показать или скрыть боковую панель", "Показать или скрыть боковую панель", "s", "sidebar", [.command, .control]); item(view, "настроить панель инструментов…", "Настроить панель инструментов…", "", "customize")
+        let view = menu(store.text("вид", "Вид")); item(view, "увеличить", "Увеличить", "=", "zoomIn"); item(view, "уменьшить", "Уменьшить", "-", "zoomOut"); item(view, "исходный масштаб", "Исходный масштаб", "0", "zoomReset"); view.addItem(.separator()); item(view, "инструменты разработчика", "Инструменты разработчика", "i", "devTools", [.command, .option]); item(view, "консоль JavaScript", "Консоль JavaScript", "c", "console", [.command, .option]); view.addItem(.separator()); item(view, "показать или скрыть боковую панель", "Показать или скрыть боковую панель", "s", "sidebar", [.command, .control]); item(view, "настроить панель инструментов…", "Настроить панель инструментов…", "", "customize")
         view.addItem(withTitle: store.text("полноэкранный режим", "Полноэкранный режим"), action: #selector(NSWindow.toggleFullScreen(_:)), keyEquivalent: "f").keyEquivalentModifierMask = [.command, .control]
         let go = menu(store.text("переход", "Переход")); item(go, "адресная строка", "Адресная строка", "l", "address"); item(go, "назад", "Назад", "[", "back"); item(go, "вперёд", "Вперёд", "]", "forward"); item(go, "перезагрузить", "Перезагрузить", "r", "reload"); item(go, "перезагрузить без кэша", "Перезагрузить без кэша", "r", "reloadHard", [.command, .shift]); item(go, "следующая вкладка", "Следующая вкладка", "\t", "next", [.control]); item(go, "предыдущая вкладка", "Предыдущая вкладка", "\t", "previous", [.control, .shift])
         // Safari's ⌘⇧] and ⌘⇧[ and Chrome's ⌘⌥→ and ⌘⌥← also switch tabs.

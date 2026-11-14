@@ -12,6 +12,7 @@ import { prepareCommandBar } from './shell/command.js';
 import { focusFind } from './shell/page.js';
 import { coversPage, keepsPageKeyboard, layout as currentLayout } from './shell/model.js';
 import { keymap } from './gen/tokens.g.js';
+import { openPageMenu } from './shell/pagemenu.js';
 
 // Window shortcuts from shared/keymap.json. The shell sees them while it has the keyboard and hands them to the host,
 // which runs them exactly as its accelerators do (and ignores a second report of the same press).
@@ -75,6 +76,7 @@ onEvent((name, args) => {
     case 'focusAddress': if (!focusStartField()) send('commandBar', { on: true }); break;
     case 'menu': openAppMenu(); break;
     case 'saveMenu': openSaveMenu(); break;
+    case 'pageMenu': openPageMenu(args); break;
     case 'focusFind': focusFind(); break;
     case 'closeMenus': closeMenu(false); closePopover(); break;
     case 'entered': update(u => { u.entered = false; }); break;

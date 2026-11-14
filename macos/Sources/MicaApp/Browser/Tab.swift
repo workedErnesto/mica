@@ -27,6 +27,8 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
     private var faviconBridge: FaviconBridge?
     private var faviconRefresh: Task<Void, Never>?
     var webView: WKWebView?
+    /// Holds the page in its card; WebKit docks the Web Inspector beside the page inside it (see PageBox).
+    var box: PageBox?
     /// The start page of this tab already played its entrance; going back to the tab shows it at rest.
     var introduced = false
     var navigationFailure: NSError?
@@ -55,6 +57,7 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
         config.mediaTypesRequiringUserActionForPlayback = .all
         config.preferences.isElementFullscreenEnabled = true
         config.applicationNameForUserAgent = Tab.userAgentSuffix
+        Inspector.enable(config)
         if configuration == nil && !owner.privateMode { passwordBridge = PasswordBridge(tab: self, controller: config.userContentController) }
         if configuration == nil { notifications = NotificationBridge(tab: self, controller: config.userContentController, privateMode: owner.privateMode, permissions: owner.store.permissions) }
         // A popup shares the opener's content controller, which already carries the context script and its handler.
@@ -69,9 +72,10 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
         view.navigationDelegate = self; view.uiDelegate = self
         view.allowsBackForwardNavigationGestures = true
         view.allowsLinkPreview = true
-        view.isInspectable = ProcessInfo.processInfo.arguments.contains("--diagnostics")
+        view.isInspectable = !Inspector.available || ProcessInfo.processInfo.arguments.contains("--diagnostics")
         owner.store.blocker.apply(view)
         webView = view
+        box = PageBox(page: view)
         func observe<T>(_ key: KeyPath<WKWebView, T>, _ update: @escaping (Tab, WKWebView) -> Void) {
             observations.append(view.observe(key, options: [.new]) { [weak self] web, _ in
                 MainActor.assumeIsolated { if let self { update(self, web) } }
@@ -104,6 +108,12 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
         controller.removeAllUserScripts()
         for script in others { controller.addUserScript(script) }
         owner.store.ublock.addScripts(to: controller)
+    }
+    /// WebKit prints only through runModal: a plain run() keeps paginating and never finishes the job.
+    func printPage() {
+        guard let web = webView, let window = web.window else { return }
+        let operation = web.printOperation(with: NSPrintInfo.shared); operation.showsPrintPanel = true; operation.view?.frame = web.bounds
+        operation.runModal(for: window, delegate: nil, didRun: nil, contextInfo: nil)
     }
     func ensureLoaded() {
         guard phase != .live && phase != .terminated, let url else { return }
@@ -184,7 +194,9 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
         if let notifications, let controller = webView?.configuration.userContentController { notifications.detach(from: controller); self.notifications = nil }
         if passwordBridge != nil { webView?.configuration.userContentController.removeScriptMessageHandler(forName: "micaPasswords", contentWorld: .world(name: "mica.passwords")); passwordBridge = nil }
         webView?.stopLoading(); webView?.setCameraCaptureState(.none, completionHandler: nil); webView?.setMicrophoneCaptureState(.none, completionHandler: nil)
+        if let webView { Inspector.close(webView) }
         webView?.navigationDelegate = nil; webView?.uiDelegate = nil; webView?.removeFromSuperview(); webView = nil
+        box?.removeFromSuperview(); box = nil
     }
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
         secure = false; error = nil; navigationFailure = nil

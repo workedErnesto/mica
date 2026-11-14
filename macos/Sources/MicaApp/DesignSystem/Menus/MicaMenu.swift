@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import Combine
 import MicaCore
 
 @MainActor
@@ -20,12 +21,22 @@ final class MicaMenu {
     /// The choices of a row opened by a right click, beside this menu, which stays open under them.
     private lazy var child = MicaMenu()
     private weak var parent: MicaMenu?
+    /// The child menu is the submenu of a row (it follows the pointer) rather than a right click's choices.
+    private var childIsSubmenu = false
+    private var submenuWork: DispatchWorkItem?
+    private var highlightWatch: AnyCancellable?
     private var monitors: [Any] = []
     private var observers: [NSObjectProtocol] = []
     /// Transparent room around the menu in its window for the shadow and the opening scale.
     static let margin: CGFloat = 24
 
     var isOpen: Bool { panel?.isVisible == true && model.shown }
+
+    init() {
+        highlightWatch = model.$highlighted.removeDuplicates().sink { [weak self] index in
+            MainActor.assumeIsolated { self?.highlightChanged(index) }
+        }
+    }
 
     /// Opens at a point in screen coordinates (a right click).
     func show(_ entries: [MenuEntry], at point: NSPoint, in window: NSWindow?) {
@@ -74,6 +85,7 @@ final class MicaMenu {
         panel.contentView = host
         panel.orderFront(nil)
         self.panel = panel
+        self.window = window
         watch(window)
         withMotion(Motion.reduced ? .easeOut(duration: 0.1) : .spring(response: 0.2, dampingFraction: 0.9)) { model.shown = true }
         NSAccessibility.post(element: host, notification: .created)
@@ -93,14 +105,44 @@ final class MicaMenu {
         } else { panel.orderOut(nil) }
     }
 
-    /// The action runs right away; the menu fades out after it.
+    /// The action runs right away; the menu fades out after it. A row with a submenu opens it instead.
     private func choose(_ index: Int) {
         guard model.entries.indices.contains(index), model.entries[index].kind == .action, model.entries[index].enabled else { return }
+        if !model.entries[index].submenu.isEmpty { openSubmenu(index, highlightFirst: false); return }
         let action = model.entries[index].action
         close()
         parent?.close()
         action()
     }
+
+    /// Resting on a row with a submenu opens it after a moment; moving to another row closes it after a moment, so
+    /// the pointer can cross neighbouring rows on its way into the submenu.
+    private func highlightChanged(_ index: Int?) {
+        guard parent == nil, panel != nil, let index else { return }
+        submenuWork?.cancel()
+        let opens = model.entries.indices.contains(index) && !model.entries[index].submenu.isEmpty
+        if opens && childIsSubmenu && child.panel != nil && child.model.entries.map(\.title) == model.entries[index].submenu.map(\.title) { return }
+        guard opens || (childIsSubmenu && child.panel != nil) else { return }
+        let work = DispatchWorkItem { [weak self] in
+            guard let self, self.model.highlighted == index else { return }
+            if opens { self.openSubmenu(index, highlightFirst: false) }
+            else if self.child.model.highlighted == nil { self.child.close(animated: true); self.childIsSubmenu = false }
+        }
+        submenuWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + (opens ? 0.12 : 0.25), execute: work)
+    }
+
+    /// Opens a row's submenu beside this menu, level with the row.
+    private func openSubmenu(_ index: Int, highlightFirst: Bool) {
+        guard let panel, model.entries.indices.contains(index), !model.entries[index].submenu.isEmpty else { return }
+        model.highlighted = index
+        child.parent = self
+        childIsSubmenu = true
+        let rowTop = min(NSEvent.mouseLocation.y + 13, panel.frame.maxY - Self.margin)
+        child.show(model.entries[index].submenu, at: NSPoint(x: panel.frame.maxX - Self.margin - 2, y: rowTop + 5), in: window)
+        if highlightFirst { child.move(1) }
+    }
+    private weak var window: NSWindow?
 
     private func move(_ step: Int) {
         let candidates = model.entries.indices.filter { model.entries[$0].kind == .action && model.entries[$0].enabled }
@@ -117,6 +159,7 @@ final class MicaMenu {
             guard let self, let panel = self.panel, event.window === panel else { return event }
             if let index = self.model.highlighted, self.model.entries.indices.contains(index), !self.model.entries[index].secondary.isEmpty {
                 self.child.parent = self
+                self.childIsSubmenu = false
                 self.child.show(self.model.entries[index].secondary, at: NSEvent.mouseLocation, in: window)
             }
             return nil
@@ -144,6 +187,8 @@ final class MicaMenu {
             case 53: self.close()
             case 125: self.move(1)
             case 126: self.move(-1)
+            case 124: if self.parent == nil, let index = self.model.highlighted { self.openSubmenu(index, highlightFirst: true) }
+            case 123: if self.parent != nil { self.close() }
             case 36, 76, 49: if let index = self.model.highlighted { self.choose(index) }
             default: break
             }

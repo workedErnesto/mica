@@ -100,6 +100,7 @@ public static class Commands
             case "zoomOut": browser.ZoomBy(-0.1); break;
             case "zoomReset": browser.ZoomBy(0); break;
             case "print": tab?.Print(); break;
+            case "devTools" or "console": tab?.OpenDevTools(); break;
             case "save":
                 if (!PageSaver.CanSave(tab)) break;
                 // The menu hangs from the save button; with the button hidden it opens under the address instead.
