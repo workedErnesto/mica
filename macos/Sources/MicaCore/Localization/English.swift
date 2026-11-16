@@ -769,6 +769,7 @@ mica обновляет списки каждый день без cookie. Бло
 Открыть изображение в новой вкладке⟩open image in new tab⟩Open image in new tab
 Загрузить изображение⟩download image⟩Download image
 Скопировать изображение⟩copy image⟩Copy image
+Скопировать адрес изображения⟩copy image address⟩Copy image address
 Открыть видео в новой вкладке⟩open video in new tab⟩Open video in new tab
 Загрузить видео⟩download video⟩Download video
 Скопировать адрес видео⟩copy video address⟩Copy video address

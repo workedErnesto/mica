@@ -281,6 +281,16 @@ final class Tab: NSObject, ObservableObject, Identifiable, WKNavigationDelegate,
         let finish: (NSApplication.ModalResponse) -> Void = { result in completionHandler(result == .alertFirstButtonReturn ? .useCredential : .cancelAuthenticationChallenge, result == .alertFirstButtonReturn ? URLCredential(user: username.stringValue, password: password.stringValue, persistence: .none) : nil) }
         if let window = owner?.controller?.window { alert.beginSheetModal(for: window, completionHandler: finish) } else { finish(alert.runModal()) }
     }
+    /// WebKit answers `window.outerWidth`, `outerHeight`, `screenX` and `screenY` from this private delegate method, and
+    /// a web view whose delegate lacks it reports an empty rectangle: every outer size is 0. Google Sheets and other
+    /// canvas apps read the browser's zoom as outerWidth / innerWidth, so with 0 they drew their grid at a wrong scale
+    /// and it came out blurry. The page's own box in screen coordinates makes that ratio exactly the page zoom (1 at
+    /// 100%), as in Safari, where the window is the page.
+    @objc(_webView:getWindowFrameWithCompletionHandler:)
+    func micaWindowFrame(_ webView: WKWebView, completionHandler: @escaping (CGRect) -> Void) {
+        guard let window = webView.window else { completionHandler(.zero); return }
+        completionHandler(window.convertToScreen(webView.convert(webView.bounds, to: nil)))
+    }
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
         guard navigationAction.request.url?.isFileURL != true else { return nil }
         guard let owner else { return nil }

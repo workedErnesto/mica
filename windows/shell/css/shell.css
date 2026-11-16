@@ -185,7 +185,7 @@
 .page-hole { position: absolute; inset: 0; }
 .card-dim { position: absolute; inset: 0; background: rgb(0 0 0 / 0.18); }
 .library-host { position: relative; flex: none; height: 100%; transition: width var(--spring-panel-ms) var(--spring-panel); }
-.library { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: 10px; overflow: hidden; background: var(--surface); box-shadow: 0 0 0 1px var(--hairline), var(--shadow-card); }
+.library { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: 10px; overflow: hidden; background: color-mix(in srgb, var(--surface) calc(var(--start-alpha) * 100%), transparent); box-shadow: 0 0 0 1px var(--hairline); }
 .customize-host { position: absolute; left: 12px; right: 12px; top: 12px; display: flex; justify-content: center; pointer-events: none; z-index: 5; }
 .customize-host > * { pointer-events: auto; }
 
@@ -367,7 +367,7 @@
 .lib-list { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; gap: 2px; margin: 0 -6px; padding: 0 6px; }
 .lib-note { font-size: 11.5px; color: var(--text3); line-height: 1.4; }
 .lib-note.danger, .danger { color: var(--danger); }
-.day-header { position: sticky; top: 0; z-index: 1; padding: 8px 8px 4px; font-size: 11.5px; font-weight: 500; color: var(--text3); background: var(--surface); }
+.day-header { padding: 8px 8px 4px; font-size: 11.5px; font-weight: 500; color: var(--text3); }
 .lib-row { position: relative; flex: none; }
 .lib-main {
   display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 32px 6px 8px; border-radius: 10px; text-align: left; --press: 0.98;

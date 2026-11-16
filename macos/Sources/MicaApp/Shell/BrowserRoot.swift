@@ -128,16 +128,17 @@ struct BrowserRoot: View {
         // On the first appearance the start page card rises a little out of the shell. A site's card is not moved or
         // scaled, its pixels stay as they are; it appears with the window fade.
         let startPage = browser.selected.map { $0.webView == nil && $0.url == nil } ?? true
+        let glass = Store.glass(browser.prefs, reduceTransparency: reduceTransparency, contrast: contrast)
         return HStack(spacing: Radius.gutter) {
             ContentCard(browser: browser, store: store)
                 .entrance(browser.entered || !startPage, delay: Entrance.step(1), scale: MotionTokens.entrance.cardScale)
             if let panel = browser.panel {
                 SidePanel(panel: panel, browser: browser, store: store)
                     .frame(width: min(340, geo.size.width * 0.4))
-                    .background(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).fill(Palette.surface))
+                    .background(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).fill(Palette.surface.opacity(glass ? Store.startTint(browser.prefs) : 1)))
                     .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(Palette.hairline, lineWidth: 1))
-                    .shadow(color: Palette.shadow, radius: 6, y: 2)
+                    .shadow(color: glass ? .clear : Palette.shadow, radius: 6, y: 2)
                     .transition(Motion.slide(.trailing))
             }
         }
