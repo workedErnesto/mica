@@ -1,6 +1,7 @@
 import AppKit
 import WebKit
 import MicaCore
+import UniformTypeIdentifiers
 
 /// The context menu of a web page, drawn as a mica menu. WebKit still decides what the click was on and builds its
 /// items (copy, open link, look up, writing tools); PageView takes them out of WebKit's own menu before it opens, and
@@ -75,11 +76,53 @@ enum PageMenu {
             // menu keeps the state of the moment it opened, so an unknown item that is off then is left out.
             let on = enabled(item)
             if kind == nil && !on { continue }
+            if kind == .copyImage {
+                // WebKit puts the picture and its address (as text and a link) on the pasteboard; "copy image" keeps
+                // the picture only, and the address has an item of its own.
+                result.append(.item(title, enabled: on) { copyImageOnly(item, action: action) })
+                if let address = page.target.image, ["http", "https"].contains(address.scheme?.lowercased() ?? "") {
+                    result.append(.item(browser.text("скопировать адрес изображения", "Скопировать адрес изображения")) { copyText(address.absoluteString) })
+                }
+                continue
+            }
             result.append(.item(title, enabled: on, checked: item.state == .on) {
                 NSApp.sendAction(action, to: item.target, from: item)
             })
         }
         return result
+    }
+
+    private static func copyText(_ text: String) {
+        let board = NSPasteboard.general
+        board.clearContents()
+        board.setString(text, forType: .string)
+    }
+
+    /// Runs WebKit's "Copy Image", waits for it to reach the pasteboard (WebKit writes it from the page's process, a
+    /// moment later) and rewrites the pasteboard with the picture formats only.
+    private static func copyImageOnly(_ item: NSMenuItem, action: Selector) {
+        let board = NSPasteboard.general
+        let before = board.changeCount
+        NSApp.sendAction(action, to: item.target, from: item)
+        Task { @MainActor in
+            for _ in 0..<100 where board.changeCount == before { try? await Task.sleep(for: .milliseconds(20)) }
+            guard board.changeCount != before else { return }
+            keepImageOnly(board)
+        }
+    }
+
+    private static func isImageType(_ type: NSPasteboard.PasteboardType) -> Bool {
+        type == .tiff || type == .png || UTType(type.rawValue)?.conforms(to: .image) == true
+    }
+
+    static func keepImageOnly(_ board: NSPasteboard) {
+        guard let source = board.pasteboardItems?.first(where: { $0.types.contains(where: isImageType) }) else { return }
+        let kept = source.types.filter(isImageType).compactMap { type in source.data(forType: type).map { (type, $0) } }
+        guard !kept.isEmpty, kept.count < (board.types?.count ?? 0) else { return }
+        let item = NSPasteboardItem()
+        for (type, data) in kept { item.setData(data, forType: type) }
+        board.clearContents()
+        board.writeObjects([item])
     }
 
     private static func title(_ item: NSMenuItem, _ kind: Item?, _ browser: BrowserModel) -> String {

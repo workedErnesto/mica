@@ -14,7 +14,7 @@ struct DownloadsPanel: View {
             EmptyState(symbol: "arrow.down.circle", text: query.isEmpty ? browser.text("загрузки появятся здесь", "Загрузки появятся здесь") : browser.text("ничего не найдено", "Ничего не найдено"))
         } else {
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 2, pinnedViews: [.sectionHeaders]) {
+                LazyVStack(alignment: .leading, spacing: 2) {
                     ForEach(Self.days(items), id: \.day) { group in
                         Section {
                             ForEach(group.items) { item in DownloadRow(item: item, manager: manager, browser: browser).transition(.opacity) }

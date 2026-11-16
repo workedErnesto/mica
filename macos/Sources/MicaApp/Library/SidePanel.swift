@@ -49,7 +49,7 @@ struct SidePanel: View {
             EmptyState(symbol: panel == .history ? "clock" : "bookmark", text: query.isEmpty ? (panel == .history ? browser.text("история пока пуста", "История пока пуста") : browser.text("добавьте закладку через ⌘D", "Добавьте закладку через ⌘D")) : browser.text("ничего не найдено", "Ничего не найдено"))
         } else {
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 2, pinnedViews: panel == .history ? [.sectionHeaders] : []) {
+                LazyVStack(alignment: .leading, spacing: 2) {
                     if panel == .history {
                         ForEach(History.days(visits), id: \.day) { group in
                             Section {
@@ -82,7 +82,6 @@ struct DayHeader: View {
         Text(title).font(.system(size: 11.5, weight: .medium)).foregroundStyle(Palette.text3)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 8).padding(.top, Space.small).padding(.bottom, Space.micro)
-            .background(Palette.surface)
             .accessibilityAddTraits(.isHeader)
     }
     private var title: String {
